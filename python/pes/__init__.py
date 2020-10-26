@@ -1,3 +1,6 @@
+#
+#    This file is part of the Pi Entertainment System (PES).
+#
 #    PES provides an interactive GUI for games console emulators
 #    and is designed to work on the Raspberry Pi.
 #
@@ -17,13 +20,14 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+
 import os
 import shutil
 import sys
 import logging
 
 VERSION_NUMBER = '3.0 (ALPHA)'
-VERSION_DATE = '2020-02-25'
+VERSION_DATE = '2020-10-26'
 VERSION_AUTHOR = 'Neil Munday'
 
 romScrapers = ['theGamesDb.net'] # list of ROM scrapers, default scraper is assumed to be at index 0
