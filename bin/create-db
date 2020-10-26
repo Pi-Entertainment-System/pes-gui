@@ -94,12 +94,9 @@ if __name__ == "__main__":
 	logging.info("MAME dictionary saved to database")
 
 	retroJSONCache = None
-	if not args.update:
-		if os.path.exists(retroGameJSON):
-			with open(retroGameJSON, "r") as f:
-				retroJSONCache = json.load(f)
-		else:
-			pesExit("%s does not exist" % retroGameJSON)
+	if os.path.exists(retroGameJSON) and not args.update:
+		with open(retroGameJSON, "r") as f:
+			retroJSONCache = json.load(f)
 
 	logging.info("loading console definitions from: %s" % consoleJSON)
 	with open(consoleJSON, 'r') as consoleJSONFile:
@@ -115,7 +112,7 @@ if __name__ == "__main__":
 				console = pes.sql.Console(name=c["name"], gamesDbId=c["gamesDbId"], retroId=c["retroId"])
 				session.add(console)
 				session.commit() # force console's ID to be generated
-				if args.update:
+				if retroJSONCache == None:
 					for gameId, data in pes.retroachievement.getGameHashes(int(c["retroId"])).items():
 						retroDic[c["retroId"]].append({"id": gameId, "rasum": data["hash"], "name": data["name"]})
 						retroGame = pes.sql.RetroAchievementGame(id=gameId, rasum=data["hash"], name=data["name"], consoleId=console.id)
@@ -129,11 +126,11 @@ if __name__ == "__main__":
 			else:
 				console = pes.sql.Console(name=c["name"], gamesDbId=c["gamesDbId"])
 				session.add(console)
-		if args.update:
-			logging.info("saving RetroAchievement game info to: %s" % retroGameJSON)
-			with open(retroGameJSON, "w") as retroGameJSONFile:
-				retroGameJSONFile.write("%s\n" % json.dumps(retroDic))
 	session.commit()
+	if args.update or not os.path.exists(retroGameJSON):
+		logging.info("saving RetroAchievement game info to: %s" % retroGameJSON)
+		with open(retroGameJSON, "w") as retroGameJSONFile:
+			retroGameJSONFile.write("%s\n" % json.dumps(retroDic))
 
 	#consoles = session.query(pes.sql.Console).all()
 	#for c in consoles:
