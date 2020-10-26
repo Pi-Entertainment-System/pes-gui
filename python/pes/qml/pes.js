@@ -1,6 +1,6 @@
 
 function getConsolesWithGames() {
-  return backend.getConsoles();
+  return backend.getConsoles(true);
 }
 
 function mainMenuEvent(text) {
