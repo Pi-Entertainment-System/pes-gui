@@ -1,3 +1,25 @@
+/*
+    This file is part of the Pi Entertainment System (PES).
+
+    PES provides an interactive GUI for games console emulators
+    and is designed to work on the Raspberry Pi.
+
+    Copyright (C) 2020 Neil Munday (neil@mundayweb.com)
+
+    PES is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    PES is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with PES.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 import QtQuick 2.7
 import QtQuick.Layouts 1.12
 import QtQuick.Window 2.2
@@ -22,8 +44,8 @@ ApplicationWindow {
 	    target: backend
 
 			onHomeButtonPress: {
-				pesDialog.open();
-	      popupMenuView.forceActiveFocus();
+				//pesDialog.open();
+	      //popupMenuView.forceActiveFocus();
 			}
 
 			onControlPadButtonPress: {
@@ -32,7 +54,8 @@ ApplicationWindow {
 			}
 	}
 
-  Dialog {
+	// closing dialog
+	Dialog {
     id: closeDialog
     modal: true
     width: 500
@@ -47,6 +70,7 @@ ApplicationWindow {
     }
 
     ColumnLayout {
+			anchors.fill: parent
       spacing: 10
       Text {
         color: Colour.text
@@ -57,10 +81,17 @@ ApplicationWindow {
       RowLayout {
         spacing: 10
 
+				Item {
+					Layout.fillHeight: true
+					Layout.fillWidth: true
+				}
+
         DialogButton {
 					id: exitYesBtn
-          Layout.fillWidth: true
+          Layout.fillWidth: false
           Layout.minimumWidth: 100
+					Layout.preferredWidth: 150
+					Layout.maximumWidth: 150
 					Layout.minimumHeight: 50
           btnText: "Yes"
 					focus: true
@@ -73,8 +104,10 @@ ApplicationWindow {
 
 				DialogButton {
 					id: exitNoBtn
-          Layout.fillWidth: true
+          Layout.fillWidth: false
           Layout.minimumWidth: 100
+					Layout.maximumWidth: 150
+					Layout.preferredWidth: 150
 					Layout.minimumHeight: 50
           btnText: "No"
 					KeyNavigation.left: exitYesBtn
@@ -83,6 +116,11 @@ ApplicationWindow {
 						closeDialog.close()
 					}
         }
+
+				Item {
+					Layout.fillHeight: true
+					Layout.fillWidth: true
+				}
       }
     }
 
@@ -91,8 +129,9 @@ ApplicationWindow {
 		}
   }
 
+	// options dialog
   Dialog {
-    id: pesDialog
+    id: optionsDialog
     modal: true
     width: 500
     height: 274
@@ -134,7 +173,7 @@ ApplicationWindow {
       focus: true
       model: popupMenu
       delegate: MenuDelegate {
-				Keys.onReturnPressed: PES.pesDialogEvent(text);
+				Keys.onReturnPressed: PES.optionsDialogEvent(text);
 			}
       keyNavigationEnabled: true
       keyNavigationWraps: true
@@ -143,9 +182,10 @@ ApplicationWindow {
 		onOpened: popupMenuView.forceActiveFocus()
   }
 
+  // shortcuts
   Shortcut {
     sequence: "Home"
-    onActivated: pesDialog.open()
+    onActivated: optionsDialog.open()
   }
 
   Shortcut {
@@ -153,6 +193,16 @@ ApplicationWindow {
     onActivated: closeDialog.open()
   }
 
+	// models
+	ListModel {
+		id: mainMenuModel
+
+		ListElement {
+			name: "Home"
+		}
+	}
+
+	// layout
 	Text {
 		id: titleTxt
 		text: "Pi Entertainment System"
@@ -194,101 +244,97 @@ ApplicationWindow {
 		color: Colour.line
 	}
 
-  Rectangle {
-    x: 0
-    y: headerLine.y + headerLine.height + 1
-    width: parent.width
-    height: parent.height - (headerLine.y + headerLine.height + 1)
-
-    id: mainScreen
-    color: mainWindow.color
-
-    ListModel {
-      id: menuModel
-
-      ListElement {
-        name: "Home"
-      }
-    }
-
-    Rectangle {
-      id: menuRect
-      x: 0
-      y: 0
-      width: 400
-      height: parent.height
-      color: Colour.menuBg
-
-      Rectangle {
-        x: 0
-        y: parent.y
-        width: parent.width
-        height: parent.height - this.y
-        color: parent.color
-
-        ScrollView {
-          width: parent.width
-          height: parent.height
-          clip: true
-
-          focus: true
-
-          ListView {
-            id: menuView
-            anchors.fill: parent
-            focus: true
-            model: menuModel
-            delegate: MenuDelegate {
-							Keys.onReturnPressed: PES.mainMenuEvent(text);
-						}
-            keyNavigationEnabled: true
-            keyNavigationWraps: false
-          }
-        }
-      }
-    }
-
-    Component.onCompleted: PES.updateMenuModel()
-  }
-
-	StackLayout {
-		id: screenLayout
-		x: menuRect.width + 1
+	Rectangle {
+		id: panelRect
+		color: Colour.menuBg
+		x: 0
 		y: headerLine.y + headerLine.height + 1
-		width: mainWindow.width - menuRect.width
-		height: parent.height - (headerLine.y + headerLine.height + 1)
-		currentIndex: 0
+		height: parent.height - this.y
+		width: parent.width
 
-    Rectangle {
-      id: homeScreen
-      width: parent.width
-      color: Colour.bg
+		StackLayout {
+			anchors.fill: parent
 
-      Text {
-        id: welcomeText
-        padding: 10
-        text: "Welcome to PES!"
-        font.pointSize: FontStyle.headerSize
-    		font.bold: true
-    		font.family: FontStyle.font
-    		color: Colour.text
-      }
+			RowLayout {
 
-      Text {
-        id: noGamesText
-        y: welcomeText.height + 10
-        visible: false
-        padding: 10
-        text: "You have not added any games to PES yet. To do so press the Home button and select 'Update Games' option."
-        font.pointSize: FontStyle.bodySize
-    		font.bold: true
-    		font.family: FontStyle.font
-    		color: Colour.text
-        wrapMode: Text.Wrap
-        width: parent.width // must set width for wrapping to work
-      }
+				spacing: 0
 
-      Component.onCompleted: PES.updateHomeScreen()
-    }
+				Rectangle {
+
+					id: mainMenuRect
+					Layout.preferredWidth: 300
+					Layout.minimumWidth: 400
+					Layout.maximumWidth: 500
+					Layout.topMargin: 30
+					Layout.bottomMargin: 30
+					Layout.fillHeight: true
+					Layout.fillWidth: false
+
+					color: Colour.menuBg
+
+					Rectangle {
+		        x: 0
+		        y: parent.y
+		        width: parent.width
+		        height: parent.height - this.y
+		        color: parent.color
+
+		        ScrollView {
+		          width: parent.width
+		          height: parent.height
+		          clip: true
+
+		          focus: true
+
+		          ListView {
+		            id: menuView
+		            anchors.fill: parent
+		            focus: true
+		            model: mainMenuModel
+		            delegate: MenuDelegate {
+									Keys.onReturnPressed: PES.mainMenuEvent(text);
+								}
+		            keyNavigationEnabled: true
+		            keyNavigationWraps: false
+		          }
+		        }
+					}
+					Component.onCompleted: PES.updateMainMenuModel()
+				}
+
+				Rectangle {
+					id: mainScreenDisplayRect
+					color: Colour.panelBg
+
+					Layout.fillWidth: true
+					Layout.fillHeight: true
+
+					Text {
+		        id: welcomeText
+		        padding: 10
+		        text: "Welcome to PES!"
+		        font.pointSize: FontStyle.headerSize
+		    		font.bold: true
+		    		font.family: FontStyle.font
+		    		color: Colour.text
+		      }
+
+		      Text {
+		        id: noGamesText
+		        y: welcomeText.height + 10
+		        visible: false
+		        padding: 10
+		        text: "You have not added any games to PES yet. To do so press the Home button and select 'Update Games' option."
+		        font.pointSize: FontStyle.bodySize
+		    		font.bold: true
+		    		font.family: FontStyle.font
+		    		color: Colour.text
+		        wrapMode: Text.Wrap
+		        width: parent.width // must set width for wrapping to work
+		      }
+					Component.onCompleted: PES.updateHomeScreen()
+				}
+			}
+		}
 	}
 }
