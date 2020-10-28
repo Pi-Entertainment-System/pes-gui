@@ -253,8 +253,10 @@ ApplicationWindow {
 		width: parent.width
 
 		StackLayout {
+      id: screenStack
 			anchors.fill: parent
-
+      currentIndex: 0
+      // main layout
 			RowLayout {
 
 				spacing: 0
@@ -263,8 +265,8 @@ ApplicationWindow {
 
 					id: mainMenuRect
 					Layout.preferredWidth: 300
-					Layout.minimumWidth: 400
-					Layout.maximumWidth: 500
+					Layout.minimumWidth: 300
+					Layout.maximumWidth: 300
 					Layout.topMargin: 30
 					Layout.bottomMargin: 30
 					Layout.fillHeight: true
@@ -309,32 +311,40 @@ ApplicationWindow {
 					Layout.fillWidth: true
 					Layout.fillHeight: true
 
-					Text {
+					HeaderText {
 		        id: welcomeText
-		        padding: 10
 		        text: "Welcome to PES!"
-		        font.pointSize: FontStyle.headerSize
-		    		font.bold: true
-		    		font.family: FontStyle.font
-		    		color: Colour.text
 		      }
 
-		      Text {
+		      BodyText {
 		        id: noGamesText
 		        y: welcomeText.height + 10
 		        visible: false
-		        padding: 10
 		        text: "You have not added any games to PES yet. To do so press the Home button and select 'Update Games' option."
-		        font.pointSize: FontStyle.bodySize
-		    		font.bold: true
-		    		font.family: FontStyle.font
-		    		color: Colour.text
-		        wrapMode: Text.Wrap
-		        width: parent.width // must set width for wrapping to work
 		      }
 					Component.onCompleted: PES.updateHomeScreen()
 				}
 			}
+
+      // Update games layout
+      Rectangle {
+        anchors.fill: parent
+        color: Colour.panelBg
+
+        ColumnLayout {
+
+          HeaderText {
+            Layout.fillWidth: true
+            text: "Update Games"
+          }
+
+          BodyText {
+            Layout.fillWidth: true
+            Layout.preferredWidth: panelRect.width
+            text: "Select the <i>Begin</i> button below to begin the scan. A working Inernet connection is required to download game metadata and cover art."
+          }
+        }
+      }
 		}
 	}
 }

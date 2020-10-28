@@ -33,6 +33,8 @@ function mainMenuEvent(text) {
 function optionsDialogEvent(text) {
 	switch(text) {
 		case "Update Games": {
+      optionsDialog.close();
+      screenStack.currentIndex = 1;
 			break;
 		}
 		case "Exit": {
