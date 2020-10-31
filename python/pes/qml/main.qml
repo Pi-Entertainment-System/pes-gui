@@ -328,10 +328,17 @@ ApplicationWindow {
 
       // Update games layout
       Rectangle {
-        anchors.fill: parent
         color: Colour.panelBg
 
+        Keys.onPressed: {
+          if (event.key == Qt.Key_Backspace) {
+            screenStack.currentIndex = 0;
+          }
+        }
+
         ColumnLayout {
+
+          spacing: 10
 
           HeaderText {
             Layout.fillWidth: true
@@ -341,7 +348,61 @@ ApplicationWindow {
           BodyText {
             Layout.fillWidth: true
             Layout.preferredWidth: panelRect.width
+            Layout.leftMargin: 30
             text: "Select the <i>Begin</i> button below to begin the scan. A working Inernet connection is required to download game metadata and cover art."
+          }
+
+          UiButton {
+            id: beginScanBtn
+            btnText: "Begin"
+
+            Layout.preferredWidth: 100
+            Layout.preferredHeight: 50
+            Layout.leftMargin: 30
+
+            Keys.onReturnPressed: {
+              this.visible = false;
+              abortScanBtn.visible = true;
+              abortScanBtn.forceActiveFocus();
+              updateGamesProgressBar.progress = 0;
+              updateGamesProgressBar.visible = true;
+              gamesFoundTxt.visible = true;
+              statusTxt.visible = true;
+            }
+          }
+
+          BodyText {
+            id: gamesFoundTxt
+            text: "Found: 0"
+            visible: false
+          }
+
+          BodyText {
+            id: statusTxt
+            text: "Scanning..."
+            visible: false
+          }
+
+          ProgressBar {
+            id: updateGamesProgressBar
+            visible: false
+            progress: 0
+
+            Layout.leftMargin: 30
+            Layout.rightMargin: 30
+            Layout.preferredWidth: panelRect.width - 60
+            Layout.preferredHeight: 50
+          }
+
+          UiButton {
+            id: abortScanBtn
+            btnText: "Abort"
+            visible: false
+
+            Layout.preferredWidth: 100
+            Layout.preferredHeight: 50
+            Layout.leftMargin: 30
+            Layout.topMargin: 20
           }
         }
       }

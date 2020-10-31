@@ -30,7 +30,7 @@ QtObject {
   readonly property color text: "#f0f0f0"
   readonly property color line: "#f08819"
 	readonly property color progressBar: "#f08819"
-	readonly property color progressBarBg: "#131313"
+	readonly property color progressBarBg: "#1f2326"
   readonly property color menuFocus: "#2e3235"
   readonly property color buttonFocus: "#f08819"
   readonly property color menuText: "#999999"

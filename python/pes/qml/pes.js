@@ -35,6 +35,7 @@ function optionsDialogEvent(text) {
 		case "Update Games": {
       optionsDialog.close();
       screenStack.currentIndex = 1;
+      beginScanBtn.forceActiveFocus();
 			break;
 		}
 		case "Exit": {
