@@ -48,5 +48,6 @@ Rectangle {
 		text: name
 		color: parent.focus ? Colour.text : Colour.menuText
 		font.pointSize: FontStyle.menuSize
+		font.family: FontStyle.font
 	}
 }
