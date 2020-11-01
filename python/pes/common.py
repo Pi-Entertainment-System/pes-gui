@@ -75,7 +75,7 @@ def initConfig():
 def initDb():
 	checkFile(masterDb)
 	if not os.path.exists(userDb):
-		logging.debug("initialising database...")
+		logging.debug("initialising %s from %s..." % (userDb, masterDb))
 		shutil.copy(masterDb, userDb)
 
 def mkdir(path):
