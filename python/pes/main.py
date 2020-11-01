@@ -28,7 +28,10 @@ import logging
 import pes
 from pes.common import *
 from pes.gui import BackEnd, PESGuiApplication
+import pes.sql
 import sdl2
+
+from sqlalchemy.orm import sessionmaker
 
 if __name__ == "__main__":
 
@@ -88,6 +91,15 @@ if __name__ == "__main__":
 		pesExit("Could not find \"romsDir\" parameter in \"settings\" section in %s" % pes.userPesConfigFile)
 	logging.debug("ROMs dir: %s" % romsDir)
 	mkdir(romsDir)
+
+	# make directory for each support console
+	logging.debug("connecting to database: %s" % userDb)
+	engine = pes.sql.connect(userDb)
+	session = sessionmaker(bind=engine)()
+	consoles = session.query(pes.sql.Console).all()
+	logging.debug("creating ROM directories for user")
+	for c in consoles:
+		mkdir(os.path.join(romsDir, c.name))
 
 	romScraper = userSettings.get("settings", "romScraper")
 	if romScraper == None:
