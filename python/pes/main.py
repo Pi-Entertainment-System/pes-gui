@@ -103,10 +103,11 @@ if __name__ == "__main__":
 
 	romScraper = userSettings.get("settings", "romScraper")
 	if romScraper == None:
-		logging.warning("Could not find \"romScraper\" parameter in \"settings\" section in %s. Will use \"%s\" for this session." % (userPesConfigFile, romScrapers[0]))
+		logging.warning("Could not find \"romScraper\" parameter in \"settings\" section in %s. Adding default setting: %s." % (userPesConfigFile, romScrapers[0]))
 		userSettings.set("settings", "romScraper", romScrapers[0])
+		userSettings.save(userPesConfigFile)
 	elif romScraper not in pes.romScrapers:
-		logging.error("Unknown romScraper value: \"%s\" in \"settings\" section in %s. Will use \"%s\" instead for this session." % (romScraper, userPesConfigFile, romScrapers[0]))
+		pesExit("Unknown romScraper value: \"%s\" in \"settings\" section in %s" % (romScraper, userPesConfigFile, romScrapers[0]))
 
 	if sdl2.SDL_Init(sdl2.SDL_INIT_JOYSTICK | sdl2.SDL_INIT_GAMECONTROLLER) != 0:
 		pesExit("Failed to initialise SDL")
