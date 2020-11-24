@@ -36,6 +36,7 @@ from PyQt5.QtCore import Qt, QUrl, pyqtSignal, pyqtSlot, QFile, QIODevice, QObje
 import sqlalchemy.orm
 
 import pes
+import pes.romscan
 import pes.sql
 from pes.common import checkDir, checkFile, initConfig, mkdir, ConsoleSettings
 
@@ -69,6 +70,7 @@ class BackEnd(QObject):
 	def __init__(self, parent=None):
 		super(BackEnd, self).__init__(parent)
 		logging.debug("Backend.__init__: connecting to database: %s" % pes.userDb)
+		#self.__romscanThread = None
 		engine = pes.sql.connect()
 		self.__session = sqlalchemy.orm.sessionmaker(bind=engine)()
 		pes.sql.createAll(engine)
@@ -100,6 +102,12 @@ class BackEnd(QObject):
 	def getTime(self):
 		return datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
+	#@pyqtSlot()
+	#def startRomScan(self):
+	#	self.__romscanThread = pes.romscan.RomScanThread()
+		#self.__romscanThread.progressSignal.connect(self.__romScanProgress)
+	#	self.__romscanThread.start()
+
 class PESGuiApplication(QGuiApplication):
 
 	def __init__(self, argv, windowed=False):
@@ -112,6 +120,7 @@ class PESGuiApplication(QGuiApplication):
 		self.__engine = None
 		self.__backend = BackEnd()
 		self.__backend.closeSignal.connect(self.close)
+		qmlRegisterType(pes.romscan.RomScanThread, 'RomScanThread', 1, 0, 'RomScanThread')
 		self.__engine = QQmlApplicationEngine()
 		self.__engine.rootContext().setContextProperty("backend", self.__backend)
 		logging.debug("loading QML from: %s" % pes.qmlMain)

@@ -28,6 +28,7 @@ import QtQuick.Controls 2.5
 import "Components"
 import "./Style/" 1.0
 import "pes.js" as PES
+import RomScanThread 1.0
 
 ApplicationWindow {
 
@@ -328,7 +329,27 @@ ApplicationWindow {
 
       // Update games layout
       Rectangle {
+        id: updateGamesRect
+
         color: Colour.panelBg
+
+        RomScanThread {
+          id: romScanThread
+
+          onProgressSignal: {
+            updateGamesProgressBar.progress = progress;
+          }
+
+          onProgressMessage: {
+            statusTxt.text = message;
+          }
+
+          onStateChange: {
+            if (state == "done") {
+              abortScanBtn.visible = false;
+            }
+          }
+        }
 
         Keys.onPressed: {
           if (event.key == Qt.Key_Backspace) {
@@ -366,15 +387,9 @@ ApplicationWindow {
               abortScanBtn.forceActiveFocus();
               updateGamesProgressBar.progress = 0;
               updateGamesProgressBar.visible = true;
-              gamesFoundTxt.visible = true;
               statusTxt.visible = true;
+              romScanThread.start();
             }
-          }
-
-          BodyText {
-            id: gamesFoundTxt
-            text: "Found: 0"
-            visible: false
           }
 
           BodyText {
