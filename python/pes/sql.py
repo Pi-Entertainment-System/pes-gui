@@ -30,7 +30,9 @@ from sqlalchemy.orm import relationship
 Base = declarative_base()
 
 def connect(db=pes.userDb):
-	s = "sqlite:///%s" % db
+	# disable check_same_thread check
+	# must make sure writes only happen in one thread!
+	s = "sqlite:///%s?check_same_thread=false" % db
 	logging.debug("pes.sql.connect: connecting to: %s" % s)
 	return create_engine(s)
 
