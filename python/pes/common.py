@@ -143,7 +143,13 @@ class Settings(object):
 	def getSections(self):
 		return self._configparser.sections()
 
+	def save(self, path):
+		logging.debug("Settings.save: saving to %s" % path)
+		with open(path, "w") as f:
+			self._configparser.write(f)
+
 	def set(self, section, prop, value):
+		logging.debug("Settings.set: setting %s.%s = %s" % (section, prop, value))
 		self._configparser.set(section, prop, str(value))
 
 class UserSettings(Settings):
@@ -168,6 +174,7 @@ class UserSettings(Settings):
 class ConsoleSettings(Settings):
 
 	def __init__(self, f):
+		logging.debug("ConsoleSettings.__init__: created using %s" % f)
 		super(ConsoleSettings, self).__init__(f)
 		self.__props = {
 			"thegamesdb_id": "int",
@@ -180,6 +187,25 @@ class ConsoleSettings(Settings):
 		}
 
 		self.__optionalProps = ["achievement_id"]
+		self.__cache = {}
+
+	def get(self, c, prop):
+		if not self._configparser.has_option(c, prop):
+			if prop in self.__optionalProps:
+				return None
+			raise Exception("%s has no option \"%s\" in %s" % (c, prop, self._path))
+		if not prop in self.__props:
+			raise Exception("%s is not in props dictionary" % prop)
+		if c not in self.__cache:
+			self.__cache[c] = {}
+		if not prop in self.__cache[c]:
+			if self.__props[prop] == "int":
+				self.__cache[c][prop] = self._configparser.getint(c, prop)
+			elif self.__props[prop] == "path":
+				self.__cache[c][prop] = self._configparser.get(c, prop).replace("%%USERDIR%%", userDir).replace("%%BASE%%", baseDir)
+			else:
+				self.__cache[c][prop] = self._configparser.get(c, prop)
+		return self.__cache[c][prop]
 
 	def getOptions(self, c):
 		o = {}
