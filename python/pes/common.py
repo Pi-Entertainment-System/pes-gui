@@ -180,13 +180,14 @@ class ConsoleSettings(Settings):
 			"thegamesdb_id": "int",
 			"achievement_id": "int",
 			"emulator": "str",
+			"ignore_roms": "list",
 			"image": "path",
-			"extensions": "str",
+			"extensions": "list",
 			"command": "path",
 			"nocoverart": "path"
 		}
 
-		self.__optionalProps = ["achievement_id"]
+		self.__optionalProps = ["achievement_id", "ignore_roms"]
 		self.__cache = {}
 
 	def get(self, c, prop):
@@ -203,6 +204,8 @@ class ConsoleSettings(Settings):
 				self.__cache[c][prop] = self._configparser.getint(c, prop)
 			elif self.__props[prop] == "path":
 				self.__cache[c][prop] = self._configparser.get(c, prop).replace("%%USERDIR%%", userDir).replace("%%BASE%%", baseDir)
+			elif self.__props[prop] == "list":
+				self.__cache[c][prop] = self._configparser.get(c, prop).split(",")
 			else:
 				self.__cache[c][prop] = self._configparser.get(c, prop)
 		return self.__cache[c][prop]
