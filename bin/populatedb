@@ -1,0 +1,194 @@
+#!/usr/bin/env python3
+
+#
+#    This file is part of the Pi Entertainment System (PES).
+#
+#    PES provides an interactive GUI for games console emulators
+#    and is designed to work on the Raspberry Pi.
+#
+#    Copyright (C) 2020 Neil Munday (neil@mundayweb.com)
+#
+#    PES is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    PES is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with PES.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+"""
+This script initialises the PES database with console and game
+data for use by PES.
+
+By creating a cache of game data this aids adding user games to
+the database.
+"""
+
+import argparse
+import configparser
+import datetime
+import json
+import logging
+import os
+import pes
+import pes.retroachievement
+import pes.sql
+import requests
+import sys
+
+from pes.common import checkDir, checkFile, mkdir, pesExit, ConsoleSettings
+from sqlalchemy.orm import sessionmaker
+
+if __name__ == "__main__":
+
+	parser = argparse.ArgumentParser(description='Script to pre-populate PES database', add_help=True)
+	parser.add_argument('-v', '--verbose', help='Turn on debug messages', dest='verbose', action='store_true')
+	parser.add_argument('-d', '--data-dir', dest='dataDir', help='Path to data directory', required=True)
+	parser.add_argument('-l', '--log', help='File to log messages to', type=str, dest='logfile')
+	parser.add_argument('-k', '--gamesDb-key', help='theGamesDb.net API key', type=str, dest='key', required=True)
+	args = parser.parse_args()
+
+	logLevel = logging.INFO
+	if args.verbose:
+		logLevel = logging.DEBUG
+
+	if args.logfile:
+		logging.basicConfig(format='%(asctime)s:%(levelname)s: %(message)s', datefmt='%Y/%m/%d %H:%M:%S', level=logLevel, filename=args.logfile)
+	else:
+		logging.basicConfig(format='%(asctime)s:%(levelname)s: %(message)s', datefmt='%Y/%m/%d %H:%M:%S', level=logLevel)
+
+	GAMESDB_API_URL = "https://api.thegamesdb.net/v1"
+	HEADERS = { "accept": "application/json", 'User-Agent': 'PES Scraper'}
+	URL_TIMEOUT = 30
+
+	checkDir(args.dataDir)
+	cacheDir = os.path.join(args.dataDir, 'cache')
+	mkdir(cacheDir)
+	# create directory to store JSON cache
+	gamesDbCacheDir = os.path.join(cacheDir, "tgdb-%s" % datetime.datetime.now().strftime('%Y-%m-%d_%H%M'))
+	logging.info("using %s for theGamesDb JSON cache" % gamesDbCacheDir)
+	mkdir(gamesDbCacheDir)
+
+	pesDb = os.path.join(args.dataDir, 'pes.db')
+
+	consoleJSON = os.path.join(args.dataDir, "consoles.json")
+	checkFile(consoleJSON)
+
+	engine = pes.sql.connect(pesDb)
+	session = sessionmaker(bind=engine)()
+	pes.sql.createAll(engine)
+
+	logging.info("loading console definitions from: %s" % consoleJSON)
+	with open(consoleJSON, 'r') as consoleJSONFile:
+		consoleData = json.load(consoleJSONFile)
+		foundConsoleIds = []
+		consoleRetroIds = []
+		for c in consoleData["consoles"]:
+			platformId = int(c["gamesDbId"])
+			consoleId = int(c["id"])
+
+			console = session.query(pes.sql.Console).get(consoleId)
+			if console:
+				logging.info("updating Console: %s" % c["name"])
+				console.name = c["name"]
+			else:
+				logging.info("adding console: %s" % c["name"])
+				console = pes.sql.Console(id=consoleId, name=c["name"])
+
+			if "retroId" in c and c["retroId"] not in consoleRetroIds:
+				console.retroId = int(c["retroId"])
+
+			session.add(console)
+			session.commit()
+
+			gamesDbPlatform = session.query(pes.sql.GamesDbPlatform).get(platformId)
+			if gamesDbPlatform:
+				logging.info("updating GamesDbPlatform: %s" % c["name"])
+				gamesDbPlatform.consoleId = consoleId
+				gamesDbPlatform.name = c["name"]
+			else:
+				logging.info("adding GamesDbPlatform: %s" % c["name"])
+				gamesDbPlatform = pes.sql.GamesDbPlatform(id=platformId, consoleId=consoleId, name=c["name"])
+			session.add(gamesDbPlatform)
+			session.commit()
+
+			if c["gamesDbId"] in foundConsoleIds:
+				logging.info("skipping: %s" % c["name"])
+			else:
+				logging.info("processing: %s" % c["name"])
+				foundConsoleIds.append(c["gamesDbId"])
+				jsonCacheDir = os.path.join(gamesDbCacheDir, str(c["gamesDbId"]))
+				mkdir(jsonCacheDir)
+
+				page = 1
+
+				while True:
+					logging.info("downloading page %d from results" % page)
+					params = {
+						'apikey': '%s' % args.key,
+						'id': c["gamesDbId"],
+						'fields': 'overview',
+						'include': 'boxart',
+						'page': page
+					}
+
+					#try:
+					response = requests.get(
+						"%s/Games/ByPlatformID" % GAMESDB_API_URL,
+						params=params,
+						headers=HEADERS,
+						timeout=URL_TIMEOUT,
+						stream=True
+					)
+					if response.status_code == requests.codes.ok:
+						data = response.json()
+						if data["status"] != "Success":
+							pesExit("Got bad status value: %s" % data["status"])
+						if "data" not in data or "games" not in data["data"]:
+							peExit("Invalued JSON: %s" % data)
+						# save JSON to cache for parsing later (if needed to save API requests)
+						jsonFileCache = os.path.join(jsonCacheDir, "games_%s.json" % page)
+						logging.debug("saving JSON to: %s" % jsonFileCache)
+						with open(jsonFileCache, 'w') as f:
+							json.dump(data, f)
+						for game in data["data"]["games"]:
+							logging.info("processing game: %s, %s" % (game["id"], game["game_title"]))
+							gameId = int(game["id"])
+							gamesDbGame = session.query(pes.sql.GamesDbGame).get(gameId)
+							if gamesDbGame:
+								logging.info("-> updating")
+								gamesDbGame.name = game["game_title"]
+								gamesDbGame.releaseDate = game["release_date"]
+								gamesDbGame.overview = game["overview"]
+							else:
+								logging.info("-> adding")
+								gamesDbGame = pes.sql.GamesDbGame(id=gameId, platformId=platformId, name=game["game_title"], releaseDate=game["release_date"], overview=game["overview"])
+
+							# get coverart
+							if str(gameId) in data["include"]["boxart"]["data"]:
+								for image in data["include"]["boxart"]["data"][str(gameId)]:
+									if image["side"] == "front":
+										logging.info("-> setting covert art URLs...")
+										gamesDbGame.boxArtFrontOriginal = "%s%s" % (data["include"]["boxart"]["base_url"]["original"], image["filename"])
+										gamesDbGame.boxArtFrontLarge = "%s%s" % (data["include"]["boxart"]["base_url"]["large"], image["filename"])
+										gamesDbGame.boxArtFrontMedium = "%s%s" % (data["include"]["boxart"]["base_url"]["medium"], image["filename"])
+										break
+							else:
+								logging.warning("-> no cover art for game %s" % game["id"])
+							session.add(gamesDbGame)
+							session.commit()
+						if data["pages"]["next"]:
+							page += 1
+						else:
+							break
+					else:
+						pesExit("failed, status code: %s" % response.status_code)
+
+					#except Exception as e:
+					#	pesExit("Error occurred: %s" % e)
