@@ -48,8 +48,10 @@ class Console(Base, CustomBase):
 
 	id = Column(Integer, primary_key=True)
 	name = Column(String)
-	gamesDbId = Column(Integer, index=True) # FBA and MAMA use the same ID
+	#gamesDbId = Column(Integer, ForeignKey('gamesdb_platform.id')) # FBA and MAMA use the same I
 	retroId = Column(Integer, index=True) # Mega Drive & Gensis use same ID
+
+	#platform = relationship("GamesDbPlatform", back_populates="consoles")
 
 	def __repr__(self):
 		return "<Console id=%s name=%s gamesDbId=%s retroId=%s>" % (self.id, self.name, self.gamesDbId, self.retroId)
@@ -58,16 +60,36 @@ class Game(Base, CustomBase):
 	__tablename__ = "game"
 
 	id = Column(Integer, primary_key=True)
-	name = Column(String)
-	releaseDate = Column(Date)
+	consoleId = Column(Integer, ForeignKey('console.id'))
 	rasum = Column(String)
 	gamesDbId = Column(Integer, index=True)
 	retroId = Column(Integer, ForeignKey('retroachievement_game.id'), index=True)
-	description = Column(String)
 	path = Column(String)
-	consoleId = Column(Integer, ForeignKey('console.id'))
 
 	console = relationship("Console", back_populates="games")
+
+class GamesDbGame(Base, CustomBase):
+	__tablename__ = "gamesdb_game"
+
+	id = Column(Integer, primary_key=True)
+	platformId = Column(Integer, ForeignKey('gamesdb_platform.id'))
+	name = Column(String)
+	releaseDate = Column(String)
+	overview = Column(String)
+	boxArtFrontOriginal = Column(String)
+	boxArtFrontMedium = Column(String)
+	boxArtFrontLarge = Column(String)
+
+	platform = relationship("GamesDbPlatform", back_populates="games")
+
+class GamesDbPlatform(Base, CustomBase):
+	__tablename__ = "gamesdb_platform"
+
+	id = Column(Integer, primary_key=True)
+	name = Column(String)
+	consoleId = Column(Integer, ForeignKey('console.id'))
+
+	console = relationship("Console", back_populates="platforms")
 
 class MameGame(Base, CustomBase):
 	__tablename__ = "mame_game"
@@ -82,10 +104,14 @@ class RetroAchievementGame(Base, CustomBase):
 	name = Column(String)
 	consoleId = Column(Integer, ForeignKey('console.id'))
 
-	console = relationship("Console", back_populates="retrogames")
+	#console = relationship("Console", back_populates="retroachievement_games")
 
 	def __repr__(self):
 		return "<RetroAchievementGame id=%d rasum=%s name=%s consoleId=%d>" % (self.id , self.rasum, self.name, self.consoleId)
 
 Console.games = relationship("Game", order_by=Game.id, back_populates="console")
-Console.retrogames = relationship("RetroAchievementGame", order_by=RetroAchievementGame.id, back_populates="console")
+#Console.retroachievement_games = relationship("RetroAchievementGame", order_by=RetroAchievementGame.id, back_populates="console")
+#Console.gamesDbGames = relationship("GamesDbGame", order_by=GamesDbGame.id, back_populates="console")
+
+Console.platforms = relationship("GamesDbPlatform", order_by=GamesDbPlatform.id, back_populates="console")
+GamesDbPlatform.games = relationship("GamesDbGame", order_by=GamesDbGame.id, back_populates="platform")
