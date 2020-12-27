@@ -102,7 +102,7 @@ class RetroAchievementGame(Base, CustomBase):
 	id = Column(Integer, primary_key=True)
 	rasum = Column(String, index=True)
 	name = Column(String)
-	consoleId = Column(Integer, ForeignKey('console.id'))
+	retroConsoleId = Column(Integer)
 
 	#console = relationship("Console", back_populates="retroachievement_games")
 
