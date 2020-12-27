@@ -12,7 +12,7 @@
 	{"id": 11, "name": "MAME", "gamesDbId": 23},
 	{"id": 12, "name": "MasterSystem", "retroId": 11, "gamesDbId": 35},
 	{"id": 13, "name": "Mega CD", "retroId": 8, "gamesDbId": 21},
-	{"id": 14, "name": "MegaDrive", "gamesDbId": 36},
+	{"id": 14, "name": "MegaDrive", "retroId": 1, "gamesDbId": 36},
 	{"id": 15, "name": "MSX", "gamesDbId": 4929},
 	{"id": 16, "name": "N64", "retroId": 2, "gamesDbId": 3},
 	{"id": 17, "name": "Neo Geo", "gamesDbId": 24},
