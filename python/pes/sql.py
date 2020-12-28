@@ -54,7 +54,7 @@ class Console(Base, CustomBase):
 	#platform = relationship("GamesDbPlatform", back_populates="consoles")
 
 	def __repr__(self):
-		return "<Console id=%s name=%s gamesDbId=%s retroId=%s>" % (self.id, self.name, self.gamesDbId, self.retroId)
+		return "<Console id=%s name=%s retroId=%s>" % (self.id, self.name, self.retroId)
 
 class Game(Base, CustomBase):
 	__tablename__ = "game"
