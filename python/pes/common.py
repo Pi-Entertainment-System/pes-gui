@@ -26,7 +26,9 @@ import csv
 import fcntl
 import logging
 import Levenshtein
+import shlex
 import socket
+import subprocess
 import struct
 
 def checkDir(d):
@@ -103,6 +105,16 @@ def pesExit(msg = None, error = False):
 	else:
 		logging.info("Exiting...")
 	sys.exit(0)
+
+def runCommand(cmd):
+	'''
+	Execute the given command and return a tuple that contains the
+	return code, std out and std err output.
+	'''
+	logging.debug('running %s' % cmd)
+	process = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	stdout, stderr = process.communicate()
+	return (process.returncode, stdout.decode(), stderr.decode())
 
 def scaleImage(ix, iy, bx, by):
 	"""
