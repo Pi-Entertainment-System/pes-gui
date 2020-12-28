@@ -73,6 +73,20 @@ def processGamesDbJson(session, data):
 		session.add(gamesDbGame)
 		session.commit()
 
+def processRetroAchievementsJson(session, gameHashes):
+	for gameId, data in gameHashes.items():
+		logging.info("processing RetroGame: %s" % data["name"])
+		retroGame = session.query(pes.sql.RetroAchievementGame).get(gameId)
+		if retroGame:
+			logging.info("-> updating")
+			retroGame.rasum = data["hash"]
+			retroGame.name = data["name"]
+		else:
+			logging.info("-> adding")
+			retroGame = pes.sql.RetroAchievementGame(id=gameId, rasum=data["hash"], name=data["name"], retroConsoleId=consoleRetroId)
+		session.add(retroGame)
+		session.commit()
+
 if __name__ == "__main__":
 
 	parser = argparse.ArgumentParser(description='Script to pre-populate PES database', add_help=True)
@@ -82,7 +96,8 @@ if __name__ == "__main__":
 	parser.add_argument('-k', '--tgdb-key', help='theGamesDb.net API key', type=str, dest='tgdbKey')
 	parser.add_argument('-m', '--mame', help='add MAME data', dest='mame', action='store_true')
 	parser.add_argument('-r', '--retroachievements', help='update RetroAchievements data', dest='retroachievements', action='store_true')
-	parser.add_argument('--tgdb-dir', help='use given directory of JSON dumps instead of live data from theGamesDb.net', dest="tgdbDir", type=str)
+	parser.add_argument('--retroachievements-dir', help='use the given directory of JSON dumps instead of live data from retroachievements.org', dest='retroachievementsDir', type=str)
+	parser.add_argument('--tgdb-dir', help='use the given directory of JSON dumps instead of live data from theGamesDb.net', dest='tgdbDir', type=str)
 	args = parser.parse_args()
 
 	logLevel = logging.INFO
@@ -96,6 +111,9 @@ if __name__ == "__main__":
 
 	if args.tgdbKey and args.tgdbDir:
 		pesExit("please specify either --tgdb-key or --tdgb-dir not both")
+
+	if args.retroachievements and args.retroachievementsDir:
+		pesExit("please specify either --retroachievements or --retroachievements-dir not both")
 
 	GAMESDB_API_URL = "https://api.thegamesdb.net/v1"
 	HEADERS = { "accept": "application/json", 'User-Agent': 'PES Scraper'}
@@ -256,20 +274,36 @@ if __name__ == "__main__":
 				else:
 					pesExit("failed, status code: %s" % response.status_code)
 
+	if args.retroachievementsDir:
+		checkDir(args.retroachievementsDir)
+		logging.info("using cached RetroAchievements.org data from %s" % args.retroachievementsDir)
+
+		for consoleRetroId, in session.query(pes.sql.Console.retroId).filter(pes.sql.Console.retroId != None).distinct(pes.sql.Console.retroId):
+			jsonPath = os.path.join(args.retroachievementsDir, "%d-hashes.json" % consoleRetroId)
+			logging.debug("loading JSON from %s" % jsonPath)
+			checkFile(jsonPath)
+			gameHashes = None
+			with open(jsonPath, 'r') as f:
+				try:
+					gameHashes = json.load(f)
+				except Exception as e:
+					pesExit("Failed to load JSON from %s due to:\n%s" % (jsonPath, e))
+			processRetroAchievementsJson(session, gameHashes)
+
 	if args.retroachievements:
 		logging.info("updating RetroAchievement records")
+
+		# create cache dir
+		retroachievementsCacheDir = os.path.join(cacheDir, "retroachievements-%s" % datetime.datetime.now().strftime('%Y-%m-%d_%H%M'))
+		logging.info("using %s for RetroAchievements JSON cache" % retroachievementsCacheDir)
+		mkdir(retroachievementsCacheDir)
+
 		# get all consoles with a RetroId
 		for consoleRetroId, in session.query(pes.sql.Console.retroId).filter(pes.sql.Console.retroId != None).distinct(pes.sql.Console.retroId):
 			logging.info("processing Retro console ID: %d" % consoleRetroId)
-			for gameId, data in pes.retroachievement.getGameHashes(consoleRetroId).items():
-				logging.info("processing RetroGame: %s" % data["name"])
-				retroGame = session.query(pes.sql.RetroAchievementGame).get(gameId)
-				if retroGame:
-					logging.info("-> updating")
-					retroGame.rasum = data["hash"]
-					retroGame.name = data["name"]
-				else:
-					logging.info("-> adding")
-					retroGame = pes.sql.RetroAchievementGame(id=gameId, rasum=data["hash"], name=data["name"], retroConsoleId=consoleRetroId)
-				session.add(retroGame)
-				session.commit()
+			gameHashes = pes.retroachievement.getGameHashes(consoleRetroId)
+			jsonPath = os.path.join(retroachievementsCacheDir, "%d-hashes.json" % consoleRetroId)
+			logging.info("saving game hashes to: %s" % jsonPath)
+			with open(jsonPath, "w") as f:
+				f.write(json.dumps(gameHashes))
+			processRetroAchievementsJson(session, gameHashes)
