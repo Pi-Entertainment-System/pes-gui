@@ -24,6 +24,8 @@ import datetime
 import logging
 import json
 import multiprocessing
+import pes
+import pes.common
 import os
 import requests
 import time
@@ -64,6 +66,20 @@ def getGameHashes(consoleId):
 		if gameId in games.keys():
 			games[gameId]['name'] = title.strip()
 	return games
+
+def getRasum(path, consoleName):
+	if not os.path.exists(path):
+		raise FileNotFoundError("getRasum: %s does not exist" % path)
+	if not os.path.isfile(path):
+		raise Exception("getRasum: %s is not a file" % path)
+	if consoleName == "NES":
+		command = "%s -t nes \"%s\"" % (pes.rasumExe, path)
+	else:
+		command = "%s \"%s\"" % (pes.rasumExe, path)
+	rtn, stdout, stderr = pes.common.runCommand(command)
+	if rtn != 0:
+		raise Exception("Failed to run '%s'\nstdout: %s\nstderr: %s" % (command, stdout, stderr))
+	return stdout.replace("\n", "")
 
 def getRetroAchievementId(rasum):
 	try:
