@@ -48,10 +48,11 @@ class Console(Base, CustomBase):
 
 	id = Column(Integer, primary_key=True)
 	name = Column(String)
-	#gamesDbId = Column(Integer, ForeignKey('gamesdb_platform.id')) # FBA and MAMA use the same I
-	retroId = Column(Integer, index=True) # Mega Drive & Gensis use same ID
+	gamesDbId = Column(Integer, ForeignKey('gamesdb_platform.id')) # FBA and MAMA use the same ID
+	retroId = Column(Integer, ForeignKey('retroachievement_console.id')) # Mega Drive & Gensis use same ID
 
-	#platform = relationship("GamesDbPlatform", back_populates="consoles")
+	platform = relationship("GamesDbPlatform", back_populates="consoles")
+	retroAchievementConsole = relationship("RetroAchievementConsole", back_populates="consoles")
 
 	def __repr__(self):
 		return "<Console id=%s name=%s retroId=%s>" % (self.id, self.name, self.retroId)
@@ -87,9 +88,6 @@ class GamesDbPlatform(Base, CustomBase):
 
 	id = Column(Integer, primary_key=True)
 	name = Column(String)
-	consoleId = Column(Integer, ForeignKey('console.id'))
-
-	console = relationship("Console", back_populates="platforms")
 
 class MameGame(Base, CustomBase):
 	__tablename__ = "mame_game"
@@ -97,21 +95,27 @@ class MameGame(Base, CustomBase):
 	shortName = Column(String, primary_key=True)
 	name = Column(String)
 
+class RetroAchievementConsole(Base, CustomBase):
+	__tablename__ = "retroachievement_console"
+	id = Column(Integer, primary_key=True)
+
+	console = relationship("Console", back_populates="retroAchievementConsoles")
+
 class RetroAchievementGame(Base, CustomBase):
 	__tablename__ = "retroachievement_game"
 	id = Column(Integer, primary_key=True)
 	rasum = Column(String, index=True)
 	name = Column(String)
-	retroConsoleId = Column(Integer)
+	retroConsoleId = Column(Integer, ForeignKey('retroachievement_console.id'))
 
-	#console = relationship("Console", back_populates="retroachievement_games")
+	console = relationship("RetroAchievementConsole", back_populates="games")
 
 	def __repr__(self):
-		return "<RetroAchievementGame id=%d rasum=%s name=%s consoleId=%d>" % (self.id , self.rasum, self.name, self.consoleId)
+		return "<RetroAchievementGame id=%d rasum=%s name=%s retroConsoleId=%d>" % (self.id , self.rasum, self.name, self.retroConsoleId)
 
 Console.games = relationship("Game", order_by=Game.id, back_populates="console")
-#Console.retroachievement_games = relationship("RetroAchievementGame", order_by=RetroAchievementGame.id, back_populates="console")
-#Console.gamesDbGames = relationship("GamesDbGame", order_by=GamesDbGame.id, back_populates="console")
-
-Console.platforms = relationship("GamesDbPlatform", order_by=GamesDbPlatform.id, back_populates="console")
+Console.retroAchievementConsoles = relationship("RetroAchievementConsole", order_by=RetroAchievementConsole.id, back_populates="console")
+GamesDbPlatform.consoles = relationship("Console", order_by=Console.id, back_populates="platform")
 GamesDbPlatform.games = relationship("GamesDbGame", order_by=GamesDbGame.id, back_populates="platform")
+RetroAchievementConsole.consoles = relationship("Console", order_by=Console.id, back_populates="retroAchievementConsole")
+RetroAchievementConsole.games = relationship("RetroAchievementGame", order_by=RetroAchievementGame.id, back_populates="console")
