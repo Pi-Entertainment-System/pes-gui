@@ -45,7 +45,7 @@ import sys
 from pes.common import checkDir, checkFile, mkdir, pesExit, ConsoleSettings
 from sqlalchemy.orm import sessionmaker
 
-def processGamesDbJson(session, data):
+def processGamesDbJson(session, data, platformId):
 	for game in data["data"]["games"]:
 		logging.info("processing game: %s, %s" % (game["id"], game["game_title"]))
 		gameId = int(game["id"])
@@ -73,7 +73,7 @@ def processGamesDbJson(session, data):
 		session.add(gamesDbGame)
 		session.commit()
 
-def processRetroAchievementsJson(session, gameHashes):
+def processRetroAchievementsJson(session, gameHashes, consoleRetroId):
 	for gameId, data in gameHashes.items():
 		logging.info("processing RetroGame: %s" % data["name"])
 		retroGame = session.query(pes.sql.RetroAchievementGame).get(gameId)
@@ -219,7 +219,7 @@ if __name__ == "__main__":
 							data = json.load(f)
 						except Exception as e:
 							pesExit("Failed to load JSON from %s due to:\n%s" % (jsonPath, e))
-						processGamesDbJson(session, data)
+						processGamesDbJson(session, data, gamesDbPlatform.id)
 				else:
 					logging.debug("no more files to process")
 					break
@@ -272,7 +272,7 @@ if __name__ == "__main__":
 					logging.debug("saving JSON to: %s" % jsonFileCache)
 					with open(jsonFileCache, 'w') as f:
 						json.dump(data, f)
-					processGamesDbJson(session, data)
+					processGamesDbJson(session, data, gamesDbPlatform.id)
 					if data["pages"]["next"]:
 						page += 1
 					else:
@@ -294,7 +294,7 @@ if __name__ == "__main__":
 					gameHashes = json.load(f)
 				except Exception as e:
 					pesExit("Failed to load JSON from %s due to:\n%s" % (jsonPath, e))
-			processRetroAchievementsJson(session, gameHashes)
+			processRetroAchievementsJson(session, gameHashes, consoleRetroId)
 
 	if args.retroachievements:
 		logging.info("updating RetroAchievement records")
@@ -312,4 +312,4 @@ if __name__ == "__main__":
 			logging.info("saving game hashes to: %s" % jsonPath)
 			with open(jsonPath, "w") as f:
 				f.write(json.dumps(gameHashes))
-			processRetroAchievementsJson(session, gameHashes)
+			processRetroAchievementsJson(session, gameHashes, consoleRetroId)
