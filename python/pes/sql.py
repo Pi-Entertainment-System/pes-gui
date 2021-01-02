@@ -83,11 +83,17 @@ class GamesDbGame(Base, CustomBase):
 
 	platform = relationship("GamesDbPlatform", back_populates="games")
 
+	def __repr__(self):
+		return "<GamesDbGame id=%d platformId=%d name=\"%s\" releaseDate=%s>" % (self.id, self.platformId, self.name, self.releaseDate)
+
 class GamesDbPlatform(Base, CustomBase):
 	__tablename__ = "gamesdb_platform"
 
 	id = Column(Integer, primary_key=True)
 	name = Column(String)
+
+	def __repr__(self):
+		return "<GamesDbPlatform id=%d name=%s>" % (self.id, self.name)
 
 class MameGame(Base, CustomBase):
 	__tablename__ = "mame_game"
