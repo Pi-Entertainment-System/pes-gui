@@ -62,12 +62,14 @@ class Game(Base, CustomBase):
 
 	id = Column(Integer, primary_key=True)
 	consoleId = Column(Integer, ForeignKey('console.id'))
-	rasum = Column(String)
-	gamesDbId = Column(Integer, index=True)
+	rasum = Column(String, index=True)
+	gamesDbId = Column(Integer, ForeignKey('gamesdb_game.id'), index=True)
 	retroId = Column(Integer, ForeignKey('retroachievement_game.id'), index=True)
 	path = Column(String)
 
 	console = relationship("Console", back_populates="games")
+	gamesDbGame = relationship("GamesDbGame", back_populates="games")
+	retroAchievementGame = relationship("RetroAchievementGame", back_populates="games")
 
 class GamesDbGame(Base, CustomBase):
 	__tablename__ = "gamesdb_game"
@@ -121,7 +123,9 @@ class RetroAchievementGame(Base, CustomBase):
 
 Console.games = relationship("Game", order_by=Game.id, back_populates="console")
 Console.retroAchievementConsoles = relationship("RetroAchievementConsole", order_by=RetroAchievementConsole.id, back_populates="console")
+GamesDbGame.games = relationship("Game", order_by=Game.id, back_populates="gamesDbGame")
 GamesDbPlatform.consoles = relationship("Console", order_by=Console.id, back_populates="platform")
 GamesDbPlatform.games = relationship("GamesDbGame", order_by=GamesDbGame.id, back_populates="platform")
 RetroAchievementConsole.consoles = relationship("Console", order_by=Console.id, back_populates="retroAchievementConsole")
 RetroAchievementConsole.games = relationship("RetroAchievementGame", order_by=RetroAchievementGame.id, back_populates="console")
+RetroAchievementGame.games = relationship("Game", order_by=Game.id, back_populates="retroAchievementGame")
