@@ -6,7 +6,7 @@
 #    PES provides an interactive GUI for games console emulators
 #    and is designed to work on the Raspberry Pi.
 #
-#    Copyright (C) 2020 Neil Munday (neil@mundayweb.com)
+#    Copyright (C) 2021 Neil Munday (neil@mundayweb.com)
 #
 #    PES is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -43,6 +43,7 @@ import requests
 import sys
 
 from pes.common import checkDir, checkFile, mkdir, pesExit, ConsoleSettings
+from sqlalchemy import func
 from sqlalchemy.orm import sessionmaker
 
 def processGamesDbJson(session, data, platformId):
@@ -97,6 +98,7 @@ if __name__ == "__main__":
 	parser.add_argument('-m', '--mame', help='add MAME data', dest='mame', action='store_true')
 	parser.add_argument('-r', '--retroachievements', help='update RetroAchievements data', dest='retroachievements', action='store_true')
 	parser.add_argument('--retroachievements-dir', help='use the given directory of JSON dumps instead of live data from retroachievements.org', dest='retroachievementsDir', type=str)
+	parser.add_argument('--match', help='match up game records between game databases', dest='match', action='store_true')
 	parser.add_argument('--tgdb-dir', help='use the given directory of JSON dumps instead of live data from theGamesDb.net', dest='tgdbDir', type=str)
 	args = parser.parse_args()
 
@@ -313,3 +315,18 @@ if __name__ == "__main__":
 			with open(jsonPath, "w") as f:
 				f.write(json.dumps(gameHashes))
 			processRetroAchievementsJson(session, gameHashes, consoleRetroId)
+
+	if args.match:
+		logging.info("matching up theGamesDb records with RetroAchievements records")
+		i = 0
+		for console in session.query(pes.sql.Console).join(pes.sql.GamesDbPlatform).filter(pes.sql.Console.retroId != None):
+			logging.info("processing console: %s" % console.platform.name)
+			for gamesDbGame in console.platform.games:
+				for retroGame in session.query(pes.sql.RetroAchievementGame).filter(pes.sql.RetroAchievementGame.retroConsoleId == console.retroId).filter(func.lower(pes.sql.RetroAchievementGame.name) == func.lower(gamesDbGame.name)):
+					logging.debug("found match for: %s" % (retroGame.name))
+					gamesDbGame.rasum = retroGame.rasum
+					session.add(gamesDbGame)
+					i += 1
+		logging.info("found %d matches" % i)
+		if i > 0:
+			session.commit()
