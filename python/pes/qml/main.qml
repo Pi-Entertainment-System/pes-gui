@@ -28,15 +28,15 @@ import QtQuick.Controls 2.5
 import "Components"
 import "./Style/" 1.0
 import "pes.js" as PES
-import RomScanThread 1.0
+import RomScanMonitorThread 1.0
 
 ApplicationWindow {
 
   id: mainWindow
   visible: true
   color: Colour.bg
-  height: 600
-  width: 800
+  //height: 600
+  //width: 800
   visibility: "FullScreen"
 
   onClosing: backend.close()
@@ -333,20 +333,23 @@ ApplicationWindow {
 
         color: Colour.panelBg
 
-        RomScanThread {
-          id: romScanThread
+        RomScanMonitorThread {
+          id: romScanMonitorThread
 
           onProgressSignal: {
-            updateGamesProgressBar.progress = progress;
+            updateRomsProgressBar.progress = progress;
           }
 
-          onProgressMessage: {
+          onProgressMessageSignal: {
             statusTxt.text = message;
           }
 
-          onStateChange: {
+          onStateChangeSignal: {
             if (state == "done") {
               abortScanBtn.visible = false;
+            }
+            else if (state == "update") {
+              updateRomsProgressBar.visible = true;
             }
           }
         }
@@ -385,10 +388,9 @@ ApplicationWindow {
               this.visible = false;
               abortScanBtn.visible = true;
               abortScanBtn.forceActiveFocus();
-              updateGamesProgressBar.progress = 0;
-              updateGamesProgressBar.visible = true;
+              updateRomsProgressBar.progress = 0;
               statusTxt.visible = true;
-              romScanThread.start();
+              romScanMonitorThread.start();
             }
           }
 
@@ -398,8 +400,18 @@ ApplicationWindow {
             visible: false
           }
 
+          /*IndeterminateProgressBar {
+            id: romSearchProgessBar
+            visible: false
+
+            Layout.leftMargin: 30
+            Layout.rightMargin: 30
+            Layout.preferredWidth: panelRect.width - 60
+            Layout.preferredHeight: 50
+          }*/
+
           ProgressBar {
-            id: updateGamesProgressBar
+            id: updateRomsProgressBar
             visible: false
             progress: 0
 
