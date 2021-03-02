@@ -4,7 +4,7 @@
 #    PES provides an interactive GUI for games console emulators
 #    and is designed to work on the Raspberry Pi.
 #
-#    Copyright (C) 2020 Neil Munday (neil@mundayweb.com)
+#    Copyright (C) 2021 Neil Munday (neil@mundayweb.com)
 #
 #    PES is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -77,6 +77,7 @@ class GamesDbGame(Base, CustomBase):
 	id = Column(Integer, primary_key=True)
 	platformId = Column(Integer, ForeignKey('gamesdb_platform.id'))
 	name = Column(String)
+	rasum = Column(String, index=True)
 	releaseDate = Column(String)
 	overview = Column(String)
 	boxArtFrontOriginal = Column(String)
@@ -86,7 +87,7 @@ class GamesDbGame(Base, CustomBase):
 	platform = relationship("GamesDbPlatform", back_populates="games")
 
 	def __repr__(self):
-		return "<GamesDbGame id=%d platformId=%d name=\"%s\" releaseDate=%s>" % (self.id, self.platformId, self.name, self.releaseDate)
+		return "<GamesDbGame id=%d platformId=%d name=\"%s\" releaseDate=%s rasum=%s>" % (self.id, self.platformId, self.name, self.releaseDate, self.rasum)
 
 class GamesDbPlatform(Base, CustomBase):
 	__tablename__ = "gamesdb_platform"
