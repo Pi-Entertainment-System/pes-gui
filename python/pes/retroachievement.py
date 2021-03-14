@@ -67,16 +67,12 @@ def getGameHashes(consoleId):
 			games[gameId]['name'] = title.strip()
 	return games
 
-def getRasum(path, consoleName):
+def getRasum(path, retroAchievementId):
 	if not os.path.exists(path):
 		raise FileNotFoundError("getRasum: %s does not exist" % path)
 	if not os.path.isfile(path):
 		raise Exception("getRasum: %s is not a file" % path)
-	if consoleName == "NES":
-		command = "%s -t nes \"%s\"" % (pes.rasumExe, path)
-	else:
-		command = "%s \"%s\"" % (pes.rasumExe, path)
-	rtn, stdout, stderr = pes.common.runCommand(command)
+	rtn, stdout, stderr = pes.common.runCommand("%s -i %d \"%s\"" % (pes.rasumExe, int(retroAchievementId), path))
 	if rtn != 0:
 		raise Exception("Failed to run '%s'\nstdout: %s\nstderr: %s" % (command, stdout, stderr))
 	return stdout.replace("\n", "")
