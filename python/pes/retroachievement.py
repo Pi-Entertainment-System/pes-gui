@@ -51,8 +51,13 @@ def getGameHashes(consoleId):
 		logging.error("retroachievement.getGameHashes: failed to download hashes")
 		return None
 	games = {}
+	# games can have multiple hashes!
 	for hash, gameId in hashData['MD5List'].items():
-		games[int(gameId)] = { 'hash': hash }
+		gameId = int(gameId)
+		if gameId in games.keys():
+			games[gameId]['hashes'].append(hash)
+		else:
+			games[gameId] = { 'hashes': [hash] }
 	response = requests.get(RETRO_URL, params={ "r": "gameslist", "c": consoleId }, timeout=URL_TIMEOUT)
 	if not response.status_code == requests.codes.ok:
 		logging.error("retroachievement.getGameHashes: could not download game list, response code - %s" % response.status_code)
