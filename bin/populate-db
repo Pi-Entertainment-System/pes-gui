@@ -80,11 +80,18 @@ def processRetroAchievementsJson(session, gameHashes, consoleRetroId):
 		retroGame = session.query(pes.sql.RetroAchievementGame).get(gameId)
 		if retroGame:
 			logging.info("-> updating")
-			retroGame.rasum = data["hash"]
 			retroGame.name = data["name"]
 		else:
 			logging.info("-> adding")
-			retroGame = pes.sql.RetroAchievementGame(id=gameId, rasum=data["hash"], name=data["name"], retroConsoleId=consoleRetroId)
+			retroGame = pes.sql.RetroAchievementGame(id=gameId, name=data["name"], retroConsoleId=consoleRetroId)
+		for hash in data['hashes']:
+			retroGameHash = session.query(pes.sql.RetroAchievementGameHash).get((gameId, hash))
+			if not retroGameHash:
+				logging.info("-> adding hash: %s" % hash)
+				retroGameHash = pes.sql.RetroAchievementGameHash(retroGameId=gameId, rasum=hash)
+				session.add(retroGameHash)
+			else:
+				logging.info("-> already added hash: %s" % hash)
 		session.add(retroGame)
 		session.commit()
 
