@@ -88,7 +88,7 @@ class GamesDbGame(Base, CustomBase):
 	retroAchievementGame = relationship("RetroAchievementGame", back_populates="gamesDbGame")
 
 	def __repr__(self):
-		return "<GamesDbGame id=%d platformId=%d name=\"%s\" releaseDate=%s rasum=%s>" % (self.id, self.platformId, self.name, self.releaseDate, self.rasum)
+		return "<GamesDbGame id=%d platformId=%d name=\"%s\" releaseDate=%s retroId=%s>" % (self.id, self.platformId, self.name, self.releaseDate, self.retroId)
 
 class GamesDbPlatform(Base, CustomBase):
 	__tablename__ = "gamesdb_platform"
@@ -120,15 +120,18 @@ class RetroAchievementGame(Base, CustomBase):
 	console = relationship("RetroAchievementConsole", back_populates="games")
 
 	def __repr__(self):
-		return "<RetroAchievementGame id=%d rasum=%s name=%s retroConsoleId=%d>" % (self.id , self.rasum, self.name, self.retroConsoleId)
+		return "<RetroAchievementGame id=%d rasum=%s name=%s retroConsoleId=%d>" % (self.id, self.rasum, self.name, self.retroConsoleId)
 
 # start here, each game can have more than one hash!
 class RetroAchievementGameHash(Base, CustomBase):
 	__tablename__ = "retroachievement_game_hash"
-	retroGameId = Column(Integer, ForeignKey('retroachievement_game.id'), primary_key=True)
+	id = Column(Integer, ForeignKey('retroachievement_game.id'), primary_key=True)
 	rasum = Column(String, primary_key=True)
 
 	game = relationship("RetroAchievementGame", back_populates="hashes")
+
+	def __repr__(self):
+		return "<RetroAchievementGameHash id=%d rasum=%s>" % (self.id, self.rasum)
 
 Console.games = relationship("Game", order_by=Game.id, back_populates="console")
 Console.retroAchievementConsoles = relationship("RetroAchievementConsole", order_by=RetroAchievementConsole.id, back_populates="console")
