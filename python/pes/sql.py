@@ -75,9 +75,9 @@ class GamesDbGame(Base, CustomBase):
 	__tablename__ = "gamesdb_game"
 
 	id = Column(Integer, primary_key=True)
-	platformId = Column(Integer, ForeignKey('gamesdb_platform.id'))
+	platformId = Column(Integer, ForeignKey('gamesdb_platform.id'), index=True)
+	retroId = Column(Integer, ForeignKey('retroachievement_game.id'), index=True)
 	name = Column(String)
-	rasum = Column(String, index=True)
 	releaseDate = Column(String)
 	overview = Column(String)
 	boxArtFrontOriginal = Column(String)
@@ -85,6 +85,7 @@ class GamesDbGame(Base, CustomBase):
 	boxArtFrontLarge = Column(String)
 
 	platform = relationship("GamesDbPlatform", back_populates="games")
+	retroAchievementGame = relationship("RetroAchievementGame", back_populates="gamesDbGame")
 
 	def __repr__(self):
 		return "<GamesDbGame id=%d platformId=%d name=\"%s\" releaseDate=%s rasum=%s>" % (self.id, self.platformId, self.name, self.releaseDate, self.rasum)
@@ -137,4 +138,5 @@ GamesDbPlatform.games = relationship("GamesDbGame", order_by=GamesDbGame.id, bac
 RetroAchievementConsole.consoles = relationship("Console", order_by=Console.id, back_populates="retroAchievementConsole")
 RetroAchievementConsole.games = relationship("RetroAchievementGame", order_by=RetroAchievementGame.id, back_populates="console")
 RetroAchievementGame.games = relationship("Game", order_by=Game.id, back_populates="retroAchievementGame")
+RetroAchievementGame.gamesDbGame = relationship("GamesDbGame", order_by=GamesDbGame.id, back_populates="retroAchievementGame")
 RetroAchievementGame.hashes = relationship("RetroAchievementGameHash", order_by=RetroAchievementGameHash.rasum, back_populates="game")
