@@ -91,7 +91,7 @@ def processRetroAchievementsJson(session, gameHashes, consoleRetroId):
 				retroGameHash = pes.sql.RetroAchievementGameHash(retroGameId=gameId, rasum=hash)
 				session.add(retroGameHash)
 			else:
-				logging.info("-> already added hash: %s" % hash)
+				logging.info("-> skipping hash: %s" % hash)
 		session.add(retroGame)
 		session.commit()
 
@@ -331,7 +331,7 @@ if __name__ == "__main__":
 			for gamesDbGame in console.platform.games:
 				for retroGame in session.query(pes.sql.RetroAchievementGame).filter(pes.sql.RetroAchievementGame.retroConsoleId == console.retroId).filter(func.lower(pes.sql.RetroAchievementGame.name) == func.lower(gamesDbGame.name)):
 					logging.debug("found match for: %s" % (retroGame.name))
-					gamesDbGame.rasum = retroGame.rasum
+					gamesDbGame.retroId = retroGame.id
 					session.add(gamesDbGame)
 					i += 1
 		logging.info("found %d matches" % i)
