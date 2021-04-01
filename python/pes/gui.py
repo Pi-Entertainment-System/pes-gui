@@ -4,7 +4,7 @@
 #    PES provides an interactive GUI for games console emulators
 #    and is designed to work on the Raspberry Pi.
 #
-#    Copyright (C) 2020 Neil Munday (neil@mundayweb.com)
+#    Copyright (C) 2021 Neil Munday (neil@mundayweb.com)
 #
 #    PES is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -120,7 +120,8 @@ class PESGuiApplication(QGuiApplication):
 		self.__engine = None
 		self.__backend = BackEnd()
 		self.__backend.closeSignal.connect(self.close)
-		qmlRegisterType(pes.romscan.RomScanThread, 'RomScanThread', 1, 0, 'RomScanThread')
+		#qmlRegisterType(pes.romscan.RomScanThread, 'RomScanThread', 1, 0, 'RomScanThread')
+		qmlRegisterType(pes.romscan.RomScanMonitorThread, 'RomScanMonitorThread', 1, 0, 'RomScanMonitorThread')
 		self.__engine = QQmlApplicationEngine()
 		self.__engine.rootContext().setContextProperty("backend", self.__backend)
 		logging.debug("loading QML from: %s" % pes.qmlMain)

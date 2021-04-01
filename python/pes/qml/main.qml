@@ -283,6 +283,7 @@ ApplicationWindow {
 		        color: parent.color
 
 		        ScrollView {
+              id: mainMenuScrollView
 		          width: parent.width
 		          height: parent.height
 		          clip: true
@@ -318,12 +319,11 @@ ApplicationWindow {
 		      }
 
 		      BodyText {
-		        id: noGamesText
+		        id: mainText
 		        y: welcomeText.height + 10
 		        visible: false
-		        text: "You have not added any games to PES yet. To do so press the Home button and select 'Update Games' option."
+		        text: ""
 		      }
-					Component.onCompleted: PES.updateHomeScreen()
 				}
 			}
 
@@ -346,7 +346,10 @@ ApplicationWindow {
 
           onStateChangeSignal: {
             if (state == "done") {
+              beginScanTxt.visible = false;
               abortScanBtn.visible = false;
+              updateRomsProgressBar.visible = false;
+              statusTxt.text = "Scan complete!";
             }
             else if (state == "update") {
               updateRomsProgressBar.visible = true;
@@ -357,6 +360,7 @@ ApplicationWindow {
         Keys.onPressed: {
           if (event.key == Qt.Key_Backspace) {
             screenStack.currentIndex = 0;
+            mainMenuScrollView.forceActiveFocus();
           }
         }
 
@@ -370,9 +374,9 @@ ApplicationWindow {
           }
 
           BodyText {
+            id: beginScanTxt
             Layout.fillWidth: true
             Layout.preferredWidth: panelRect.width
-            Layout.leftMargin: 30
             text: "Select the <i>Begin</i> button below to begin the scan. A working Inernet connection is required to download game metadata and cover art."
           }
 

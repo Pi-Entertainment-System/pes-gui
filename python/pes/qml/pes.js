@@ -36,6 +36,7 @@ function optionsDialogEvent(text) {
       optionsDialog.close();
       screenStack.currentIndex = 1;
       beginScanBtn.forceActiveFocus();
+      beginScanTxt.visible = true;
 			break;
 		}
 		case "Exit": {
@@ -48,8 +49,12 @@ function optionsDialogEvent(text) {
 
 function updateHomeScreen() {
   if (mainMenuModel.count == 1) {
-    noGamesText.visible = true;
+    mainText.text = "You have not added any games to PES yet. To do so press the Home button and select 'Update Games' option.";
   }
+  else {
+    mainText.text = "Time to go gaming!";
+  }
+  mainText.visible = true;
 }
 
 function updateMainMenuModel() {
@@ -63,4 +68,5 @@ function updateMainMenuModel() {
   for (var i = 0; i < consoles.length; i++) {
     mainMenuModel.append(consoles[i]);
   }
+  updateHomeScreen();
 }
