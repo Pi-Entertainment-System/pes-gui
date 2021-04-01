@@ -24,7 +24,7 @@ import logging
 import pes
 
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import create_engine, Column, Date, ForeignKey, Integer, String
+from sqlalchemy import create_engine, Column, Date, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 Base = declarative_base()
@@ -61,6 +61,7 @@ class Game(Base, CustomBase):
 	__tablename__ = "game"
 
 	id = Column(Integer, primary_key=True)
+	name = Column(Text)
 	consoleId = Column(Integer, ForeignKey('console.id'))
 	rasum = Column(String, index=True)
 	gamesDbId = Column(Integer, ForeignKey('gamesdb_game.id'), index=True)
@@ -77,12 +78,12 @@ class GamesDbGame(Base, CustomBase):
 	id = Column(Integer, primary_key=True)
 	platformId = Column(Integer, ForeignKey('gamesdb_platform.id'), index=True)
 	retroId = Column(Integer, ForeignKey('retroachievement_game.id'), index=True)
-	name = Column(String)
+	name = Column(Text)
 	releaseDate = Column(String)
-	overview = Column(String)
-	boxArtFrontOriginal = Column(String)
-	boxArtFrontMedium = Column(String)
-	boxArtFrontLarge = Column(String)
+	overview = Column(Text)
+	boxArtFrontOriginal = Column(Text)
+	boxArtFrontMedium = Column(Text)
+	boxArtFrontLarge = Column(Text)
 
 	platform = relationship("GamesDbPlatform", back_populates="games")
 	retroAchievementGame = relationship("RetroAchievementGame", back_populates="gamesDbGame")
@@ -114,7 +115,7 @@ class RetroAchievementConsole(Base, CustomBase):
 class RetroAchievementGame(Base, CustomBase):
 	__tablename__ = "retroachievement_game"
 	id = Column(Integer, primary_key=True)
-	name = Column(String)
+	name = Column(Text)
 	retroConsoleId = Column(Integer, ForeignKey('retroachievement_console.id'))
 
 	console = relationship("RetroAchievementConsole", back_populates="games")
