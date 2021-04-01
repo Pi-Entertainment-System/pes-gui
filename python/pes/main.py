@@ -71,7 +71,7 @@ if __name__ == "__main__":
 	checkFile(pes.userDb)
 	checkFile(pes.userConsolesConfigFile)
 	checkFile(pes.userGameControllerFile)
-	#checkFile(pes.rasumExe)
+	checkFile(pes.rasumExe)
 
 	logging.info("loading settings...")
 	checkFile(pes.userPesConfigFile)
