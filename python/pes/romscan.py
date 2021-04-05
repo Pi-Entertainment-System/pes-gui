@@ -186,8 +186,9 @@ class GamesDbRomTask(RomTask):
 			logging.debug("%s already in database" % logPrefix)
 			game = result
 			game.found = True
-			session.add(game)
-			session.commit()
+			with self._lock:
+				session.add(game)
+				session.commit()
 			newGame = False
 		else:
 			logging.debug("%s new game" % logPrefix)
@@ -199,8 +200,9 @@ class GamesDbRomTask(RomTask):
 				if result.gamesDbGame and len(result.gamesDbGame) > 0:
 					gamesDbGame = result.gamesDbGame[0]
 					game = pes.sql.Game(consoleId=self._console.id, rasum=rasum, gamesDbId=gamesDbGame.id, retroId=gamesDbGame.retroId, path=self._rom, found=True)
-					session.add(game)
-					session.commit()
+					with self._lock:
+						session.add(game)
+						session.commit()
 					logging.debug("%s saved new record" % logPrefix)
 					romTaskResult.state = RomTaskResult.STATE_ADDED
 
@@ -309,6 +311,7 @@ class RomScanThread(QThread):
 		self.__romTotal = 0
 		self.__added = 0
 		self.__updated = 0
+		self.__deleted = 0
 		self.__consoleSettings = pes.common.ConsoleSettings(pes.userConsolesConfigFile)
 		self.__userSettings = pes.common.UserSettings(pes.userPesConfigFile)
 		self.__romScraper = self.__userSettings.get("settings", "romScraper")
@@ -397,6 +400,7 @@ class RomScanThread(QThread):
 			logging.debug("RomScanThread.run: found %d ROMs for %s" % (consoleRomTotal, console.name))
 			self.progressMessageSignal.emit("Processing %s: %d ROMs found" % (console.name, consoleRomTotal))
 
+		# our session must be closed before starting the sub processes
 		session.close()
 
 		if self.__romTotal == 0:
@@ -427,7 +431,13 @@ class RomScanThread(QThread):
 		while not results.empty():
 			romTaskResult = results.get()
 		logging.debug("RomScanThread.run: finished processing result queue")
-		# @TODO: delete all games that were removed
+		session = sqlalchemy.orm.sessionmaker(bind=engine)()
+		self.__deleted = session.query(pes.sql.Game).filter(pes.sql.Game.found == False).count()
+		if self.__deleted > 0:
+			logging.warning("RomScanThread.run: deleted %d games from database" % self.__deleted)
+			session.query(pes.sql.Game).filter(pes.sql.Game.found == False).delete()
+		session.commit()
+		session.close()
 		self.__done = True
 		self.stateChangeSignal.emit("done")
 		logging.debug("RomScanThread.run: complete")
