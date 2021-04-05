@@ -377,24 +377,44 @@ ApplicationWindow {
             id: beginScanTxt
             Layout.fillWidth: true
             Layout.preferredWidth: panelRect.width
-            text: "Select the <i>Begin</i> button below to begin the scan. A working Inernet connection is required to download game metadata and cover art."
+            text: "Select the type of scan that you would like to perfrom using the buttons below. A working Inernet connection is required to download game cover art and badges for achievements."
           }
 
-          UiButton {
-            id: beginScanBtn
-            btnText: "Begin"
+          RowLayout {
 
-            Layout.preferredWidth: 100
-            Layout.preferredHeight: 50
-            Layout.leftMargin: 30
+            UiButton {
+              id: beginScanBtn
+              btnText: "Normal Scan"
 
-            Keys.onReturnPressed: {
-              this.visible = false;
-              abortScanBtn.visible = true;
-              abortScanBtn.forceActiveFocus();
-              updateRomsProgressBar.progress = 0;
-              statusTxt.visible = true;
-              romScanMonitorThread.start();
+              Layout.preferredWidth: 200
+              Layout.preferredHeight: 50
+              Layout.leftMargin: 30
+
+              Keys.onReturnPressed: PES.beginRomScan(false)
+              KeyNavigation.down: beginFullScanBtn
+            }
+
+            BodyText {
+              text: "Add new ROMs and remove any deleted ROMs from the database as well as downloading cover art and badges"
+            }
+          }
+
+          RowLayout {
+
+            UiButton {
+              id: beginFullScanBtn
+              btnText: "Full Scan"
+
+              Layout.preferredWidth: 200
+              Layout.preferredHeight: 50
+              Layout.leftMargin: 30
+
+              Keys.onReturnPressed: PES.beginRomScan(true)
+              KeyNavigation.down: beginScanBtn
+            }
+
+            BodyText {
+              text: "Same as a normal scan but also refresh covert art and badges from the Internet"
             }
           }
 

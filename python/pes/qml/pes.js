@@ -20,6 +20,17 @@
     along with PES.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+function beginRomScan(fullscan) {
+  beginFullScanBtn.visible = false;
+  beginScanBtn.visible = false;
+  abortScanBtn.visible = true;
+  abortScanBtn.forceActiveFocus();
+  updateRomsProgressBar.progress = 0;
+  statusTxt.visible = true;
+  romScanMonitorThread.fullscan = fullscan;
+  romScanMonitorThread.start();
+}
+
 function getConsolesWithGames() {
   return backend.getConsoles(true);
 }
