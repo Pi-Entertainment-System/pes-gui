@@ -59,10 +59,13 @@ if __name__ == "__main__":
 	checkDir(pes.confDir)
 	logging.debug("user dir: %s" % pes.userDir)
 	mkdir(pes.userDir)
+	mkdir(pes.userBadgeDir)
 	mkdir(pes.userBiosDir)
 	mkdir(pes.userConfDir)
+	mkdir(pes.userCoverartDir)
 	mkdir(pes.userRetroArchConfDir)
 	mkdir(pes.userRetroArchJoysticksConfDir)
+	mkdir(pes.userRomDir)
 	mkdir(pes.userViceConfDir)
 	initConfig()
 	initDb()
@@ -76,30 +79,17 @@ if __name__ == "__main__":
 	logging.info("loading settings...")
 	checkFile(pes.userPesConfigFile)
 	userSettings = UserSettings(pes.userPesConfigFile)
-	covertArtDir = userSettings.get("settings", "coverartDir")
-	if covertArtDir == None:
-		pesExit("Could not find \"coverartDir\" parameter in \"settings\" section in %s" % pes.userPesConfigFile)
-	logging.debug("cover art dir: %s" % covertArtDir)
-	mkdir(covertArtDir)
-	badgeDir = userSettings.get("settings", "badgeDir")
-	if badgeDir == None:
-		pesExit("Could not find \"badgeDir\" parameter in \"settings\" section in %s" % pes.userPesConfigFile)
-	logging.debug("badge dir: %s" % badgeDir)
-	mkdir(badgeDir)
-	romsDir = userSettings.get("settings", "romsDir")
-	if romsDir == None:
-		pesExit("Could not find \"romsDir\" parameter in \"settings\" section in %s" % pes.userPesConfigFile)
-	logging.debug("ROMs dir: %s" % romsDir)
-	mkdir(romsDir)
 
 	# make directory for each support console
 	logging.debug("connecting to database: %s" % userDb)
 	engine = pes.sql.connect(userDb)
 	session = sessionmaker(bind=engine)()
+	pes.sql.createAll(engine)
 	consoles = session.query(pes.sql.Console).all()
 	logging.debug("creating ROM directories for user")
 	for c in consoles:
-		mkdir(os.path.join(romsDir, c.name))
+		mkdir(os.path.join(pes.userRomDir, c.name))
+		mkdir(os.path.join(pes.userCoverartDir, c.name))
 
 	romScraper = userSettings.get("settings", "romScraper")
 	if romScraper == None:
