@@ -24,7 +24,7 @@ import logging
 import pes
 
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import create_engine, Column, Date, ForeignKey, Integer, String, Text
+from sqlalchemy import create_engine, Column, Date, ForeignKey, Integer, String, Text, Boolean
 from sqlalchemy.orm import relationship
 
 Base = declarative_base()
@@ -67,6 +67,7 @@ class Game(Base, CustomBase):
 	gamesDbId = Column(Integer, ForeignKey('gamesdb_game.id'), index=True)
 	retroId = Column(Integer, ForeignKey('retroachievement_game.id'), index=True)
 	path = Column(String)
+	found = Column(Boolean)
 
 	console = relationship("Console", back_populates="games")
 	gamesDbGame = relationship("GamesDbGame", back_populates="games")
