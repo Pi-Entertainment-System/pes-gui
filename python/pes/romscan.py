@@ -267,6 +267,14 @@ class RomScanMonitorThread(QThread):
 	def __handleStateChangeSignal(self, state):
 		self.stateChangeSignal.emit(state)
 
+	@pyqtProperty(int)
+	def added(self):
+		return self.__scanThread.getAdded()
+
+	@pyqtProperty(int)
+	def updated(self):
+		return self.__scanThread.getUpdated()
+
 	def run(self):
 		if self.__scanThread:
 			self.__scanThread.progressMessageSignal.disconnect(self.__handleProgressMessageSignal)
@@ -327,6 +335,15 @@ class RomScanThread(QThread):
 				name = os.path.split(filename)[1]
 				return True
 		return False
+
+	def getAdded(self):
+		return self.__added
+
+	def getDeleted(self):
+		return self.__deleted
+
+	def getUpdated(self):
+		return self.__updated
 
 	def getLastRom(self) -> str:
 		if self.__romList == None or not self.__started or (self.__exitEvent != None and self.__exitEvent.is_set()) or len(self.__romList) == 0:
@@ -430,6 +447,10 @@ class RomScanThread(QThread):
 		logging.debug("RomScanThread.run: processing result queue...")
 		while not results.empty():
 			romTaskResult = results.get()
+			if romTaskResult.state == RomTaskResult.STATE_ADDED:
+				self.__added += 1
+			elif romTaskResult.state == RomTaskResult.STATE_UPDATED:
+				self.__updated += 1
 		logging.debug("RomScanThread.run: finished processing result queue")
 		session = sqlalchemy.orm.sessionmaker(bind=engine)()
 		self.__deleted = session.query(pes.sql.Game).filter(pes.sql.Game.found == False).count()
