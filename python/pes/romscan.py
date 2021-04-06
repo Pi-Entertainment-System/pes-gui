@@ -238,7 +238,7 @@ class GamesDbRomTask(RomTask):
 				# now is there a GamesDbGame match?
 				if result.gamesDbGame and len(result.gamesDbGame) > 0:
 					gamesDbGame = result.gamesDbGame[0]
-					game = pes.sql.Game(consoleId=self._console.id, ame=gamesDbGame.name, rasum=rasum, gamesDbId=gamesDbGame.id, retroId=gamesDbGame.retroId, path=self._rom, found=True)
+					game = pes.sql.Game(consoleId=self._console.id, name=gamesDbGame.name, rasum=rasum, gamesDbId=gamesDbGame.id, retroId=gamesDbGame.retroId, path=self._rom, found=True)
 					with self._lock:
 						session.add(game)
 						session.commit()
