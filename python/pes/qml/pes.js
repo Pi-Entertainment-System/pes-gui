@@ -21,8 +21,9 @@
 */
 
 function beginRomScan(fullscan) {
-  beginFullScanBtn.visible = false;
-  beginScanBtn.visible = false;
+  beginScanTxt.visible = false;
+  beginScanLayout.visible = false;
+  beginFullScanLayout.visible = false;
   abortScanBtn.visible = true;
   abortScanBtn.forceActiveFocus();
   updateRomsProgressBar.progress = 0;
@@ -46,8 +47,13 @@ function optionsDialogEvent(text) {
 		case "Update Games": {
       optionsDialog.close();
       screenStack.currentIndex = 1;
+      beginScanLayout.visible = true;
+      beginFullScanLayout.visible = true;
       beginScanBtn.forceActiveFocus();
       beginScanTxt.visible = true;
+      abortScanBtn.visible = false;
+      updateRomsProgressBar.visible = false;
+      statusTxt.visible = false;
 			break;
 		}
 		case "Exit": {

@@ -349,7 +349,9 @@ ApplicationWindow {
               beginScanTxt.visible = false;
               abortScanBtn.visible = false;
               updateRomsProgressBar.visible = false;
-              statusTxt.text = "Scan complete!";
+              beginScanLayout.visible = false;
+              beginFullScanLayout.visible = false;
+              statusTxt.text = "<p>Scan complete!</p><p>Added: " + romScanMonitorThread.added + "</p><p>Updated: " + romScanMonitorThread.updated + "</p><p>Skipped: " + romScanMonitorThread.skipped + "</p><p>Deleted: " + romScanMonitorThread.deleted + "</p><p>Time taken: " + romScanMonitorThread.timeTaken + "s</p>";
             }
             else if (state == "update") {
               updateRomsProgressBar.visible = true;
@@ -382,6 +384,8 @@ ApplicationWindow {
 
           RowLayout {
 
+            id: beginScanLayout
+
             UiButton {
               id: beginScanBtn
               btnText: "Normal Scan"
@@ -400,6 +404,8 @@ ApplicationWindow {
           }
 
           RowLayout {
+
+            id: beginFullScanLayout
 
             UiButton {
               id: beginFullScanBtn
