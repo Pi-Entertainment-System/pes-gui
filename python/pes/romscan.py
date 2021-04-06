@@ -32,6 +32,7 @@ import pes.retroachievement
 import pes.sql
 import PIL
 import requests
+import sqlalchemy
 import sqlalchemy.orm
 import time
 
@@ -46,9 +47,10 @@ class RomTaskResult(object):
 	STATE_ADDED = 1
 	STATE_UPDATED = 2
 	STATE_FAILED = 3
+	STATE_SKIPPED = 4
 
-	def __init__(self):
-		self.__state = None
+	def __init__(self, state):
+		self.state = state
 
 	@property
 	def state(self) -> int:
@@ -56,13 +58,50 @@ class RomTaskResult(object):
 
 	@state.setter
 	def state(self, state: int):
-		if state == RomTaskResult.STATE_ADDED or state == RomTaskResult.STATE_UPDATED or state == RomTaskResult.STATE_FAILED:
+		if state == RomTaskResult.STATE_ADDED or state == RomTaskResult.STATE_UPDATED or state == RomTaskResult.STATE_FAILED or state == RomTaskResult.STATE_SKIPPED:
 			self.__state = state
 		else:
 			raise ValueError("Invalid state: %s" % state)
 
 	def __repr__(self):
 		return "<RomTaskResult state=%d >" % self.state
+
+class RomProcessResult(object):
+
+	def __init__(self):
+		self.__added = 0
+		self.__skipped = 0
+		self.__updated = 0
+		self.__failed = 0
+
+	@property
+	def added(self) -> int:
+		return self.__added
+
+	def addRomTaskResult(self, result: RomTaskResult):
+		if result.state == RomTaskResult.STATE_UPDATED:
+			self.__updated += 1
+		elif result.state == RomTaskResult.STATE_ADDED:
+			self.__added += 1
+		elif result.state == RomTaskResult.STATE_FAILED:
+			self.__failed += 1
+		elif result.state == RomTaskResult.STATE_SKIPPED:
+			self.__skipped += 1
+		else:
+			raise ValueError("Invalid state for RomTaskResult: %s" % result)
+
+	@property
+	def failed(self) -> int:
+		return self.__failed
+
+	@property
+	def skipped(self) -> int:
+		return self.__skipped
+
+	@property
+	def updated(self) -> int:
+		return self.__updated
+
 
 class RomProcess(multiprocessing.Process):
 
@@ -77,7 +116,7 @@ class RomProcess(multiprocessing.Process):
 
 	def run(self):
 
-		result = None
+		romProcessResult = RomProcessResult()
 		while True:
 			task = self.__taskQueue.get()
 			if task is None:
@@ -89,16 +128,16 @@ class RomProcess(multiprocessing.Process):
 			else:
 				task.setLock(self.__lock)
 				try:
-					result = task.run(self.__processNumber)
+					romProcessResult.addRomTaskResult(task.run(self.__processNumber))
 					#if not self.__exitEvent.is_set():
 					#	self.__romList.append((result[2], result[3]))
 					#	self.__romList.append(result)
 				except Exception as e:
-					logging.error("%s: Failed to process task due to the following error:" % self.name)
-					logging.error(e)
+					logging.exception("%s: Failed to process task due to the following error:" % self.name)
+					#logging.error(e)
+					self.__resultQueue.put(RomTaskResult(RomTaskResult.STATE_FAILED))
 				self.__taskQueue.task_done()
-		if result:
-			self.__resultQueue.put(result)
+		self.__resultQueue.put(romProcessResult)
 		self.__resultQueue.close()
 
 class RomTask(abc.ABC):
@@ -168,15 +207,12 @@ class GamesDbRomTask(RomTask):
 
 	def run(self, processNumber: int) -> RomTaskResult:
 		logPrefix = "GamesDbRomTask(%d).run:" % processNumber
-		romTaskResult = RomTaskResult()
+		romTaskResult = RomTaskResult(RomTaskResult.STATE_FAILED)
 		filename = os.path.split(self._rom)[1]
 		logging.debug("%s processing -> %s" % (logPrefix, filename))
 
 		engine = pes.sql.connect()
 		session = sqlalchemy.orm.sessionmaker(bind=engine)()
-
-		rasum = pes.retroachievement.getRasum(self._rom, self._console.retroId)
-		logging.debug("%s rasum for %s is %s" % (logPrefix, self._rom, rasum))
 
 		# have we already saved this game?
 		result = session.query(pes.sql.Game).filter(pes.sql.Game.path == self._rom).first()
@@ -190,23 +226,45 @@ class GamesDbRomTask(RomTask):
 				session.add(game)
 				session.commit()
 			newGame = False
+			romTaskResult.state = RomTaskResult.STATE_SKIPPED
 		else:
 			logging.debug("%s new game" % logPrefix)
 			# find a game with matching rasum
+			rasum = pes.retroachievement.getRasum(self._rom, self._console.retroId)
+			logging.debug("%s rasum for %s is %s" % (logPrefix, self._rom, rasum))
 			result = session.query(pes.sql.RetroAchievementGame).join(pes.sql.RetroAchievementGameHash).filter(pes.sql.RetroAchievementGame.retroConsoleId == self._console.retroId).filter(pes.sql.RetroAchievementGameHash.rasum == rasum).first()
 			if result:
-				logging.debug("%s: found match for rasum: %s" % (logPrefix, rasum))
+				logging.debug("%s found match for rasum: %s" % (logPrefix, rasum))
 				# now is there a GamesDbGame match?
 				if result.gamesDbGame and len(result.gamesDbGame) > 0:
 					gamesDbGame = result.gamesDbGame[0]
-					game = pes.sql.Game(consoleId=self._console.id, rasum=rasum, gamesDbId=gamesDbGame.id, retroId=gamesDbGame.retroId, path=self._rom, found=True)
+					game = pes.sql.Game(consoleId=self._console.id, ame=gamesDbGame.name, rasum=rasum, gamesDbId=gamesDbGame.id, retroId=gamesDbGame.retroId, path=self._rom, found=True)
 					with self._lock:
 						session.add(game)
 						session.commit()
 					logging.debug("%s saved new record" % logPrefix)
 					romTaskResult.state = RomTaskResult.STATE_ADDED
+				else:
+					logging.debug("%s no GamesDbGame associated with RetroAchievementGame %d" % (logPrefix, result.id))
+			
+			if game == None: 
+				# try searching by name
+				logging.debug("%s no match for rasum: %s, trying name match" % (logPrefix, rasum))
+				romName = os.path.splitext(os.path.basename(self._rom))[0]
+				gamesDbGame = session.query(pes.sql.GamesDbGame).filter(sqlalchemy.func.lower(sqlalchemy.func.replace(pes.sql.GamesDbGame.name, " ", "")) == romName.replace(" ", "").lower()).first()
+				if gamesDbGame:
+					logging.debug("%s found match for name: \"%s\"" % (logPrefix, romName))
+					game = pes.sql.Game(consoleId=self._console.id, name=gamesDbGame.name, rasum=rasum, gamesDbId=gamesDbGame.id, retroId=gamesDbGame.retroId, path=self._rom, found=True)
+				else:
+					logging.warning("%s could not find any match for %s" % (logPrefix, self._rom))
+					game = pes.sql.Game(consoleId=self._console.id, name=romName, rasum=rasum, path=self._rom, found=True)
+				with self._lock:
+					session.add(game)
+					session.commit()
+				logging.debug("%s saved new record" % logPrefix)
+				romTaskResult.state = RomTaskResult.STATE_ADDED
 
-		if newGame or self._fullscan:
+		if game and (newGame or self._fullscan):
 			logging.debug("%s downloading cover art" % logPrefix)
 
 			url = None
@@ -218,36 +276,29 @@ class GamesDbRomTask(RomTask):
 				elif game.gamesDbGame.boxArtFrontOriginal:
 					url = game.gamesDbGame.boxArtFrontOriginal
 
-			if url:
-				logging.debug("%s URL for %s is %s" % (logPrefix, self._rom, url))
-				response = requests.get(
-					url,
-					headers=self.HEADERS,
-					timeout=self.URL_TIMEOUT
-				)
-				if response.status_code == requests.codes.ok:
-					extension = url[url.rfind('.'):]
-					path = os.path.join(pes.userCoverartDir, self._console.name, "%s%s" % (game.gamesDbGame.name, extension))
-					logging.debug("%s saving to %s" % (logPrefix, path))
-					with open(path, "wb") as f:
-						f.write(response.content)
-					self._scaleImage(path)
-					if not newGame:
-						romTaskResult.state = RomTaskResult.STATE_UPDATED
+				if url:
+					logging.debug("%s URL for %s is %s" % (logPrefix, self._rom, url))
+					response = requests.get(
+						url,
+						headers=self.HEADERS,
+						timeout=self.URL_TIMEOUT
+					)
+					if response.status_code == requests.codes.ok:
+						extension = url[url.rfind('.'):]
+						path = os.path.join(pes.userCoverartDir, self._console.name, "%s%s" % (game.gamesDbGame.name, extension))
+						logging.debug("%s saving to %s" % (logPrefix, path))
+						with open(path, "wb") as f:
+							f.write(response.content)
+						self._scaleImage(path)
+						if not newGame:
+							romTaskResult.state = RomTaskResult.STATE_UPDATED
+					else:
+						logging.warning("%s unable to download %s" % (logPrefix, url))
+						romTaskResult.state = RomTaskResult.STATE_FAILED
 				else:
-					logging.warning("%s unable to download %s" % (logPrefix, url))
-					romTaskResult.state = RomTaskResult.STATE_FAILED
-
-			else:
-				logging.warning("%s no cover art URL for %s (%d)" % (logPrefix, self._rom, game.gamesDbId))
-
-		# look for best match
-		#for result in session.query(pes.sql.GamesDbPlatform).join(pes.sql.GamesDbGame).filter(pes.sql.GamesDbPlatform.id == self.__platformId).filter(pes.sql.GamesDbGame.rasum == rasum):
-		#	logging.debug("GamesDbRomTask(%d).run: found match for rasum: %s" % (processNumber, rasum))
-		#	break
+					logging.warning("%s no cover art URL for %s (%d)" % (logPrefix, self._rom, game.gamesDbId))
 
 		return romTaskResult
-
 
 class RomScanMonitorThread(QThread):
 
@@ -268,11 +319,27 @@ class RomScanMonitorThread(QThread):
 		self.stateChangeSignal.emit(state)
 
 	@pyqtProperty(int)
-	def added(self):
+	def added(self) -> int:
 		return self.__scanThread.getAdded()
 
 	@pyqtProperty(int)
-	def updated(self):
+	def deleted(self) -> int:
+		return self.__scanThread.getDeleted()
+
+	@pyqtProperty(int)
+	def failed(self) -> int:
+		return self.__scanThread.getFailed()
+
+	@pyqtProperty(int)
+	def skipped(self) -> int:
+		return self.__scanThread.getSkipped()
+
+	@pyqtProperty(int)
+	def timeTaken(self) -> int:
+		return self.__scanThread.getTimeTaken()
+
+	@pyqtProperty(int)
+	def updated(self) -> int:
 		return self.__scanThread.getUpdated()
 
 	def run(self):
@@ -316,8 +383,11 @@ class RomScanThread(QThread):
 		self.__started = False
 		self.__processStarted = False
 		self.__startTime = None
+		self.__timeTaken = 0
 		self.__romTotal = 0
 		self.__added = 0
+		self.__failed = 0
+		self.__skipped = 0
 		self.__updated = 0
 		self.__deleted = 0
 		self.__consoleSettings = pes.common.ConsoleSettings(pes.userConsolesConfigFile)
@@ -336,14 +406,14 @@ class RomScanThread(QThread):
 				return True
 		return False
 
-	def getAdded(self):
+	def getAdded(self) -> int:
 		return self.__added
 
-	def getDeleted(self):
+	def getDeleted(self) -> int:
 		return self.__deleted
 
-	def getUpdated(self):
-		return self.__updated
+	def getFailed(self) -> int:
+		return self.__failed
 
 	def getLastRom(self) -> str:
 		if self.__romList == None or not self.__started or (self.__exitEvent != None and self.__exitEvent.is_set()) or len(self.__romList) == 0:
@@ -363,6 +433,15 @@ class RomScanThread(QThread):
 		qsize -= self.__romProcessTotal
 		return float(self.__romTotal - qsize) / float(self.__romTotal)
 
+	def getSkipped(self) -> int:
+		return self.__skipped
+
+	def getTimeTaken(self) -> int:
+		return self.__timeTaken
+
+	def getUpdated(self) -> int:
+		return self.__updated
+
 	def hasStarted(self) -> bool:
 		return self.__started
 
@@ -378,8 +457,12 @@ class RomScanThread(QThread):
 		self.__done = False
 		self.__started = True
 		self.__startTime = time.time()
+		self.__timeTaken = 0
 		self.__romTotal = 0
 		self.__added = 0
+		self.__failed = 0
+		self.__deleted = 0
+		self.__skipped = 0
 		self.__updated = 0
 
 		lock = multiprocessing.Lock()
@@ -445,13 +528,15 @@ class RomScanThread(QThread):
 		self.__tasks.join()
 		logging.debug("RomScanThread.run: ROM tasks joined main thread")
 		logging.debug("RomScanThread.run: processing result queue...")
+		count = 0
 		while not results.empty():
-			romTaskResult = results.get()
-			if romTaskResult.state == RomTaskResult.STATE_ADDED:
-				self.__added += 1
-			elif romTaskResult.state == RomTaskResult.STATE_UPDATED:
-				self.__updated += 1
-		logging.debug("RomScanThread.run: finished processing result queue")
+			romProcessResult = results.get()
+			self.__added += romProcessResult.added
+			self.__updated += romProcessResult.updated
+			self.__failed += romProcessResult.failed
+			self.__skipped += romProcessResult.skipped
+			count += 1
+		logging.debug("RomScanThread.run: finished processing %d result(s) from queue. Added: %d, Updated: %d, Skipped: %d, Failed: %d." % (count, self.__added, self.__updated, self.__skipped, self.__failed))
 		session = sqlalchemy.orm.sessionmaker(bind=engine)()
 		self.__deleted = session.query(pes.sql.Game).filter(pes.sql.Game.found == False).count()
 		if self.__deleted > 0:
@@ -459,6 +544,7 @@ class RomScanThread(QThread):
 			session.query(pes.sql.Game).filter(pes.sql.Game.found == False).delete()
 		session.commit()
 		session.close()
+		self.__timeTaken = time.time() - self.__startTime
 		self.__done = True
 		self.stateChangeSignal.emit("done")
 		logging.debug("RomScanThread.run: complete")
