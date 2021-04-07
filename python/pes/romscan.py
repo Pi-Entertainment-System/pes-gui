@@ -269,32 +269,39 @@ class GamesDbRomTask(RomTask):
 
 			url = None
 			if game.gamesDbGame:
+				# create list of URLs to try
+				urls = []
 				if game.gamesDbGame.boxArtFrontLarge:
-					url = game.gamesDbGame.boxArtFrontLarge
-				elif game.gamesDbGame.boxArtFrontMedium:
-					url = game.gamesDbGame.boxArtFrontMedium
-				elif game.gamesDbGame.boxArtFrontOriginal:
-					url = game.gamesDbGame.boxArtFrontOriginal
+					urls.append(game.gamesDbGame.boxArtFrontLarge)
+				if game.gamesDbGame.boxArtFrontMedium:
+					urls.append(game.gamesDbGame.boxArtFrontMedium)
+				if game.gamesDbGame.boxArtFrontOriginal:
+					urls.append(game.gamesDbGame.boxArtFrontOriginal)
 
-				if url:
-					logging.debug("%s URL for %s is %s" % (logPrefix, self._rom, url))
-					response = requests.get(
-						url,
-						headers=self.HEADERS,
-						timeout=self.URL_TIMEOUT
-					)
-					if response.status_code == requests.codes.ok:
-						extension = url[url.rfind('.'):]
-						path = os.path.join(pes.userCoverartDir, self._console.name, "%s%s" % (game.gamesDbGame.name, extension))
-						logging.debug("%s saving to %s" % (logPrefix, path))
-						with open(path, "wb") as f:
-							f.write(response.content)
-						self._scaleImage(path)
-						if not newGame:
-							romTaskResult.state = RomTaskResult.STATE_UPDATED
-					else:
-						logging.warning("%s unable to download %s" % (logPrefix, url))
-						romTaskResult.state = RomTaskResult.STATE_FAILED
+				logging.debug("%s URLs to try: %s" % (logPrefix, urls))
+
+				if len(urls) > 0:
+					i = 0
+					for url in urls:
+						logging.debug("%s URL attempt %d for %s is %s" % (logPrefix, (i + 1), self._rom, url))
+						response = requests.get(
+							url,
+							headers=self.HEADERS,
+							timeout=self.URL_TIMEOUT
+						)
+						if response.status_code == requests.codes.ok:
+							extension = url[url.rfind('.'):]
+							path = os.path.join(pes.userCoverartDir, self._console.name, "%s%s" % (game.gamesDbGame.name, extension))
+							logging.debug("%s saving to %s" % (logPrefix, path))
+							with open(path, "wb") as f:
+								f.write(response.content)
+							self._scaleImage(path)
+							if not newGame:
+								romTaskResult.state = RomTaskResult.STATE_UPDATED
+							break
+						else:
+							logging.warning("%s unable to download %s" % (logPrefix, url))
+						i += 1
 				else:
 					logging.warning("%s no cover art URL for %s (%d)" % (logPrefix, self._rom, game.gamesDbId))
 
