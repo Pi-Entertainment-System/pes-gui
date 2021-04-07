@@ -49,8 +49,26 @@ class RomTaskResult(object):
 	STATE_FAILED = 3
 	STATE_SKIPPED = 4
 
-	def __init__(self, state):
+	def __init__(self, state, name):
 		self.state = state
+		self.name = name
+		self.coverart = None
+
+	@property
+	def coverart(self) -> str:
+		return self.__coverart
+
+	@coverart.setter
+	def coverart(self, path: str):
+		self.__coverart = path
+
+	@property
+	def name(self) -> str:
+		return self.__name
+
+	@name.setter
+	def name(self, name: str):
+		self.__name = name
 
 	@property
 	def state(self) -> int:
@@ -128,14 +146,13 @@ class RomProcess(multiprocessing.Process):
 			else:
 				task.setLock(self.__lock)
 				try:
-					romProcessResult.addRomTaskResult(task.run(self.__processNumber))
-					#if not self.__exitEvent.is_set():
-					#	self.__romList.append((result[2], result[3]))
-					#	self.__romList.append(result)
+					romTaskResult = task.run(self.__processNumber)
+					romProcessResult.addRomTaskResult(romTaskResult)
+					if not self.__exitEvent.is_set():
+						self.__romList.append({ "name": romTaskResult.name, "coverart": romTaskResult.coverart })
 				except Exception as e:
 					logging.exception("%s: Failed to process task due to the following error:" % self.name)
-					#logging.error(e)
-					self.__resultQueue.put(RomTaskResult(RomTaskResult.STATE_FAILED))
+					self.__resultQueue.put(RomTaskResult(RomTaskResult.STATE_FAILED, ""))
 				self.__taskQueue.task_done()
 		self.__resultQueue.put(romProcessResult)
 		self.__resultQueue.close()
@@ -207,8 +224,9 @@ class GamesDbRomTask(RomTask):
 
 	def run(self, processNumber: int) -> RomTaskResult:
 		logPrefix = "GamesDbRomTask(%d).run:" % processNumber
-		romTaskResult = RomTaskResult(RomTaskResult.STATE_FAILED)
 		filename = os.path.split(self._rom)[1]
+		romName = os.path.splitext(os.path.basename(self._rom))[0]
+		romTaskResult = RomTaskResult(RomTaskResult.STATE_FAILED, romName)
 		logging.debug("%s processing -> %s" % (logPrefix, filename))
 
 		engine = pes.sql.connect()
@@ -227,6 +245,8 @@ class GamesDbRomTask(RomTask):
 				session.commit()
 			newGame = False
 			romTaskResult.state = RomTaskResult.STATE_SKIPPED
+			romTaskResult.name = game.name
+			romTaskResult.coverart = game.coverart
 		else:
 			logging.debug("%s new game" % logPrefix)
 			# find a game with matching rasum
@@ -250,7 +270,6 @@ class GamesDbRomTask(RomTask):
 			if game == None: 
 				# try searching by name
 				logging.debug("%s no match for rasum: %s, trying name match" % (logPrefix, rasum))
-				romName = os.path.splitext(os.path.basename(self._rom))[0]
 				gamesDbGame = session.query(pes.sql.GamesDbGame).filter(sqlalchemy.func.lower(sqlalchemy.func.replace(pes.sql.GamesDbGame.name, " ", "")) == romName.replace(" ", "").lower()).first()
 				if gamesDbGame:
 					logging.debug("%s found match for name: \"%s\"" % (logPrefix, romName))
@@ -266,6 +285,7 @@ class GamesDbRomTask(RomTask):
 
 		if game and (newGame or self._fullscan):
 			logging.debug("%s downloading cover art" % logPrefix)
+			romTaskResult.name = game.name
 
 			url = None
 			if game.gamesDbGame:
@@ -291,13 +311,18 @@ class GamesDbRomTask(RomTask):
 						)
 						if response.status_code == requests.codes.ok:
 							extension = url[url.rfind('.'):]
-							path = os.path.join(pes.userCoverartDir, self._console.name, "%s%s" % (game.gamesDbGame.name, extension))
+							path = os.path.join(pes.userCoverartDir, self._console.name, "%s%s" % (romName, extension))
 							logging.debug("%s saving to %s" % (logPrefix, path))
 							with open(path, "wb") as f:
 								f.write(response.content)
 							self._scaleImage(path)
 							if not newGame:
 								romTaskResult.state = RomTaskResult.STATE_UPDATED
+							if newGame:
+								game.coverart = path
+								with self._lock:
+									session.add(game)
+									session.commit()
 							break
 						else:
 							logging.warning("%s unable to download %s" % (logPrefix, url))
@@ -309,7 +334,7 @@ class GamesDbRomTask(RomTask):
 
 class RomScanMonitorThread(QThread):
 
-	progressSignal = pyqtSignal(float, arguments=['progress'])
+	progressSignal = pyqtSignal(float, str, str, arguments=['progress', 'name', 'coverart'])
 	progressMessageSignal = pyqtSignal(str, arguments=['message'])
 	stateChangeSignal = pyqtSignal(str, arguments=['state'])
 
@@ -366,7 +391,9 @@ class RomScanMonitorThread(QThread):
 			if not self.__scanThread.isRunning():
 				logging.debug("RomScanMonitorThread.run: RomScanThread finished")
 				break
-			self.progressSignal.emit(self.__scanThread.getProgress())
+			lastRom = self.__scanThread.getLastRom()
+			if lastRom:
+				self.progressSignal.emit(self.__scanThread.getProgress(), lastRom["name"], lastRom["coverart"])
 			time.sleep(1)
 
 	@pyqtProperty(bool)
@@ -403,6 +430,7 @@ class RomScanThread(QThread):
 		self.__romsDir = self.__userSettings.get("settings", "romsDir")
 		self.__tasks = None
 		self.__romList = None
+		self.__exitEvent = None
 		self.__romProcessTotal = multiprocessing.cpu_count() * 2
 
 	@staticmethod
@@ -422,7 +450,7 @@ class RomScanThread(QThread):
 	def getFailed(self) -> int:
 		return self.__failed
 
-	def getLastRom(self) -> str:
+	def getLastRom(self) -> dict:
 		if self.__romList == None or not self.__started or (self.__exitEvent != None and self.__exitEvent.is_set()) or len(self.__romList) == 0:
 			return None
 		return self.__romList[-1]
@@ -474,11 +502,12 @@ class RomScanThread(QThread):
 
 		lock = multiprocessing.Lock()
 		self.__tasks = multiprocessing.JoinableQueue()
-		self.__romList = multiprocessing.Manager().list()
-		exitEvent = multiprocessing.Event()
+		manager = multiprocessing.Manager()
+		self.__romList = manager.list()
+		self.__exitEvent = multiprocessing.Event()
 		results = multiprocessing.Queue()
 		logging.debug("RomScanThread.run: will use %d ROM processes" % self.__romProcessTotal)
-		romProcesses = [RomProcess(i, self.__tasks, results, exitEvent, lock, self.__romList) for i in range(self.__romProcessTotal)]
+		romProcesses = [RomProcess(i, self.__tasks, results, self.__exitEvent, lock, self.__romList) for i in range(self.__romProcessTotal)]
 
 		engine = pes.sql.connect()
 		session = sqlalchemy.orm.sessionmaker(bind=engine)()

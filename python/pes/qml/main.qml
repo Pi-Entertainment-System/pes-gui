@@ -338,6 +338,10 @@ ApplicationWindow {
 
           onProgressSignal: {
             updateRomsProgressBar.progress = progress;
+            if (coverart) {
+              scanPreviewImg.source = "file://" + coverart;
+              scanPreviewTxt.text = name;
+            }
           }
 
           onProgressMessageSignal: {
@@ -348,6 +352,8 @@ ApplicationWindow {
             if (state == "done") {
               beginScanTxt.visible = false;
               abortScanBtn.visible = false;
+              scanPreviewImg.visible = false;
+              scanPreviewTxt.visible = false;
               updateRomsProgressBar.visible = false;
               beginScanLayout.visible = false;
               beginFullScanLayout.visible = false;
@@ -430,16 +436,6 @@ ApplicationWindow {
             visible: false
           }
 
-          /*IndeterminateProgressBar {
-            id: romSearchProgessBar
-            visible: false
-
-            Layout.leftMargin: 30
-            Layout.rightMargin: 30
-            Layout.preferredWidth: panelRect.width - 60
-            Layout.preferredHeight: 50
-          }*/
-
           ProgressBar {
             id: updateRomsProgressBar
             visible: false
@@ -449,6 +445,23 @@ ApplicationWindow {
             Layout.rightMargin: 30
             Layout.preferredWidth: panelRect.width - 60
             Layout.preferredHeight: 50
+          }
+
+          Image {
+            id: scanPreviewImg
+            visible: false
+
+            Layout.preferredWidth: 300
+            Layout.preferredHeight: 300
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+          }
+
+          BodyText {
+            id: scanPreviewTxt
+            text: ""
+            visible: false
+
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
           }
 
           UiButton {
