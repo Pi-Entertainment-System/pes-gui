@@ -394,6 +394,14 @@ class RomScanMonitorThread(QThread):
 		return self.__scanThread.getFailed()
 
 	@pyqtProperty(bool)
+	def fullscan(self) -> bool:
+		return self.__fullscan
+
+	@fullscan.setter
+	def fullscan(self, fullscan: bool):
+		self.__fullscan = fullscan
+
+	@pyqtProperty(bool)
 	def interrupted(self) -> bool:
 		return self.__scanThread.getInterrupted()
 
@@ -430,14 +438,6 @@ class RomScanMonitorThread(QThread):
 			if lastRom:
 				self.progressSignal.emit(self.__scanThread.getProgress(), lastRom["name"], lastRom["coverart"])
 			time.sleep(1)
-
-	@pyqtProperty(bool)
-	def fullscan(self) -> bool:
-		return self.__fullscan
-
-	@fullscan.setter
-	def fullscan(self, fullscan: bool):
-		self.__fullscan = fullscan
 
 	@pyqtSlot()
 	def stop(self):
