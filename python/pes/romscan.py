@@ -21,6 +21,7 @@
 #
 
 import abc
+import datetime
 import glob
 import json
 import logging
@@ -173,6 +174,7 @@ class RomTask(abc.ABC):
 		self._console = console
 		self._rom = rom
 		self._fullscan = fullscan
+		self._romFileSize = os.path.getsize(rom)
 
 	@abc.abstractmethod
 	def run(self, processNumber: int) -> RomTaskResult:
@@ -258,7 +260,17 @@ class GamesDbRomTask(RomTask):
 				# now is there a GamesDbGame match?
 				if result.gamesDbGame and len(result.gamesDbGame) > 0:
 					gamesDbGame = result.gamesDbGame[0]
-					game = pes.sql.Game(consoleId=self._console.id, name=gamesDbGame.name, rasum=rasum, gamesDbId=gamesDbGame.id, retroId=gamesDbGame.retroId, path=self._rom, found=True)
+					game = pes.sql.Game(
+						consoleId=self._console.id,
+						added=datetime.datetime.now(),
+						name=gamesDbGame.name,
+						rasum=rasum,
+						gamesDbId=gamesDbGame.id,
+						retroId=gamesDbGame.retroId,
+						path=self._rom,
+						fileSize=self._romFileSize,
+						found=True
+					)
 					with self._lock:
 						session.add(game)
 						session.commit()
@@ -273,10 +285,28 @@ class GamesDbRomTask(RomTask):
 				gamesDbGame = session.query(pes.sql.GamesDbGame).filter(sqlalchemy.func.lower(sqlalchemy.func.replace(pes.sql.GamesDbGame.name, " ", "")) == romName.replace(" ", "").lower()).first()
 				if gamesDbGame:
 					logging.debug("%s found match for name: \"%s\"" % (logPrefix, romName))
-					game = pes.sql.Game(consoleId=self._console.id, name=gamesDbGame.name, rasum=rasum, gamesDbId=gamesDbGame.id, retroId=gamesDbGame.retroId, path=self._rom, found=True)
+					game = pes.sql.Game(
+						consoleId=self._console.id,
+						added=datetime.datetime.now(),
+						name=gamesDbGame.name,
+						rasum=rasum,
+						gamesDbId=gamesDbGame.id,
+						retroId=gamesDbGame.retroId,
+						path=self._rom,
+						fileSize=self._romFileSize,
+						found=True
+					)
 				else:
 					logging.warning("%s could not find any match for %s" % (logPrefix, self._rom))
-					game = pes.sql.Game(consoleId=self._console.id, name=romName, rasum=rasum, path=self._rom, found=True)
+					game = pes.sql.Game(
+						consoleId=self._console.id,
+						added=datetime.datetime.now(),
+						name=romName,
+						rasum=rasum,
+						path=self._rom,
+						fileSize=self._romFileSize,
+						found=True
+					)
 				with self._lock:
 					session.add(game)
 					session.commit()
