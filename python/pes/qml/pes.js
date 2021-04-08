@@ -20,6 +20,11 @@
     along with PES.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+function abortRomScan() {
+  romScanMonitorThread.stop();
+  abortScanBtn.visible = false;
+}
+
 function beginRomScan(fullscan) {
   beginScanTxt.visible = false;
   beginScanLayout.visible = false;
@@ -37,6 +42,11 @@ function beginRomScan(fullscan) {
 
 function getConsolesWithGames() {
   return backend.getConsoles(true);
+}
+
+function goHome() {
+  screenStack.currentIndex = 0;
+  mainMenuScrollView.forceActiveFocus();
 }
 
 function mainMenuEvent(text) {

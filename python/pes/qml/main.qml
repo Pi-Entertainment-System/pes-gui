@@ -349,7 +349,12 @@ ApplicationWindow {
           }
 
           onProgressMessageSignal: {
-            statusTxt.text = message;
+            if (romScanMonitorThread.interrupted) {
+              statusTxt.text = "Aborting scan, please wait..";
+            }
+            else {
+              statusTxt.text = message;
+            }
           }
 
           onStateChangeSignal: {
@@ -361,7 +366,14 @@ ApplicationWindow {
               updateRomsProgressBar.visible = false;
               beginScanLayout.visible = false;
               beginFullScanLayout.visible = false;
-              statusTxt.text = "<p>Scan complete!</p><p>Added: " + romScanMonitorThread.added + "</p><p>Updated: " + romScanMonitorThread.updated + "</p><p>Skipped: " + romScanMonitorThread.skipped + "</p><p>Deleted: " + romScanMonitorThread.deleted + "</p><p>Time taken: " + romScanMonitorThread.timeTaken + "s</p>";
+              var s;
+              if (romScanMonitorThread.interrupted) {
+                s = "aborted";
+              }
+              else {
+                s = "complete";
+              }
+              statusTxt.text = "<p>Scan " + s + "!</p><p>Added: " + romScanMonitorThread.added + "</p><p>Updated: " + romScanMonitorThread.updated + "</p><p>Skipped: " + romScanMonitorThread.skipped + "</p><p>Deleted: " + romScanMonitorThread.deleted + "</p><p>Time taken: " + romScanMonitorThread.timeTaken + "s</p>";
             }
             else if (state == "update") {
               updateRomsProgressBar.visible = true;
@@ -371,8 +383,7 @@ ApplicationWindow {
 
         Keys.onPressed: {
           if (event.key == Qt.Key_Backspace) {
-            screenStack.currentIndex = 0;
-            mainMenuScrollView.forceActiveFocus();
+            PES.goHome();
           }
         }
 
@@ -479,6 +490,8 @@ ApplicationWindow {
             Layout.preferredHeight: 50
             Layout.leftMargin: 30
             Layout.topMargin: 20
+
+            Keys.onReturnPressed: PES.abortRomScan()
           }
         }
       }

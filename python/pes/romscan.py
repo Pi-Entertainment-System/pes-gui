@@ -393,6 +393,10 @@ class RomScanMonitorThread(QThread):
 	def failed(self) -> int:
 		return self.__scanThread.getFailed()
 
+	@pyqtProperty(bool)
+	def interrupted(self) -> bool:
+		return self.__scanThread.getInterrupted()
+
 	@pyqtProperty(int)
 	def skipped(self) -> int:
 		return self.__scanThread.getSkipped()
@@ -435,6 +439,12 @@ class RomScanMonitorThread(QThread):
 	def fullscan(self, fullscan: bool):
 		self.__fullscan = fullscan
 
+	@pyqtSlot()
+	def stop(self):
+		if self.__scanThread:
+			logging.debug("RomScanMonitorThread.stop: stopping RomScanThread...")
+			self.__scanThread.stop()
+
 class RomScanThread(QThread):
 
 	progressMessageSignal = pyqtSignal(str, arguments=['message'])
@@ -446,6 +456,7 @@ class RomScanThread(QThread):
 		self.__fullscan = False
 		self.__done = False
 		self.__started = False
+		self.__interrupted = False
 		self.__processStarted = False
 		self.__startTime = None
 		self.__timeTaken = 0
@@ -489,6 +500,9 @@ class RomScanThread(QThread):
 	def getFailed(self) -> int:
 		return self.__failed
 
+	def getInterrupted(self) -> bool:
+		return self.__interrupted
+
 	def getLastRom(self) -> dict:
 		if self.__romList == None or not self.__started or (self.__exitEvent != None and self.__exitEvent.is_set()) or len(self.__romList) == 0:
 			return None
@@ -530,6 +544,7 @@ class RomScanThread(QThread):
 
 		self.__done = False
 		self.__started = True
+		self.__interrupted = False
 		self.__startTime = time.time()
 		self.__timeTaken = 0
 		self.__romTotal = 0
@@ -586,7 +601,7 @@ class RomScanThread(QThread):
 
 		self.stateChangeSignal.emit("update")
 
-		self.progressMessageSignal.emit("Found %d ROMs, beginning meta data updates..." % self.__romTotal)
+		self.progressMessageSignal.emit("Found %d ROMs, update in progress" % self.__romTotal)
 
 		# add poison pills
 		for i in range(self.__romProcessTotal):
@@ -613,10 +628,14 @@ class RomScanThread(QThread):
 			count += 1
 		logging.debug("RomScanThread.run: finished processing %d result(s) from queue. Added: %d, Updated: %d, Skipped: %d, Failed: %d." % (count, self.__added, self.__updated, self.__skipped, self.__failed))
 		session = sqlalchemy.orm.sessionmaker(bind=engine)()
-		self.__deleted = session.query(pes.sql.Game).filter(pes.sql.Game.found == False).count()
-		if self.__deleted > 0:
-			logging.warning("RomScanThread.run: deleted %d games from database" % self.__deleted)
-			session.query(pes.sql.Game).filter(pes.sql.Game.found == False).delete()
+		if self.__interrupted:
+			# reset found status
+			session.query(pes.sql.Game).filter(not pes.sql.Game.found).update({pes.sql.Game.found: True})
+		else:
+			self.__deleted = session.query(pes.sql.Game).filter(pes.sql.Game.found == False).count()
+			if self.__deleted > 0:
+				logging.warning("RomScanThread.run: deleted %d games from database" % self.__deleted)
+				session.query(pes.sql.Game).filter(pes.sql.Game.found == False).delete()
 		session.commit()
 		session.close()
 		self.__timeTaken = time.time() - self.__startTime
@@ -624,3 +643,11 @@ class RomScanThread(QThread):
 		self.stateChangeSignal.emit("done")
 		logging.debug("RomScanThread.run: complete")
 
+	def stop(self):
+		if self.__started and not self.__done:
+			self.__interrupted = True
+			logging.debug("RomScanThread.stop: stopping processes...")
+			self.__exitEvent.set()
+		else:
+			self.__done = True
+		self.stateChangeSignal.emit("stopped")
