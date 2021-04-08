@@ -472,6 +472,14 @@ class RomScanThread(QThread):
 				return True
 		return False
 
+	@pyqtProperty(bool)
+	def fullscan(self) -> bool:
+		return self.__fullscan
+
+	@fullscan.setter
+	def fullscan(self, fullscan: bool):
+		self.__fullscan = fullscan
+
 	def getAdded(self) -> int:
 		return self.__added
 
@@ -616,10 +624,3 @@ class RomScanThread(QThread):
 		self.stateChangeSignal.emit("done")
 		logging.debug("RomScanThread.run: complete")
 
-	@pyqtProperty(bool)
-	def fullscan(self) -> bool:
-		return self.__fullscan
-
-	@fullscan.setter
-	def fullscan(self, fullscan: bool):
-		self.__fullscan = fullscan
