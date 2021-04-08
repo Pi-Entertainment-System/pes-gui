@@ -350,6 +350,7 @@ class GamesDbRomTask(RomTask):
 								romTaskResult.state = RomTaskResult.STATE_UPDATED
 							if newGame:
 								game.coverart = path
+								romTaskResult.coverart = game.coverart
 								with self._lock:
 									session.add(game)
 									session.commit()
