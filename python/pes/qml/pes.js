@@ -28,8 +28,9 @@ function beginRomScan(fullscan) {
   abortScanBtn.forceActiveFocus();
   updateRomsProgressBar.progress = 0;
   statusTxt.visible = true;
-  scanPreviewImg.visible = true;
-  scanPreviewTxt.visible = true;
+  statusTxt.text = "";
+  scanPreviewImg.visible = false;
+  scanPreviewTxt.visible = false;
   romScanMonitorThread.fullscan = fullscan;
   romScanMonitorThread.start();
 }

@@ -341,6 +341,10 @@ ApplicationWindow {
             if (coverart) {
               scanPreviewImg.source = "file://" + coverart;
               scanPreviewTxt.text = name;
+              if (!scanPreviewImg.visible) {
+                scanPreviewImg.visible = true;
+                scanPreviewTxt.visible = true;
+              }
             }
           }
 
@@ -458,10 +462,12 @@ ApplicationWindow {
 
           BodyText {
             id: scanPreviewTxt
+            horizontalAlignment: Text.AlignHCenter
             text: ""
             visible: false
 
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+            Layout.preferredWidth: panelRect.width
           }
 
           UiButton {
