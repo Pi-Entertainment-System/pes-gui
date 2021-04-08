@@ -24,7 +24,7 @@ import logging
 import pes
 
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import create_engine, Column, Date, ForeignKey, Integer, String, Text, Boolean
+from sqlalchemy import create_engine, Column, DateTime, ForeignKey, Integer, String, Text, Boolean
 from sqlalchemy.orm import relationship
 
 Base = declarative_base()
@@ -68,12 +68,12 @@ class Game(Base, CustomBase):
 	retroId = Column(Integer, ForeignKey('retroachievement_game.id'), index=True)
 	path = Column(Text)
 	coverart = Column(Text)
-	lastPlayed = Column(Date)
-	added = Column(Date)
-	favourite = Column(Boolean)
-	playCount = Column(Integer)
-	fileSize = Column(Integer)
-	found = Column(Boolean)
+	lastPlayed = Column(DateTime)
+	added = Column(DateTime)
+	favourite = Column(Boolean, default=False)
+	playCount = Column(Integer, default=0)
+	fileSize = Column(Integer, default=0)
+	found = Column(Boolean, default=False)
 
 	console = relationship("Console", back_populates="games")
 	gamesDbGame = relationship("GamesDbGame", back_populates="games")
