@@ -155,9 +155,10 @@ if __name__ == "__main__":
 				logging.info("updating Console: %s" % c["name"])
 				console.name = c["name"]
 				console.gamesDbId = platformId
+				console.nocoverart = c["nocoverart"]
 			else:
 				logging.info("adding console: %s" % c["name"])
-				console = pes.sql.Console(id=consoleId, name=c["name"], gamesDbId=platformId)
+				console = pes.sql.Console(id=consoleId, name=c["name"], gamesDbId=platformId, nocoverart=c["nocoverart"])
 
 			if "retroId" in c and c["retroId"] not in consoleRetroIds:
 				console.retroId = int(c["retroId"])
