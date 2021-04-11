@@ -25,6 +25,7 @@ import QtQuick 2.7
 
 QtObject {
   readonly property int bodySize: 20
+  readonly property int bodySmallSize: 10
   readonly property int dialogSize: 20
   readonly property int headerSize: 30
   readonly property int menuSize: 24
