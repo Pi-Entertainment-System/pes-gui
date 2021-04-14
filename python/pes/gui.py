@@ -98,15 +98,21 @@ class BackEnd(QObject):
 			consoleList.append(c.getJson())
 		return consoleList
 
+	@pyqtSlot(int, int, result=list)
+	def getRecentlyAddedGames(self, consoleId=None, limit=10):
+		logging.debug("BackEnd.getRecentlyAddedGames: getting games for console %d" % consoleId)
+		games = []
+		if consoleId or consoleId == 0:
+			result = self.__session.query(pes.sql.Game).order_by(pes.sql.Game.added.desc()).limit(limit)
+		else:
+			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).order_by(pes.sql.Game.added.desc()).limit(limit)
+		for g in result:
+			games.append(g.getJson())
+		return games
+
 	@pyqtSlot(result=str)
 	def getTime(self):
 		return datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-
-	#@pyqtSlot()
-	#def startRomScan(self):
-	#	self.__romscanThread = pes.romscan.RomScanThread()
-		#self.__romscanThread.progressSignal.connect(self.__romScanProgress)
-	#	self.__romscanThread.start()
 
 class PESGuiApplication(QGuiApplication):
 
