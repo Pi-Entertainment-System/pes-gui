@@ -49,6 +49,10 @@ function goHome() {
   mainMenuScrollView.forceActiveFocus();
 }
 
+function getRecentlyAddedGames(consoleId) {
+  return backend.getRecentlyAddedGames(consoleId, 10)
+}
+
 function mainMenuEvent(text) {
 	switch(text) {
     default: console.error(text);
@@ -87,7 +91,8 @@ function updateHomeScreen() {
   mainText.visible = true;
 }
 
-function updateMainMenuModel() {
+function updateMainScreen(){
+  // main menu model
   // remove existing entries
   if (mainMenuModel.count > 1) {
     for (var i = mainMenuModel.count - 1; i > 1; i--) {
@@ -98,5 +103,18 @@ function updateMainMenuModel() {
   for (var i = 0; i < consoles.length; i++) {
     mainMenuModel.append(consoles[i]);
   }
+  
+  var games = getRecentlyAddedGames(0);
+  if (games.length == 0) {
+    recentlyAddedMainPanel.visible = false;
+  }
+  else {
+    for (var i = 0; i < games.length; i++) {
+      recentlyAddedMainPanel.addGame(games[i]);
+    }
+    recentlyAddedMainPanel.visible = true;
+  }
+
   updateHomeScreen();
 }
+

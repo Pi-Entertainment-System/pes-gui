@@ -297,13 +297,16 @@ ApplicationWindow {
 		            model: mainMenuModel
 		            delegate: MenuDelegate {
 									Keys.onReturnPressed: PES.mainMenuEvent(text);
+                  Keys.onRightPressed: {
+                    recentlyAddedMainPanel.forceActiveFocus();
+                  }
 								}
 		            keyNavigationEnabled: true
 		            keyNavigationWraps: false
 		          }
 		        }
 					}
-					Component.onCompleted: PES.updateMainMenuModel()
+					Component.onCompleted: PES.updateMainScreen()
 				}
 
 				Rectangle {
@@ -313,17 +316,44 @@ ApplicationWindow {
 					Layout.fillWidth: true
 					Layout.fillHeight: true
 
-					HeaderText {
-		        id: welcomeText
-		        text: "Welcome to PES!"
-		      }
+          ColumnLayout {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: 10
+            anchors.rightMargin: 10
+            spacing: 10
 
-		      BodyText {
-		        id: mainText
-		        y: welcomeText.height + 10
-		        visible: false
-		        text: ""
-		      }
+            HeaderText {
+              id: welcomeText
+              text: "Welcome to PES!"
+
+              Layout.fillWidth: true
+            }
+
+            BodyText {
+              id: mainText
+              visible: false
+              text: ""
+            }
+
+            CoverartPanel {
+              id: recentlyAddedMainPanel
+              //Layout.minimumWidth: 800
+              Layout.fillWidth: true
+              height: 300
+              color: Colour.panelBg
+              headerText: "Recently Added Games"
+              visible: false
+              KeyNavigation.left: mainMenuScrollView
+
+              function itemSelected(id) {
+                var r = backend.playGame(id);
+                if (!r.result) {
+                  // @TODO: implement error message dialog
+                }
+              }
+            }
+          }
 				}
 			}
 
