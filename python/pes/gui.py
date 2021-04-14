@@ -114,6 +114,13 @@ class BackEnd(QObject):
 	def getTime(self):
 		return datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
+	@pyqtSlot(int, result=QVariant)
+	def playGame(self, id):
+		game = self.__session.query(pes.sql.Game).get(id)
+		if game:
+			return { "result": True, "msg": "Loading %s" % game.name }
+		return { "result": False, "msg": "Could not find game %d" % id }
+
 class PESGuiApplication(QGuiApplication):
 
 	def __init__(self, argv, windowed=False):
