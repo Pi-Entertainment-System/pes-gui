@@ -185,6 +185,9 @@ class RomTask(abc.ABC):
 		@returns a RomTaskResult object
 		"""
 
+	def _getNocoverart(self) -> str:
+		return os.path.join(pes.resourcesDir, self._console.nocoverart)
+
 	@staticmethod
 	def _scaleImage(path: str) -> str:
 		img = PIL.Image.open(path)
@@ -294,6 +297,7 @@ class GamesDbRomTask(RomTask):
 						retroId=gamesDbGame.retroId,
 						path=self._rom,
 						fileSize=self._romFileSize,
+						coverart=self._getNocoverart(),
 						found=True
 					)
 				else:
@@ -305,6 +309,7 @@ class GamesDbRomTask(RomTask):
 						rasum=rasum,
 						path=self._rom,
 						fileSize=self._romFileSize,
+						coverart=self._getNocoverart(),
 						found=True
 					)
 				with self._lock:
@@ -357,6 +362,7 @@ class GamesDbRomTask(RomTask):
 							break
 						else:
 							logging.warning("%s unable to download %s" % (logPrefix, url))
+							game.coverart = self._getNocoverart()
 						i += 1
 				else:
 					logging.warning("%s no cover art URL for %s (%d)" % (logPrefix, self._rom, game.gamesDbId))
