@@ -9,3 +9,7 @@ Prior to version 3.0, PES and its supporting build scripts for the emulators etc
 Please see the [pes-setup](https://github.com/Pi-Entertainment-System/pes-setup) for the scripts and instructions for setting up your Raspberry Pi build environment.
 
 The [pes-packages](https://github.com/Pi-Entertainment-System/pes-packages) repository contains the Arch Linux package build files to all off the Arch Linux packages required by PES that are not already provided by Arch Linux.
+
+# Acknowledgements
+
+GUI sound effects provided by: [Octave](https://github.com/scopegate/octave)
