@@ -30,16 +30,12 @@ Rectangle {
 	color: focus ? Colour.menuFocus : Colour.menuBg
 	property alias text: menuDelegateText.text
 
-	//Keys.onReturnPressed: {
-	//	parent.foo(event);
-	//}
-
 	Rectangle {
 		id: menuDelegateLine
 		width: 5
 		height: parent.height
 		color: Colour.line
-		visible: parent.focus
+		visible: parent.focus && parent.activeFocus
 	}
 
 	Text {
