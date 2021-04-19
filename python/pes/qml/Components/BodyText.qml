@@ -26,7 +26,7 @@ import "../Style/" 1.0
 Text {
 	text: "null"
 	padding: 10
-	font.pointSize: FontStyle.bodySize
+	font.pixelSize: FontStyle.bodySize
 	font.bold: true
 	font.family: FontStyle.font
 	color: Colour.text

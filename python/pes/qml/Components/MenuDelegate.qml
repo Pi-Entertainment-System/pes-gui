@@ -47,7 +47,7 @@ Rectangle {
 		id: menuDelegateText
 		text: name
 		color: parent.focus ? Colour.text : Colour.menuText
-		font.pointSize: FontStyle.menuSize
+		font.pixelSize: FontStyle.menuSize
 		font.family: FontStyle.font
 	}
 }

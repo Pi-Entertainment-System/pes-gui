@@ -75,7 +75,7 @@ ApplicationWindow {
       spacing: 10
       Text {
         color: Colour.text
-        font.pointSize: FontStyle.dialogSize
+        font.pixelSize: FontStyle.dialogSize
         text: "Are you sure you want to exit?"
       }
 
@@ -209,7 +209,7 @@ ApplicationWindow {
 		text: "Pi Entertainment System"
 		x: 0
 		y: 0
-		font.pointSize: FontStyle.titleSize
+		font.pixelSize: FontStyle.titleSize
 		font.bold: true
 		font.family: FontStyle.font
 		color: Colour.text
@@ -220,7 +220,7 @@ ApplicationWindow {
 		text: "Time"
 		x: mainWindow.width - clockTxt.width
 		y: 0
-		font.pointSize: FontStyle.titleSize
+		font.pixelSize: FontStyle.titleSize
 		font.bold: true
 		font.family: FontStyle.font
 		color: Colour.text

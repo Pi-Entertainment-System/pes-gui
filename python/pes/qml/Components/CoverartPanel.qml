@@ -64,7 +64,7 @@ Rectangle {
             border.color: Colour.line
             border.width: focus ? 2: 0
             color: focus ? Colour.menuFocus : Colour.panelBg
-            height: 210
+            height: 225
             width: 220
 
             Keys.onReturnPressed: {
@@ -84,9 +84,11 @@ Rectangle {
                 x: 10
                 y: img.y + img.height
                 color: Colour.text
-                font.pointSize: FontStyle.bodySmallSize
+                elide: Text.ElideRight
+                font.pixelSize: FontStyle.bodySmallSize
                 font.bold: true
                 font.family: FontStyle.font
+                maximumLineCount: 1
                 text: name
                 wrapMode: Text.Wrap
                 width: parent.width
