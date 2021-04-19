@@ -24,6 +24,7 @@ import QtQuick 2.7
 import QtQuick.Layouts 1.12
 import QtQuick.Window 2.2
 import QtQuick.Controls 2.5
+import QtMultimedia 5.12
 //import QtGamepad 1.12
 import "Components"
 import "./Style/" 1.0
@@ -54,6 +55,13 @@ ApplicationWindow {
 				console.warn(mainWindow.activeFocusItem.Keys.downPressed({ key: Qt.KeyDown }));
 			}
 	}
+
+  // sounds
+  SoundEffect {
+    id: navSound
+    source: "sounds/slide-scissors.wav"
+    loops: 1
+  }
 
 	// closing dialog
 	Dialog {
@@ -168,11 +176,12 @@ ApplicationWindow {
       }
     }
 
-    ListView {
+    SoundListView {
       id: popupMenuView
       anchors.fill: parent
       focus: true
       model: popupMenu
+      navSound: navSound
       delegate: MenuDelegate {
 				Keys.onReturnPressed: PES.optionsDialogEvent(text);
 			}
@@ -287,22 +296,21 @@ ApplicationWindow {
 		          width: parent.width
 		          height: parent.height
 		          clip: true
-
 		          focus: true
 
-		          ListView {
+		          SoundListView {
 		            id: menuView
 		            anchors.fill: parent
 		            focus: true
 		            model: mainMenuModel
+                navSound: navSound
+                navSoundOnFirstFocus: false
 		            delegate: MenuDelegate {
 									Keys.onReturnPressed: PES.mainMenuEvent(text);
                   Keys.onRightPressed: {
                     recentlyAddedMainPanel.forceActiveFocus();
                   }
 								}
-		            keyNavigationEnabled: true
-		            keyNavigationWraps: false
 		          }
 		        }
 					}
@@ -338,13 +346,13 @@ ApplicationWindow {
 
             CoverartPanel {
               id: recentlyAddedMainPanel
-              //Layout.minimumWidth: 800
-              Layout.fillWidth: true
-              height: 300
               color: Colour.panelBg
               headerText: "Recently Added Games"
-              visible: false
+              height: 300
               KeyNavigation.left: mainMenuScrollView
+              Layout.fillWidth: true
+              navSound: navSound
+              visible: false
 
               function itemSelected(id) {
                 var r = backend.playGame(id);

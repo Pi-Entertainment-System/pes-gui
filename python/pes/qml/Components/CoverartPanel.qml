@@ -23,14 +23,17 @@
 import QtQuick 2.7
 import QtQuick.Layouts 1.12
 import QtQuick.Controls 2.5
+import QtMultimedia 5.12
 import "../Style/" 1.0
 
 Rectangle {
     id: mainRect
-    property alias headerText: headerText.text
     color: 'white'
     KeyNavigation.left: null
     KeyNavigation.right: null
+
+    property alias headerText: headerText.text
+    property alias navSound: listView.navSound
 
     onFocusChanged: {
         scrollView.forceActiveFocus();
@@ -114,27 +117,34 @@ Rectangle {
 
             ListView {
                 id: listView
+                property QtObject navSound: null;
                 Keys.onLeftPressed: {
-                    if (listView.currentIndex > 0) {
-                        listView.currentIndex -= 1;
+                    if (currentIndex > 0) {
+                        if (navSound) {
+                            navSound.play();
+                        }
+                        currentIndex -= 1;
                     }
                     else {
                         if (mainRect.KeyNavigation.left) {
                             mainRect.KeyNavigation.left.forceActiveFocus();
-                            listView.currentItem.focus = false;
-                            listView.currentIndex = -1;
+                            currentItem.focus = false;
+                            currentIndex = -1;
                         }
                     }
                 }
                 Keys.onRightPressed: {
-                    if (listView.currentIndex < listView.count - 1 ) {
-                        listView.currentIndex += 1;
+                    if (currentIndex < count - 1 ) {
+                        if (navSound) {
+                            navSound.play();
+                        }
+                        currentIndex += 1;
                     }
                     else {
                         if (mainRect.KeyNavigation.right) {
                             mainRect.KeyNavigation.right.forceActiveFocus();
-                            listView.currentItem.focus = false;
-                            listView.currentIndex = -1;
+                            currentItem.focus = false;
+                            currentIndex = -1;
                         }
                     }
                 }
@@ -148,6 +158,12 @@ Rectangle {
                 model: myModel
                 orientation: Qt.Horizontal
                 spacing: 20
+
+                onActiveFocusChanged: {
+                    if (activeFocus && navSound) {
+                        navSound.play();
+                    }
+                }
             }
         }
     }
