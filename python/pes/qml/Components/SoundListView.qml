@@ -30,16 +30,11 @@ ListView {
     id: listView
 
     property QtObject navSound: null;
-    property bool navSoundOnFirstFocus: true;
-
-    QtObject {
-        id: priv
-        property bool hasBeenFocused: false;
-    }
+    property bool soundOn: true;
 
     Keys.onDownPressed: {
         if (currentIndex < count - 1) {
-            if (navSound) {
+            if (navSound && soundOn) {
                 navSound.play();
             }
             currentIndex += 1;
@@ -47,7 +42,7 @@ ListView {
     }
     Keys.onUpPressed: {
         if (currentIndex > 0) {
-            if (navSound) {
+            if (navSound && soundOn) {
                 navSound.play();
             }
             currentIndex -= 1;
@@ -55,11 +50,8 @@ ListView {
     }
 
     onActiveFocusChanged: {
-        if (activeFocus && navSound) {
-            if (navSoundOnFirstFocus || priv.hasBeenFocused) {
-                navSound.play();
-            }
+        if (activeFocus && navSound && soundOn) {
+            navSound.play();
         }
-        priv.hasBeenFocused = true;
     }
 }

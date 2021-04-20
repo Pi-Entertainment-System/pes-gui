@@ -299,12 +299,12 @@ ApplicationWindow {
 		          focus: true
 
 		          SoundListView {
-		            id: menuView
+		            id: mainMenuView
 		            anchors.fill: parent
 		            focus: true
 		            model: mainMenuModel
                 navSound: navSound
-                navSoundOnFirstFocus: false
+                soundOn: false
 		            delegate: MenuDelegate {
 									Keys.onReturnPressed: PES.mainMenuEvent(text);
                   Keys.onRightPressed: {
