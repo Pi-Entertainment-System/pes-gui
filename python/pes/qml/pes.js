@@ -89,6 +89,7 @@ function updateHomeScreen() {
     mainText.text = "Time to go gaming!";
   }
   mainText.visible = true;
+  mainMenuView.forceActiveFocus();
   mainMenuView.soundOn = true;
 }
 
