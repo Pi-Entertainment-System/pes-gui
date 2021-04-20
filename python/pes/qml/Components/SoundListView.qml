@@ -50,7 +50,7 @@ ListView {
     }
 
     onActiveFocusChanged: {
-        if (activeFocus && navSound && soundOn) {
+        if (activeFocus && visible && currentIndex >= 0 && currentIndex < count && navSound && soundOn) {
             navSound.play();
         }
     }
