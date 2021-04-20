@@ -64,78 +64,11 @@ ApplicationWindow {
   }
 
 	// closing dialog
-	Dialog {
+  YesNoDialog {
     id: closeDialog
-    modal: true
-    width: 500
-    height: 150
-    x: (parent.width - width) / 2
-    y: (parent.height - height) / 2
-
-    background: Rectangle {
-      color: Colour.dialogBg
-      border.color: Colour.line
-      anchors.fill: parent
-    }
-
-    ColumnLayout {
-			anchors.fill: parent
-      spacing: 10
-      Text {
-        color: Colour.text
-        font.pixelSize: FontStyle.dialogSize
-        text: "Are you sure you want to exit?"
-      }
-
-      RowLayout {
-        spacing: 10
-
-				Item {
-					Layout.fillHeight: true
-					Layout.fillWidth: true
-				}
-
-        DialogButton {
-					id: exitYesBtn
-          Layout.fillWidth: false
-          Layout.minimumWidth: 100
-					Layout.preferredWidth: 150
-					Layout.maximumWidth: 150
-					Layout.minimumHeight: 50
-          btnText: "Yes"
-					focus: true
-					KeyNavigation.right: exitNoBtn
-
-					Keys.onReturnPressed: {
-						mainWindow.close()
-					}
-        }
-
-				DialogButton {
-					id: exitNoBtn
-          Layout.fillWidth: false
-          Layout.minimumWidth: 100
-					Layout.maximumWidth: 150
-					Layout.preferredWidth: 150
-					Layout.minimumHeight: 50
-          btnText: "No"
-					KeyNavigation.left: exitYesBtn
-
-					Keys.onReturnPressed: {
-						closeDialog.close()
-					}
-        }
-
-				Item {
-					Layout.fillHeight: true
-					Layout.fillWidth: true
-				}
-      }
-    }
-
-		onOpened: {
-			exitYesBtn.forceActiveFocus()
-		}
+    navSound: navSound
+    text: "Are you sure you want to exit?"
+    onYesButtonPressed: mainWindow.close()
   }
 
 	// options dialog
@@ -301,7 +234,7 @@ ApplicationWindow {
 		          SoundListView {
 		            id: mainMenuView
 		            anchors.fill: parent
-		            focus: true
+		            focus: false
 		            model: mainMenuModel
                 navSound: navSound
                 soundOn: false
