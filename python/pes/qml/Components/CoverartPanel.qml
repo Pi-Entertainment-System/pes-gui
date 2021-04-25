@@ -35,6 +35,9 @@ Rectangle {
     property alias headerText: headerText.text
     property alias navSound: listView.navSound
 
+    // custom signals
+    signal itemSelected(int gameId)
+
     onFocusChanged: {
         scrollView.forceActiveFocus();
         listView.currentIndex = 0;
@@ -42,10 +45,6 @@ Rectangle {
 
     function addGame(game) {
         myModel.append(game);
-    }
-
-    function itemSelected(id) {
-
     }
 
     function removeAll() {
