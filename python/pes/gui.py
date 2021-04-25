@@ -118,7 +118,14 @@ class BackEnd(QObject):
 	def playGame(self, id):
 		game = self.__session.query(pes.sql.Game).get(id)
 		if game:
+			logging.debug("BackEnd.playGame: found game ID %d" % id)
+			game.playCount += 1
+			game.lastPlayed = datetime.datetime.now()
+			self.__session.add(game)
+			self.__session.commit()
+			self.close()
 			return { "result": True, "msg": "Loading %s" % game.name }
+		logging.error("BackEnd.playGame: coult not find game ID %d" % id)
 		return { "result": False, "msg": "Could not find game %d" % id }
 
 class PESGuiApplication(QGuiApplication):
