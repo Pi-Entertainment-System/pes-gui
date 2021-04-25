@@ -20,26 +20,6 @@
     along with PES.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-function abortRomScan() {
-  romScanMonitorThread.stop();
-  abortScanBtn.visible = false;
-}
-
-function beginRomScan(fullscan) {
-  beginScanTxt.visible = false;
-  beginScanLayout.visible = false;
-  beginFullScanLayout.visible = false;
-  abortScanBtn.visible = true;
-  abortScanBtn.forceActiveFocus();
-  updateRomsProgressBar.progress = 0;
-  statusTxt.visible = true;
-  statusTxt.text = "";
-  scanPreviewImg.visible = false;
-  scanPreviewTxt.visible = false;
-  romScanMonitorThread.fullscan = fullscan;
-  romScanMonitorThread.start();
-}
-
 function getConsolesWithGames() {
   return backend.getConsoles(true);
 }
@@ -64,13 +44,7 @@ function optionsDialogEvent(text) {
 		case "Update Games": {
       optionsDialog.close();
       screenStack.currentIndex = 1;
-      beginScanLayout.visible = true;
-      beginFullScanLayout.visible = true;
-      beginScanBtn.forceActiveFocus();
-      beginScanTxt.visible = true;
-      abortScanBtn.visible = false;
-      updateRomsProgressBar.visible = false;
-      statusTxt.visible = false;
+      updateGamesScreen.reset();
 			break;
 		}
 		case "Exit": {
