@@ -33,6 +33,10 @@ function getRecentlyAddedGames(consoleId) {
   return backend.getRecentlyAddedGames(consoleId, 10)
 }
 
+function getRecentlyPlayedGames(consoleId) {
+  return backend.getRecentlyPlayedGames(consoleId, 10)
+}
+
 function mainMenuEvent(text) {
 	switch(text) {
     default: console.error(text);
@@ -58,11 +62,12 @@ function optionsDialogEvent(text) {
 function updateHomeScreen() {
   if (mainMenuModel.count == 1) {
     mainText.text = "You have not added any games to PES yet. To do so press the Home button and select 'Update Games' option.";
+    mainText.visible = true;
   }
   else {
-    mainText.text = "Time to go gaming!";
+    //mainText.text = "Time to go gaming!";
+    mainText.visible = false;
   }
-  mainText.visible = true;
   mainMenuView.forceActiveFocus();
   mainMenuView.soundOn = true;
 }
@@ -89,6 +94,17 @@ function updateMainScreen(){
       recentlyAddedMainPanel.addGame(games[i]);
     }
     recentlyAddedMainPanel.visible = true;
+  }
+
+  games = getRecentlyPlayedGames(0);
+  if (games.length == 0) {
+    recentlyPlayedMainPanel.visible = false;
+  }
+  else {
+    for (var i = 0; i < games.length; i++) {
+      recentlyPlayedMainPanel.addGame(games[i]);
+    }
+    recentlyPlayedMainPanel.visible = true;
   }
 
   updateHomeScreen();

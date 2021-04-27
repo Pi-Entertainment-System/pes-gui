@@ -240,7 +240,12 @@ ApplicationWindow {
 		            delegate: MenuDelegate {
 									Keys.onReturnPressed: PES.mainMenuEvent(text);
                   Keys.onRightPressed: {
-                    recentlyAddedMainPanel.forceActiveFocus();
+                    if (recentlyPlayedMainPanel.visible) {
+                      recentlyPlayedMainPanel.forceActiveFocus();
+                    }
+                    else {
+                      recentlyAddedMainPanel.forceActiveFocus();
+                    }
                   }
 								}
 		          }
@@ -277,11 +282,31 @@ ApplicationWindow {
             }
 
             CoverartPanel {
+              id: recentlyPlayedMainPanel
+              color: Colour.panelBg
+              headerText: "Recently Played Games"
+              height: 300
+              KeyNavigation.left: mainMenuScrollView
+              KeyNavigation.down: recentlyAddedMainPanel
+              Layout.fillWidth: true
+              navSound: navSound
+              visible: false
+
+              onItemSelected: function(gameId) {
+                var r = backend.playGame(gameId);
+                if (!r.result) {
+                  // @TODO: implement error message dialog
+                }
+              }
+            }
+
+            CoverartPanel {
               id: recentlyAddedMainPanel
               color: Colour.panelBg
               headerText: "Recently Added Games"
               height: 300
               KeyNavigation.left: mainMenuScrollView
+              KeyNavigation.up: recentlyPlayedMainPanel
               Layout.fillWidth: true
               navSound: navSound
               visible: false
