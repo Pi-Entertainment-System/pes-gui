@@ -100,12 +100,30 @@ class BackEnd(QObject):
 
 	@pyqtSlot(int, int, result=list)
 	def getRecentlyAddedGames(self, consoleId=None, limit=10):
-		logging.debug("BackEnd.getRecentlyAddedGames: getting games for console %d" % consoleId)
+		if consoleId:
+			logging.debug("BackEnd.getRecentlyAddedGames: getting games for console %d" % consoleId)
+		else:
+			logging.debug("BackEnd.getRecentlyAddedGames: getting games for all consoles")
 		games = []
 		if consoleId or consoleId == 0:
 			result = self.__session.query(pes.sql.Game).order_by(pes.sql.Game.added.desc()).limit(limit)
 		else:
 			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).order_by(pes.sql.Game.added.desc()).limit(limit)
+		for g in result:
+			games.append(g.getJson())
+		return games
+
+	@pyqtSlot(int, int, result=list)
+	def getRecentlyPlayedGames(self, consoleId=None, limit=10):
+		if consoleId:
+			logging.debug("BackEnd.getRecentlyPlayedGames: getting games for console %d" % consoleId)
+		else:
+			logging.debug("BackEnd.getRecentlyPlayedGames: getting games for all consoles")
+		games = []
+		if consoleId or consoleId == 0:
+			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.lastPlayed != None).order_by(pes.sql.Game.lastPlayed.desc()).limit(limit)
+		else:
+			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId and pes.sql.Game.lastPlayed != None).order_by(pes.sql.Game.lastPlayed.desc()).limit(limit)
 		for g in result:
 			games.append(g.getJson())
 		return games
