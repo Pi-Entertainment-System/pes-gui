@@ -29,8 +29,10 @@ import "../Style/" 1.0
 Rectangle {
     id: mainRect
     color: 'white'
+    KeyNavigation.down: null
     KeyNavigation.left: null
     KeyNavigation.right: null
+    KeyNavigation.up: null
 
     property alias headerText: headerText.text
     property alias navSound: listView.navSound
@@ -117,6 +119,13 @@ Rectangle {
             ListView {
                 id: listView
                 property QtObject navSound: null;
+                Keys.onDownPressed: {
+                    if (mainRect.KeyNavigation.down) {
+                        mainRect.KeyNavigation.down.forceActiveFocus();
+                        currentItem.focus = false;
+                        currentIndex = -1;
+                    }
+                }
                 Keys.onLeftPressed: {
                     if (currentIndex > 0) {
                         if (navSound) {
@@ -145,6 +154,13 @@ Rectangle {
                             currentItem.focus = false;
                             currentIndex = -1;
                         }
+                    }
+                }
+                Keys.onUpPressed: {
+                    if (mainRect.KeyNavigation.up) {
+                        mainRect.KeyNavigation.up.forceActiveFocus();
+                        currentItem.focus = false;
+                        currentIndex = -1;
                     }
                 }
                 Layout.fillHeight: true
