@@ -105,7 +105,7 @@ class BackEnd(QObject):
 		else:
 			logging.debug("BackEnd.getRecentlyAddedGames: getting games for all consoles")
 		games = []
-		if consoleId or consoleId == 0:
+		if not consoleId or consoleId == 0:
 			result = self.__session.query(pes.sql.Game).order_by(pes.sql.Game.added.desc()).limit(limit)
 		else:
 			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).order_by(pes.sql.Game.added.desc()).limit(limit)
@@ -120,7 +120,7 @@ class BackEnd(QObject):
 		else:
 			logging.debug("BackEnd.getRecentlyPlayedGames: getting games for all consoles")
 		games = []
-		if consoleId or consoleId == 0:
+		if not consoleId or consoleId == 0:
 			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.lastPlayed != None).order_by(pes.sql.Game.lastPlayed.desc()).limit(limit)
 		else:
 			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId and pes.sql.Game.lastPlayed != None).order_by(pes.sql.Game.lastPlayed.desc()).limit(limit)
