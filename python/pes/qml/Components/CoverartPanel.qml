@@ -50,10 +50,8 @@ Rectangle {
     }
 
     function removeAll() {
-        if (myModel.count > 0) {
-            for (var i = myModel.count - 1; i > 1; i--) {
-                myModel.remove(i);
-            }
+        while (myModel.count > 0) {
+            myModel.remove(myModel.count - 1);
         }
     }
 
