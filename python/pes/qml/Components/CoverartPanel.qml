@@ -49,6 +49,13 @@ Rectangle {
         myModel.append(game);
     }
 
+    function loseFocus() {
+        if (listView.currentItem) {
+            listView.currentItem.focus = false;
+        }
+        listView.currentIndex = -1;
+    }
+
     function removeAll() {
         while (myModel.count > 0) {
             myModel.remove(myModel.count - 1);
@@ -120,8 +127,7 @@ Rectangle {
                 Keys.onDownPressed: {
                     if (mainRect.KeyNavigation.down) {
                         mainRect.KeyNavigation.down.forceActiveFocus();
-                        currentItem.focus = false;
-                        currentIndex = -1;
+                        mainRect.loseFocus();
                     }
                 }
                 Keys.onLeftPressed: {
@@ -134,8 +140,7 @@ Rectangle {
                     else {
                         if (mainRect.KeyNavigation.left) {
                             mainRect.KeyNavigation.left.forceActiveFocus();
-                            currentItem.focus = false;
-                            currentIndex = -1;
+                            mainRect.loseFocus();
                         }
                     }
                 }
@@ -149,16 +154,14 @@ Rectangle {
                     else {
                         if (mainRect.KeyNavigation.right) {
                             mainRect.KeyNavigation.right.forceActiveFocus();
-                            currentItem.focus = false;
-                            currentIndex = -1;
+                            mainRect.loseFocus();
                         }
                     }
                 }
                 Keys.onUpPressed: {
                     if (mainRect.KeyNavigation.up) {
                         mainRect.KeyNavigation.up.forceActiveFocus();
-                        currentItem.focus = false;
-                        currentIndex = -1;
+                        mainRect.loseFocus();
                     }
                 }
                 Layout.fillHeight: true
