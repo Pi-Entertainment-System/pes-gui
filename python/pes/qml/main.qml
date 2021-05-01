@@ -325,6 +325,8 @@ ApplicationWindow {
       // Update games layout
       UpdateGamesScreen {
         id: updateGamesScreen
+        Layout.fillWidth: true
+        Layout.fillHeight: true
       }
 		}
 	}

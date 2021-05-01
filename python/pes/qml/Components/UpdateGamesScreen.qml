@@ -140,7 +140,7 @@ Rectangle {
                 id: beginScanBtn
                 btnText: "Normal Scan"
 
-                Layout.preferredWidth: 200
+                Layout.preferredWidth: 220
                 Layout.preferredHeight: 50
                 Layout.leftMargin: 30
 
@@ -150,6 +150,9 @@ Rectangle {
 
             BodyText {
                 text: "Add new ROMs and remove any deleted ROMs from the database as well as downloading cover art and badges"
+                Layout.fillWidth: true
+                // horrible hack to fix text wrapping/width
+                Layout.preferredWidth: panelRect.width - beginScanBtn.Layout.preferredWidth - beginScanBtn.Layout.leftMargin
             }
         }
 
@@ -160,7 +163,7 @@ Rectangle {
                 id: beginFullScanBtn
                 btnText: "Full Scan"
 
-                Layout.preferredWidth: 200
+                Layout.preferredWidth: 220
                 Layout.preferredHeight: 50
                 Layout.leftMargin: 30
 
@@ -170,6 +173,9 @@ Rectangle {
 
             BodyText {
                 text: "Same as a normal scan but also refresh covert art and badges from the Internet"
+                Layout.fillWidth: true
+                // horrible hack to fix text wrapping/width
+                Layout.preferredWidth: panelRect.width - beginScanBtn.Layout.preferredWidth - beginScanBtn.Layout.leftMargin
             }
         }
 

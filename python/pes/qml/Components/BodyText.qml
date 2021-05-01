@@ -31,5 +31,4 @@ Text {
 	font.family: FontStyle.font
 	color: Colour.text
 	wrapMode: Text.Wrap
-	width: parent.width // must set width for wrapping to work
 }
