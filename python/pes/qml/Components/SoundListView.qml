@@ -32,12 +32,16 @@ ListView {
     property QtObject navSound: null;
     property bool soundOn: true;
 
+    signal itemHighlighted(variant item);
+
     Keys.onDownPressed: {
         if (currentIndex < count - 1) {
             if (navSound && soundOn) {
                 navSound.play();
+
             }
             currentIndex += 1;
+            itemHighlighted(model.get(currentIndex));
         }
     }
     Keys.onUpPressed: {
@@ -46,6 +50,7 @@ ListView {
                 navSound.play();
             }
             currentIndex -= 1;
+            itemHighlighted(model.get(currentIndex));
         }
     }
 
