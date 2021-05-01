@@ -37,10 +37,10 @@ function getRecentlyPlayedGames(consoleId) {
   return backend.getRecentlyPlayedGames(consoleId, 10)
 }
 
-function mainMenuEvent(text) {
-	switch(text) {
-    default: console.error(text);
-	}
+function mainMenuEvent(item) {
+  if (item.name == "Home" || item.id) {
+    PES.setCoverartPanelFocus();
+  }
 }
 
 function optionsDialogEvent(text) {
@@ -57,6 +57,42 @@ function optionsDialogEvent(text) {
 			break;
 		}
 	}
+}
+
+function setCoverartPanelFocus() {
+  if (recentlyPlayedMainPanel.visible) {
+    recentlyPlayedMainPanel.forceActiveFocus();
+  }
+  else {
+    recentlyAddedMainPanel.forceActiveFocus();
+  }
+}
+
+function updateCoverartPanels(consoleId) {
+  recentlyAddedMainPanel.removeAll();
+  recentlyPlayedMainPanel.removeAll();
+
+  var games = getRecentlyAddedGames(consoleId);
+  if (games.length == 0) {
+    recentlyAddedMainPanel.visible = false;
+  }
+  else {
+    for (var i = 0; i < games.length; i++) {
+      recentlyAddedMainPanel.addGame(games[i]);
+    }
+    recentlyAddedMainPanel.visible = true;
+  }
+
+  games = getRecentlyPlayedGames(consoleId);
+  if (games.length == 0) {
+    recentlyPlayedMainPanel.visible = false;
+  }
+  else {
+    for (var i = 0; i < games.length; i++) {
+      recentlyPlayedMainPanel.addGame(games[i]);
+    }
+    recentlyPlayedMainPanel.visible = true;
+  }
 }
 
 function updateHomeScreen() {
@@ -85,27 +121,7 @@ function updateMainScreen(){
     mainMenuModel.append(consoles[i]);
   }
   
-  var games = getRecentlyAddedGames(0);
-  if (games.length == 0) {
-    recentlyAddedMainPanel.visible = false;
-  }
-  else {
-    for (var i = 0; i < games.length; i++) {
-      recentlyAddedMainPanel.addGame(games[i]);
-    }
-    recentlyAddedMainPanel.visible = true;
-  }
-
-  games = getRecentlyPlayedGames(0);
-  if (games.length == 0) {
-    recentlyPlayedMainPanel.visible = false;
-  }
-  else {
-    for (var i = 0; i < games.length; i++) {
-      recentlyPlayedMainPanel.addGame(games[i]);
-    }
-    recentlyPlayedMainPanel.visible = true;
-  }
+  updateCoverartPanels(0);
 
   updateHomeScreen();
 }

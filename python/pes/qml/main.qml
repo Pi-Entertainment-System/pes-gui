@@ -238,16 +238,18 @@ ApplicationWindow {
                 navSound: navSound
                 soundOn: false
 		            delegate: MenuDelegate {
-									Keys.onReturnPressed: PES.mainMenuEvent(text);
-                  Keys.onRightPressed: {
-                    if (recentlyPlayedMainPanel.visible) {
-                      recentlyPlayedMainPanel.forceActiveFocus();
-                    }
-                    else {
-                      recentlyAddedMainPanel.forceActiveFocus();
-                    }
-                  }
+									Keys.onReturnPressed: PES.mainMenuEvent(mainMenuModel.get(mainMenuView.currentIndex));
+                  Keys.onRightPressed: PES.setCoverartPanelFocus()
 								}
+                onItemHighlighted: {
+                  // console objects in the model will have ID set
+                  if (item.id) {
+                    PES.updateCoverartPanels(item.id);
+                  }
+                  else {
+                    PES.updateCoverartPanels(0);
+                  }
+                }
 		          }
 		        }
 					}
@@ -267,6 +269,15 @@ ApplicationWindow {
             anchors.leftMargin: 10
             anchors.rightMargin: 10
             spacing: 10
+
+            Keys.onPressed: {
+              if (event.key == Qt.Key_Backspace) {
+                event.accepted = true;
+                recentlyAddedMainPanel.loseFocus();
+                recentlyPlayedMainPanel.loseFocus();
+                mainMenuView.forceActiveFocus();
+              }
+            }
 
             HeaderText {
               id: welcomeText
