@@ -51,6 +51,7 @@ class Console(Base, CustomBase):
 	gamesDbId = Column(Integer, ForeignKey('gamesdb_platform.id')) # FBA and MAMA use the same ID
 	retroId = Column(Integer, ForeignKey('retroachievement_console.id')) # Mega Drive & Gensis use same ID
 	nocoverart = Column(String)
+	art = Column(String)
 
 	platform = relationship("GamesDbPlatform", back_populates="consoles")
 	retroAchievementConsole = relationship("RetroAchievementConsole", back_populates="consoles")
