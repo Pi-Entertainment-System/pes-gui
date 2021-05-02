@@ -290,6 +290,7 @@ ApplicationWindow {
               id: mainText
               visible: false
               text: ""
+              Layout.fillWidth: true
             }
 
             CoverartPanel {
