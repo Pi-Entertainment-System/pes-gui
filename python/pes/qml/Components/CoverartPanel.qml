@@ -28,7 +28,6 @@ import "../Style/" 1.0
 
 Rectangle {
     id: mainRect
-    color: 'white'
     KeyNavigation.down: null
     KeyNavigation.left: null
     KeyNavigation.right: null
@@ -72,7 +71,7 @@ Rectangle {
         Rectangle {
             border.color: Colour.line
             border.width: focus ? 2: 0
-            color: focus ? Colour.menuFocus : Colour.panelBg
+            color: focus ? Colour.menuFocus : mainRect.color
             height: 225
             width: 220
 

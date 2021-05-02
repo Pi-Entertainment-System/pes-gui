@@ -86,6 +86,15 @@ class BackEnd(QObject):
 	def emitControlPadButtonPress(self, button):
 		self.controlPadButtonPress.emit(button)
 
+	@pyqtSlot(int, result=str)
+	def getConsoleArt(self, consoleId):
+		logging.debug("Backend.getConsoleArt: getting console art URL for %d" % consoleId)
+		console = self.__session.query(pes.sql.Console).get(consoleId)
+		if console:
+			return os.path.join(pes.resourcesDir, console.art)
+		logging.error("Backend.getConsoleArt: could not find console with ID: %d" % consoleId)
+		return None
+
 	@pyqtSlot(bool, result=list)
 	def getConsoles(self, withGames=False):
 		logging.debug("BackEnd.getConsoles: getting consoles, withGames = %s" % withGames)
@@ -123,7 +132,7 @@ class BackEnd(QObject):
 		if not consoleId or consoleId == 0:
 			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.lastPlayed != None).order_by(pes.sql.Game.lastPlayed.desc()).limit(limit)
 		else:
-			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId and pes.sql.Game.lastPlayed != None).order_by(pes.sql.Game.lastPlayed.desc()).limit(limit)
+			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).filter(pes.sql.Game.playCount > 0).order_by(pes.sql.Game.lastPlayed.desc()).limit(limit)
 		for g in result:
 			games.append(g.getJson())
 		return games

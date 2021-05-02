@@ -93,6 +93,19 @@ function updateCoverartPanels(consoleId) {
     }
     recentlyPlayedMainPanel.visible = true;
   }
+
+  if (consoleId > 0) {
+    var img = backend.getConsoleArt(i);
+    if (img) {
+      mainBackgroundImg.source = img;
+    }
+    else {
+      mainBackgroundImg.source = "";
+    }
+  }
+  else {
+    mainBackgroundImg.source = "";
+  }
 }
 
 function updateHomeScreen() {

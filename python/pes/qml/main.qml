@@ -263,6 +263,16 @@ ApplicationWindow {
 					Layout.fillWidth: true
 					Layout.fillHeight: true
 
+          Image {
+            id: mainBackgroundImg
+            x: 0
+            y: 0
+            anchors.fill: parent
+            opacity: 0.2
+            source: ""
+            visible: source != ""
+          }
+
           ColumnLayout {
             anchors.left: parent.left
             anchors.right: parent.right
@@ -295,7 +305,7 @@ ApplicationWindow {
 
             CoverartPanel {
               id: recentlyPlayedMainPanel
-              color: Colour.panelBg
+              color: "transparent"
               headerText: "Recently Played Games"
               height: 300
               KeyNavigation.left: mainMenuScrollView
@@ -314,7 +324,7 @@ ApplicationWindow {
 
             CoverartPanel {
               id: recentlyAddedMainPanel
-              color: Colour.panelBg
+              color: "transparent"
               headerText: "Recently Added Games"
               height: 300
               KeyNavigation.left: mainMenuScrollView
