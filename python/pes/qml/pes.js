@@ -20,6 +20,8 @@
     along with PES.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+var consoleArtCache = {};
+
 function getConsolesWithGames() {
   return backend.getConsoles(true);
 }
@@ -94,18 +96,20 @@ function updateCoverartPanels(consoleId) {
     recentlyPlayedMainPanel.visible = true;
   }
 
+  var img = "";
   if (consoleId > 0) {
-    var img = backend.getConsoleArt(i);
-    if (img) {
-      mainBackgroundImg.source = img;
+    if (consoleId in consoleArtCache) {
+      img = consoleArtCache[consoleId];
     }
     else {
-      mainBackgroundImg.source = "";
+      var rslt = backend.getConsoleArt(consoleId);
+      if (rslt) {
+        consoleArtCache[consoleId] = rslt;
+        img = rslt;
+      }
     }
   }
-  else {
-    mainBackgroundImg.source = "";
-  }
+  mainBackgroundImg.source = img;
 }
 
 function updateHomeScreen() {

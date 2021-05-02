@@ -91,7 +91,9 @@ class BackEnd(QObject):
 		logging.debug("Backend.getConsoleArt: getting console art URL for %d" % consoleId)
 		console = self.__session.query(pes.sql.Console).get(consoleId)
 		if console:
-			return os.path.join(pes.resourcesDir, console.art)
+			path = os.path.join(pes.resourcesDir, console.art)
+			logging.debug("Backend.getConsoleArt: path is %s" % path)
+			return path
 		logging.error("Backend.getConsoleArt: could not find console with ID: %d" % consoleId)
 		return None
 
