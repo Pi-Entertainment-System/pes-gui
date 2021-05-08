@@ -64,7 +64,7 @@ def processGamesDbJson(session, data, platformId):
 		if str(gameId) in data["include"]["boxart"]["data"]:
 			for image in data["include"]["boxart"]["data"][str(gameId)]:
 				if image["side"] == "front":
-					logging.info("-> setting covert art URLs...")
+					logging.info("-> setting cover art URLs...")
 					gamesDbGame.boxArtFrontOriginal = "%s%s" % (data["include"]["boxart"]["base_url"]["original"], image["filename"])
 					gamesDbGame.boxArtFrontLarge = "%s%s" % (data["include"]["boxart"]["base_url"]["large"], image["filename"])
 					gamesDbGame.boxArtFrontMedium = "%s%s" % (data["include"]["boxart"]["base_url"]["medium"], image["filename"])
