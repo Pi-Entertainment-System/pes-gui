@@ -21,6 +21,22 @@
 */
 
 var consoleArtCache = {};
+var currentConsoleId = null;
+
+function getConsoleArt(consoleId) {
+  var img = "";
+  if (consoleId in consoleArtCache) {
+    img = consoleArtCache[consoleId];
+  }
+  else {
+    var rslt = backend.getConsoleArt(consoleId);
+    if (rslt) {
+      consoleArtCache[consoleId] = rslt;
+      img = rslt;
+    }
+  }
+  return img;
+}
 
 function getConsolesWithGames() {
   return backend.getConsoles(true);
@@ -71,6 +87,7 @@ function setCoverartPanelFocus() {
 }
 
 function updateCoverartPanels(consoleId) {
+  currentConsoleId = consoleId;
   recentlyAddedMainPanel.removeAll();
   recentlyPlayedMainPanel.removeAll();
 
@@ -96,20 +113,14 @@ function updateCoverartPanels(consoleId) {
     recentlyPlayedMainPanel.visible = true;
   }
 
-  var img = "";
-  if (consoleId > 0) {
-    if (consoleId in consoleArtCache) {
-      img = consoleArtCache[consoleId];
-    }
-    else {
-      var rslt = backend.getConsoleArt(consoleId);
-      if (rslt) {
-        consoleArtCache[consoleId] = rslt;
-        img = rslt;
-      }
-    }
+  if (consoleId > 0){
+    mainBackgroundImg.source = getConsoleArt(consoleId);
+    exploreBtn.visible = true;
   }
-  mainBackgroundImg.source = img;
+  else {
+    mainBackgroundImg.source = "";
+    exploreBtn.visible =  false;
+  }
 }
 
 function updateHomeScreen() {

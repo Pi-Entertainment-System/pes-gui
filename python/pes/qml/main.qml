@@ -329,6 +329,7 @@ ApplicationWindow {
               height: 300
               KeyNavigation.left: mainMenuScrollView
               KeyNavigation.up: recentlyPlayedMainPanel
+              KeyNavigation.down: exploreBtn
               Layout.fillWidth: true
               navSound: navSound
               visible: false
@@ -340,13 +341,36 @@ ApplicationWindow {
                 }
               }
             }
+
+            UiButton {
+              id: exploreBtn
+              btnText: "Explore"
+              height: 50
+              width: 200
+              visible: false
+              KeyNavigation.left: mainMenuScrollView
+              KeyNavigation.up: recentlyAddedMainPanel.visible ? recentlyAddedMainPanel : recentlyPlayedMainPanel
+
+              Keys.onReturnPressed: {
+                consoleScreen.background = PES.getConsoleArt(PES.currentConsoleId);
+                screenStack.currentIndex = 2;
+                consoleScreen.forceActiveFocus();
+              }
+            }
           }
 				}
 			}
 
-      // Update games layout
+      // Update games screen
       UpdateGamesScreen {
         id: updateGamesScreen
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+      }
+
+      // Console screen
+      ConsoleScreen {
+        id: consoleScreen
         Layout.fillWidth: true
         Layout.fillHeight: true
       }
