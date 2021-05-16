@@ -22,6 +22,7 @@
 
 var consoleArtCache = {};
 var currentConsoleId = null;
+var gamesAdded = false;
 
 function getConsoleArt(consoleId) {
   var img = "";
@@ -59,6 +60,9 @@ function mainMenuEvent(item) {
   if (item.name == "Home" || item.id) {
     PES.setCoverartPanelFocus();
   }
+  else if (item.name == "Options") {
+    optionsDialog.open();
+  }
 }
 
 function optionsDialogEvent(text) {
@@ -78,11 +82,13 @@ function optionsDialogEvent(text) {
 }
 
 function setCoverartPanelFocus() {
-  if (recentlyPlayedMainPanel.visible) {
-    recentlyPlayedMainPanel.forceActiveFocus();
-  }
-  else {
-    recentlyAddedMainPanel.forceActiveFocus();
+  if (gamesAdded) {
+    if (recentlyPlayedMainPanel.visible) {
+      recentlyPlayedMainPanel.forceActiveFocus();
+    }
+    else {
+      recentlyAddedMainPanel.forceActiveFocus();
+    }
   }
 }
 
@@ -124,7 +130,7 @@ function updateCoverartPanels(consoleId) {
 }
 
 function updateHomeScreen() {
-  if (mainMenuModel.count == 1) {
+  if (!gamesAdded) {
     mainText.text = "You have not added any games to PES yet. To do so press the Home button and select 'Update Games' option.";
     mainText.visible = true;
   }
@@ -148,9 +154,10 @@ function updateMainScreen(){
   for (var i = 0; i < consoles.length; i++) {
     mainMenuModel.append(consoles[i]);
   }
-  
+
+  gamesAdded = consoles.length > 0;
+
   updateCoverartPanels(0);
 
   updateHomeScreen();
 }
-
