@@ -44,12 +44,12 @@ ApplicationWindow {
 	Connections {
 	    target: backend
 
-			onHomeButtonPress: {
+			function onHomeButtonPress() {
 				//pesDialog.open();
 	      //popupMenuView.forceActiveFocus();
 			}
 
-			onControlPadButtonPress: {
+			function onControlPadButtonPress() {
 				console.warn("button: " + button);
 				console.warn(mainWindow.activeFocusItem.Keys.downPressed({ key: Qt.KeyDown }));
 			}
@@ -141,6 +141,10 @@ ApplicationWindow {
 
 		ListElement {
 			name: "Home"
+		}
+
+    ListElement {
+			name: "Options"
 		}
 	}
 
