@@ -31,7 +31,22 @@ from pes.gui import BackEnd, PESGuiApplication
 import pes.sql
 import sdl2
 
+cecImported = False
+try:
+	import cec
+	cecImported = True
+except ImportError as e:
+	pass
+
 from sqlalchemy.orm import sessionmaker
+
+def cecEvent(button, dur):
+	"""
+	Wrapper function to work around segmentation fault
+	when adding Qt app as the callback.
+	"""
+	global app
+	app.processCecEvent(button, dur)
 
 if __name__ == "__main__":
 
@@ -74,7 +89,7 @@ if __name__ == "__main__":
 	checkFile(pes.userDb)
 	checkFile(pes.userConsolesConfigFile)
 	checkFile(pes.userGameControllerFile)
-	checkFile(pes.rasumExe)
+	#checkFile(pes.rasumExe)
 
 	logging.info("loading settings...")
 	checkFile(pes.userPesConfigFile)
@@ -109,4 +124,29 @@ if __name__ == "__main__":
 	logging.debug("loaded %d control pad mappings" % mappingsLoaded)
 
 	app = PESGuiApplication(sys.argv)
+
+	if cecImported:
+		logging.debug("creating CEC config...")
+		cecconfig = cec.libcec_configuration()
+		cecconfig.strDeviceName   = "PES"
+		cecconfig.bActivateSource = 0
+		cecconfig.deviceTypes.Add(cec.CEC_DEVICE_TYPE_RECORDING_DEVICE)
+		cecconfig.clientVersion = cec.LIBCEC_VERSION_CURRENT
+		logging.debug("adding CEC callback...")
+		cecconfig.SetKeyPressCallback(cecEvent)
+		lib = cec.ICECAdapter.Create(cecconfig)
+		logging.debug("looking for CEC adapters...")
+		adapters = lib.DetectAdapters()
+		adapterCount = len(adapters)
+		if adapterCount == 0:
+			logging.warning("could not find any CEC adapters!")
+		else:
+			logging.debug("found %d CEC adapters, attempting to open first adapter..." % adapterCount)
+			if lib.Open(adapters[0].strComName):
+				logging.debug("CEC adapter opened")
+			else:
+				logging.error("unable to open CEC adapter!")
+	else:
+		logging.warning("CEC module disabled")
+
 	app.run()

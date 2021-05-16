@@ -35,6 +35,13 @@ from PyQt5.QtCore import Qt, QUrl, pyqtSignal, pyqtSlot, QFile, QIODevice, QObje
 
 import sqlalchemy.orm
 
+cecImported = False
+try:
+	import cec
+	cecImported = True
+except ImportError as e:
+	pass
+
 import pes
 import pes.romscan
 import pes.sql
@@ -181,6 +188,27 @@ class PESGuiApplication(QGuiApplication):
 		self.__running = False
 		sdl2.SDL_Quit()
 		self.exit()
+
+	def processCecEvent(self, button, dur):
+		if not cecImported:
+			raise Exception("PESGuiApplication.processCecEvent: CEC module not imported")
+		if dur > 0:
+			logging.debug("PESGuiApplication.processCecEvent: button %s" % button)
+			event = None
+			if button == cec.CEC_USER_CONTROL_CODE_UP:
+				event = QKeyEvent(QEvent.KeyPress, Qt.Key_Up, Qt.NoModifier)
+			elif button == cec.CEC_USER_CONTROL_CODE_DOWN:
+				event = QKeyEvent(QEvent.KeyPress, Qt.Key_Down, Qt.NoModifier)
+			elif button == cec.CEC_USER_CONTROL_CODE_LEFT:
+				event = QKeyEvent(QEvent.KeyPress, Qt.Key_Left, Qt.NoModifier)
+			elif button == cec.CEC_USER_CONTROL_CODE_RIGHT:
+				event = QKeyEvent(QEvent.KeyPress, Qt.Key_Right, Qt.NoModifier)
+			elif button == cec.CEC_USER_CONTROL_CODE_SELECT:
+				event = QKeyEvent(QEvent.KeyPress, Qt.Key_Return, Qt.NoModifier)
+			elif button == cec.CEC_USER_CONTROL_CODE_AN_RETURN or button == cec.CECDEVICE_RESERVED2:
+				event = QKeyEvent(QEvent.KeyPress, Qt.Key_Backspace, Qt.NoModifier)
+			if event:
+				self.sendEvent(self.__engine.rootObjects()[0], event)
 
 	def run(self):
 		joystickTick = sdl2.timer.SDL_GetTicks()
