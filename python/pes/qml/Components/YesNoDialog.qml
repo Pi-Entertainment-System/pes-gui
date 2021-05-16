@@ -61,17 +61,17 @@ Dialog {
         RowLayout {
             spacing: 10
 
-			      Item {
-				        Layout.fillHeight: true
-			          Layout.fillWidth: true
-			      }
+			Item {
+			    Layout.fillHeight: true
+			    Layout.fillWidth: true
+			}
 
             DialogButton {
-				        id: exitYesBtn
+			    id: exitYesBtn
                 Layout.fillWidth: false
                 Layout.minimumWidth: 100
-				        Layout.preferredWidth: 150
-				        Layout.maximumWidth: 150
+				Layout.preferredWidth: 150
+				Layout.maximumWidth: 150
                 Layout.minimumHeight: 50
                 btnText: "Yes"
                 focus: true
@@ -90,12 +90,12 @@ Dialog {
             }
 
             DialogButton {
-				        id: exitNoBtn
+				id: exitNoBtn
                 Layout.fillWidth: false
                 Layout.minimumWidth: 100
-				        Layout.maximumWidth: 150
-				        Layout.preferredWidth: 150
-				        Layout.minimumHeight: 50
+				Layout.maximumWidth: 150
+				Layout.preferredWidth: 150
+				Layout.minimumHeight: 50
                 btnText: "No"
 
                 Keys.onLeftPressed: {
@@ -106,15 +106,15 @@ Dialog {
                     exitYesBtn.forceActiveFocus();
                 }
 
-				        Keys.onReturnPressed: {
+				Keys.onReturnPressed: {
                     dialog.close();
                     dialog.noButtonPressed();
-				        }
+				}
             }
 
-			      Item {
-				        Layout.fillHeight: true
-				        Layout.fillWidth: true
+			Item {
+			    Layout.fillHeight: true
+			    Layout.fillWidth: true
             }
         }
     }
