@@ -61,66 +61,65 @@ Dialog {
         RowLayout {
             spacing: 10
 
-			Item {
-				Layout.fillHeight: true
-				Layout.fillWidth: true
-			}
+			      Item {
+				        Layout.fillHeight: true
+			          Layout.fillWidth: true
+			      }
 
             DialogButton {
-				id: exitYesBtn
+				        id: exitYesBtn
                 Layout.fillWidth: false
                 Layout.minimumWidth: 100
-				Layout.preferredWidth: 150
-				Layout.maximumWidth: 150
-				Layout.minimumHeight: 50
+				        Layout.preferredWidth: 150
+				        Layout.maximumWidth: 150
+                Layout.minimumHeight: 50
                 btnText: "Yes"
-				focus: true
-				KeyNavigation.right: exitNoBtn
+                focus: true
 
                 Keys.onRightPressed: {
                     if (dialog.navSound) {
                         dialog.navSound.play();
                     }
-                    event.accepted = false; // pass to KeyNavigation
+                    event.accepted = true;
+                    exitNoBtn.forceActiveFocus();
                 }
 
-				Keys.onReturnPressed: {
-                    //dialog.close();
+                Keys.onReturnPressed: {
                     dialog.yesButtonPressed();
-				}
+                }
             }
 
-			DialogButton {
-				id: exitNoBtn
+            DialogButton {
+				        id: exitNoBtn
                 Layout.fillWidth: false
                 Layout.minimumWidth: 100
-				Layout.maximumWidth: 150
-				Layout.preferredWidth: 150
-				Layout.minimumHeight: 50
+				        Layout.maximumWidth: 150
+				        Layout.preferredWidth: 150
+				        Layout.minimumHeight: 50
                 btnText: "No"
-				KeyNavigation.left: exitYesBtn
 
                 Keys.onLeftPressed: {
                     if (dialog.navSound) {
                         dialog.navSound.play();
                     }
-                    event.accepted = false;  // pass to KeyNavigation
+                    event.accepted = true;
+                    exitYesBtn.forceActiveFocus();
                 }
 
-				Keys.onReturnPressed: {
+				        Keys.onReturnPressed: {
                     dialog.close();
                     dialog.noButtonPressed();
-				}
+				        }
             }
 
-			Item {
-				Layout.fillHeight: true
-				Layout.fillWidth: true
-			}
+			      Item {
+				        Layout.fillHeight: true
+				        Layout.fillWidth: true
+            }
         }
     }
 
-	onOpened: {
-		exitYesBtn.forceActiveFocus()
-	}
+    onOpened: {
+		  exitYesBtn.forceActiveFocus()
+    }
 }
