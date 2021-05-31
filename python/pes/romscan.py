@@ -475,7 +475,7 @@ class RomScanThread(QThread):
 		self.__consoleSettings = pes.common.ConsoleSettings(pes.userConsolesConfigFile)
 		self.__userSettings = pes.common.UserSettings(pes.userPesConfigFile)
 		self.__romScraper = self.__userSettings.get("settings", "romScraper")
-		self.__romsDir = self.__userSettings.get("settings", "romsDir")
+		self.__romsDir = pes.userRomDir
 		self.__tasks = None
 		self.__romList = None
 		self.__exitEvent = None

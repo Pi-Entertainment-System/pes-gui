@@ -97,11 +97,14 @@ def processRetroAchievementsJson(session, gameHashes, consoleRetroId):
 
 if __name__ == "__main__":
 
+	# Neil Munday's theGamesDb API key - rate limited per IP
+	defaultTGDBKey = 'd12fb5ce1f84c6cb3cec2b89861551905540c0ab564a5a21b3e06e34b2206928'
+
 	parser = argparse.ArgumentParser(description='Script to pre-populate PES database', add_help=True)
 	parser.add_argument('-v', '--verbose', help='Turn on debug messages', dest='verbose', action='store_true')
 	parser.add_argument('-d', '--data-dir', dest='dataDir', help='Path to data directory', required=True)
 	parser.add_argument('-l', '--log', help='File to log messages to', type=str, dest='logfile')
-	parser.add_argument('-k', '--tgdb-key', help='theGamesDb.net API key', type=str, dest='tgdbKey')
+	parser.add_argument('-k', '--tgdb-key', help='theGamesDb.net API key. Specify "default" to use Neil Munday\'s key', type=str, dest='tgdbKey')
 	parser.add_argument('-m', '--mame', help='add MAME data', dest='mame', action='store_true')
 	parser.add_argument('-r', '--retroachievements', help='update RetroAchievements data', dest='retroachievements', action='store_true')
 	parser.add_argument('--retroachievements-dir', help='use the given directory of JSON dumps instead of live data from retroachievements.org', dest='retroachievementsDir', type=str)
@@ -237,6 +240,10 @@ if __name__ == "__main__":
 				page += 1
 
 	if args.tgdbKey:
+		if args.tgdbKey == 'default':
+			args.tgdbKey = defaultTGDBKey
+			logging.info("using Neil Munday's TGDB API key - rate limited per IP")
+		
 		logging.info("accessing theGamesDb.net API")
 
 		# create directory to store JSON cache
