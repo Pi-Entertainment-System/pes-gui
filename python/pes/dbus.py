@@ -138,18 +138,20 @@ class DbusBroker(QObject):
 
     @pyqtSlot(QDBusMessage)
     def btDeviceAdded(self, message):
-        device = message.arguments()[0]
-        logging.debug("DbusBroker.btDeviceAdded: detected device %s" % device)
-        connection = QDBusInterface(BT_SERVICE, device, DBUS_PROPERTIES_INTERFACE, self._bus)
-        alias = connection.call("Get", BT_DEVICE_INTERFACE, "Alias").arguments()[0]
-        address = connection.call("Get", BT_DEVICE_INTERFACE, "Address").arguments()[0]
-        logging.debug("DbusBroker.btDeviceAdded: alias = %s, address = %s " % (alias, address))
-        if alias == "Sony PLAYSTATION(R)3 Controller":
-            if connection.call("Get", BT_DEVICE_INTERFACE, "Trusted").arguments()[0]:
-                logging.debug("DbusBroker.btDeviceAdded: already truested")
-            else:
-                logging.debug("DbusBroker.btDeviceAdded: trusting device")
-                connection.call("Set", BT_DEVICE_INTERFACE, "Trusted", QDBusVariant(True)).arguments()
+        args = message.arguments()
+        if "org.bluez.Device1" in args[1]:
+            device = args[0]
+            logging.debug("DbusBroker.btDeviceAdded: detected device %s" % device)
+            connection = QDBusInterface(BT_SERVICE, device, DBUS_PROPERTIES_INTERFACE, self._bus)
+            alias = connection.call("Get", BT_DEVICE_INTERFACE, "Alias").arguments()[0]
+            address = connection.call("Get", BT_DEVICE_INTERFACE, "Address").arguments()[0]
+            logging.debug("DbusBroker.btDeviceAdded: alias = %s, address = %s " % (alias, address))
+            if alias == "Sony PLAYSTATION(R)3 Controller":
+                if connection.call("Get", BT_DEVICE_INTERFACE, "Trusted").arguments()[0]:
+                    logging.debug("DbusBroker.btDeviceAdded: already truested")
+                else:
+                    logging.debug("DbusBroker.btDeviceAdded: trusting device")
+                    connection.call("Set", BT_DEVICE_INTERFACE, "Trusted", QDBusVariant(True)).arguments()
 
     @pyqtSlot(QDBusMessage)
     def btPropertyChange(self, message):
