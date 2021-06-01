@@ -63,5 +63,6 @@ if __name__ == "__main__":
     broker.btPowered = True
     broker.btDiscoverable = True
     broker.btPairable = True
+    broker.btStartDiscovery()
 
     app.exec()
