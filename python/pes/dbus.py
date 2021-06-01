@@ -33,18 +33,32 @@ BT_DEVICE_INTERFACE = BT_SERVICE + ".Device1"
 
 DBUS_PROPERTIES_INTERFACE = "org.freedesktop.DBus.Properties"
 
+PS3_CONTROLLER = "Sony PLAYSTATION(R)3 Controller"
+WII_CONTROLLER = "Nintendo RVL-CNT-01"
+WIRELESS_CONTROLLER = "Wireless Controller"
+CONTROLLERS = [WII_CONTROLLER, PS3_CONTROLLER, WIRELESS_CONTROLLER]
+
 class BluetoothAdapter(QDBusAbstractAdaptor):
+
+    _PINS = ["0000", "1234"] # PINS to try
 
     Q_CLASSINFO("D-Bus Interface", "org.bluez.Agent1")
     Q_CLASSINFO("D-Bus Introspection", """                                                                         <interface name=\"org.bluez.Agent1\">
         <method name=\"AuthorizeService\">
             <arg direction=\"in\" type=\"o\"/>
-            <arg direction=\"in\" type=\"s\"/>\n"
-        </method>\n"
+            <arg direction=\"in\" type=\"s\"/>"
+        </method>
     </interface>""")
+
+    # request PIN signature
+    # <method name=\"RequestPinCode\">
+    #    <arg direction=\"in\" type=\"o\"/>
+    #    <arg direction=\"out\" type=\"s\"/>"
+    #</method>
 
     def __init__(self, parent=None):
         super(BluetoothAdapter, self).__init__(parent)
+        #self._devicePINTries = {}
         DBusQtMainLoop(set_as_default=True)
         self._bus = QDBusConnection.systemBus()
         self.setAutoRelaySignals(True)
@@ -56,7 +70,7 @@ class BluetoothAdapter(QDBusAbstractAdaptor):
         connection = QDBusInterface(BT_SERVICE, device, DBUS_PROPERTIES_INTERFACE, self._bus)
         alias = connection.call("Get", BT_DEVICE_INTERFACE, "Alias").arguments()[0]
         address = connection.call("Get", BT_DEVICE_INTERFACE, "Address").arguments()[0]
-        if alias == "Sony PLAYSTATION(R)3 Controller":
+        if alias in CONTROLLERS:
             # authorized
             logging.info("BluetoothAdapter.AuthorizeService: authorized %s %s" % (alias, device))
             return
@@ -64,6 +78,24 @@ class BluetoothAdapter(QDBusAbstractAdaptor):
         logging.warning("BluetoothAdapter.AuthorizeService: denied for %s (%s), service %s" % (device, alias, service))
         error = message.createErrorReply(QDBusError.AccessDenied, "Failed")
         self._bus.send(error)
+
+    #@pyqtSlot(QDBusMessage, result=str)
+    #def RequestPinCode(self, message):
+    #    device = message.arguments()[0]
+    #    logging.debug("BluetoothAdapter.RequestPinCode: device = %s" % device)
+    #    if device in self._devicePINTries:
+    #        if self._devicePINTries[device] == len(self._PINS):
+    #            logging.debug("BluetoothAdapter.RequestPinCode: PIN tries exhausted for %s" % device)
+    #            error = message.createErrorReply(QDBusError.AccessDenied, "Failed")
+    #            self._bus.send(error)
+    #            return None
+    #    else:
+    #        self._devicePINTries[device] = 0
+    #    pin = self._PINS[self._devicePINTries[device]]
+    #    self._devicePINTries[device] += 1
+    #    logging.debug("BluetoothAdapter.RequestPinCode: trying PIN %s" % pin)
+    #    message.createReply(pin)
+    #    return pin
 
 class BluetoothAgent(QObject):
 
@@ -119,7 +151,7 @@ class DbusBroker(QObject):
         connection = QDBusInterface(BT_SERVICE, "/", "org.freedesktop.DBus.ObjectManager", self._bus)
         for path, value in connection.call("GetManagedObjects").arguments()[0].items():
             if BT_DEVICE_INTERFACE in value:
-                if value[BT_DEVICE_INTERFACE]["Alias"] == "Sony PLAYSTATION(R)3 Controller":
+                if value[BT_DEVICE_INTERFACE]["Alias"] in CONTROLLERS:
                     devices[value[BT_DEVICE_INTERFACE]["Address"]] = value[BT_DEVICE_INTERFACE]["Alias"]
         return devices
 
@@ -146,12 +178,21 @@ class DbusBroker(QObject):
             alias = connection.call("Get", BT_DEVICE_INTERFACE, "Alias").arguments()[0]
             address = connection.call("Get", BT_DEVICE_INTERFACE, "Address").arguments()[0]
             logging.debug("DbusBroker.btDeviceAdded: alias = %s, address = %s " % (alias, address))
-            if alias == "Sony PLAYSTATION(R)3 Controller":
+            if alias in CONTROLLERS:
                 if connection.call("Get", BT_DEVICE_INTERFACE, "Trusted").arguments()[0]:
                     logging.debug("DbusBroker.btDeviceAdded: already truested")
                 else:
                     logging.debug("DbusBroker.btDeviceAdded: trusting device")
                     connection.call("Set", BT_DEVICE_INTERFACE, "Trusted", QDBusVariant(True)).arguments()
+                if alias == WIRELESS_CONTROLLER:
+                    # PS4 / PS5 and possibly others...
+                    logging.debug("DbusBroker.btDeviceAdded: wireless controller detected, initiating pairing")
+                    connection = QDBusInterface(BT_SERVICE, device, BT_DEVICE_INTERFACE, self._bus, self)
+                    connection.call("Pair").arguments()[0]
+                elif alias == WII_CONTROLLER:
+                    logging.debug("DbusBroker.btDeviceAdded: connecting to Wii mote")
+                    connection = QDBusInterface(BT_SERVICE, device, BT_DEVICE_INTERFACE, self._bus, self)
+                    connection.call("Connect").arguments()[0]
 
     @pyqtSlot(QDBusMessage)
     def btPropertyChange(self, message):
@@ -188,3 +229,9 @@ class DbusBroker(QObject):
     def btPowered(self, powered: bool):
         logging.debug("DbusBroker.btPowered: setting to %s" % powered)
         return self._setBtAdapterProperty("Powered", powered)
+
+    @pyqtSlot()
+    def btStartDiscovery(self):
+        logging.debug("DbusBroker.btStartDiscovery: starting")
+        connection = QDBusInterface(BT_SERVICE, self._adapterPath, "org.bluez.Adapter1", self._bus, self)
+        connection.call("StartDiscovery").arguments()[0]
