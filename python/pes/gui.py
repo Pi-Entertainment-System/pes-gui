@@ -31,7 +31,7 @@ import sdl2.joystick
 
 from PyQt5.QtGui import QGuiApplication, QKeyEvent
 from PyQt5.QtQml import QQmlApplicationEngine, qmlRegisterType
-from PyQt5.QtCore import Qt, QUrl, pyqtSignal, pyqtSlot, QFile, QIODevice, QObject, QEvent, QThread, QVariant, QTimer
+from PyQt5.QtCore import Qt, QUrl, pyqtProperty, pyqtSignal, pyqtSlot, QFile, QIODevice, QObject, QEvent, QThread, QVariant, QTimer
 
 import sqlalchemy.orm
 
@@ -81,6 +81,10 @@ class BackEnd(QObject):
 		engine = pes.sql.connect()
 		self.__session = sqlalchemy.orm.sessionmaker(bind=engine)()
 		pes.sql.createAll(engine)
+
+	@pyqtProperty(bool, constant=True)
+	def cecEnabled(self):
+		return cecImported
 
 	@pyqtSlot()
 	def close(self):
