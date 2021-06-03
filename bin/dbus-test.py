@@ -31,7 +31,7 @@ import logging
 import os
 import signal
 import sys
-import pes.dbus
+import pes.system
 from dbus.mainloop.pyqt5 import DBusQtMainLoop
 from PyQt5.QtCore import Qt, QCoreApplication, QTimer
 
@@ -49,8 +49,8 @@ if __name__ == "__main__":
     DBusQtMainLoop(set_as_default=True)
 
     app = QCoreApplication(sys.argv)
-    broker = pes.dbus.DbusBroker()
-    agent = pes.dbus.BluetoothAgent()
+    broker = pes.system.DbusBroker()
+    agent = pes.system.BluetoothAgent()
 
     signal.signal(signal.SIGINT, handleSignal)
     timer = QTimer()
