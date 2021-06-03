@@ -73,9 +73,11 @@ class BackEnd(QObject):
 	closeSignal = pyqtSignal()
 	controlPadButtonPress = pyqtSignal(int, arguments=['button'])
 	homeButtonPress = pyqtSignal()
+	gamepadTotalSignal = pyqtSignal(int, arguments=['total'])
 
 	def __init__(self, parent=None):
 		super(BackEnd, self).__init__(parent)
+		self.__gamepadTotal = 0
 		logging.debug("Backend.__init__: connecting to database: %s" % pes.userDb)
 		#self.__romscanThread = None
 		engine = pes.sql.connect()
@@ -96,6 +98,15 @@ class BackEnd(QObject):
 
 	def emitControlPadButtonPress(self, button):
 		self.controlPadButtonPress.emit(button)
+
+	@pyqtProperty(int)
+	def gamepadTotal(self):
+		return self.__gamepadTotal
+
+	@gamepadTotal.setter
+	def gamepadTotal(self, total):
+		self.__gamepadTotal = total
+		self.gamepadTotalSignal.emit(total)
 
 	@pyqtSlot(int, result=str)
 	def getConsoleArt(self, consoleId):
@@ -271,6 +282,7 @@ class PESGuiApplication(QGuiApplication):
 					self.__controlPadTotal = controlPadTotal
 					#self.__handler.emitJoysticksConnected(self.__controlPadTotal)
 				joystickTick = tick
+				self.__backend.gamepadTotal = controlPadTotal
 
 			self.processEvents()
 

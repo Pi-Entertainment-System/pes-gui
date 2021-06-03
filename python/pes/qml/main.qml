@@ -174,9 +174,26 @@ ApplicationWindow {
       }
 
       Image {
+        id: gamepadIcon
+        source: "icons/gamepad.png"
+        visible: false
+        // connecting directly to gamepadTotal propery via visible
+        // property can result in a race conditon where backend
+        // is null, therefore use the following workaround
+        function visibleHandler(total) {
+          visible = total > 0;
+        }
+
+        Component.onCompleted: {
+          visible = backend.gamepadTotal;
+          backend.gamepadTotalSignal.connect(visibleHandler);
+        }
+      }
+
+      Image {
         id: remoteIcon
         source: "icons/remote.png"
-        visible: backend.cecEnabled
+        visible: false
       }
 
       Text {
