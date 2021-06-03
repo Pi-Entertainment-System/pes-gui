@@ -149,28 +149,48 @@ ApplicationWindow {
 	}
 
 	// layout
-	Text {
-		id: titleTxt
-		text: "Pi Entertainment System"
-		x: 0
-		y: 0
-		font.pixelSize: FontStyle.titleSize
-		font.bold: true
-		font.family: FontStyle.font
-		color: Colour.text
-	}
+  Rectangle {
+    x: 0
+    y: 0
+    color: Colour.bg
+    height: 31
+    width: mainWindow.width
 
-	Text {
-		id: clockTxt
-		text: "Time"
-		x: mainWindow.width - clockTxt.width
-		y: 0
-		font.pixelSize: FontStyle.titleSize
-		font.bold: true
-		font.family: FontStyle.font
-		color: Colour.text
-		rightPadding: 5
-	}
+    RowLayout {
+      anchors.fill: parent
+
+      Text {
+        id: titleTxt
+        text: "Pi Entertainment System"
+        font.pixelSize: FontStyle.titleSize
+        font.bold: true
+        font.family: FontStyle.font
+        color: Colour.text
+      }
+
+      // filler to force right alignment
+      Item {
+        Layout.fillWidth: true
+      }
+
+      Image {
+        id: remoteIcon
+        source: "icons/remote.png"
+        visible: backend.cecEnabled
+      }
+
+      Text {
+        id: clockTxt
+        text: "Time"
+        font.pixelSize: FontStyle.titleSize
+        font.bold: true
+        font.family: FontStyle.font
+        color: Colour.text
+        Layout.leftMargin: 10
+        Layout.rightMargin: 5
+      }
+    }
+  }
 
 	Timer {
 		interval: 1000
