@@ -234,7 +234,6 @@ class PESGuiApplication(QGuiApplication):
 		while self.__running:
 			events = sdl2.ext.get_events()
 			for event in events:
-				print("processing event")
 				if event.type == sdl2.SDL_CONTROLLERBUTTONUP:
 					if event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP:
 						logging.debug("player 1: up")
@@ -250,6 +249,7 @@ class PESGuiApplication(QGuiApplication):
 						self.sendEvent(self.focusWindow(), QKeyEvent(QEvent.KeyPress, Qt.Key_Right, Qt.NoModifier))
 					elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_A:
 						logging.debug("player 1: A")
+						self.sendEvent(self.focusWindow(), QKeyEvent(QEvent.KeyPress, Qt.Key_Backspace, Qt.NoModifier))
 					elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_B:
 						logging.debug("player 1: B")
 						self.sendEvent(self.focusWindow(), QKeyEvent(QEvent.KeyPress, Qt.Key_Return, Qt.NoModifier))
