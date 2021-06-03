@@ -45,6 +45,7 @@ except ImportError as e:
 import pes
 import pes.romscan
 import pes.sql
+import pes.system
 from pes.common import checkDir, checkFile, initConfig, mkdir, ConsoleSettings
 
 def getLitteEndianFromHex(x):
@@ -183,6 +184,8 @@ class PESGuiApplication(QGuiApplication):
 
 	def __init__(self, argv, windowed=False):
 		super(PESGuiApplication, self).__init__(argv)
+		self.__dbusBroker = pes.system.DbusBroker()
+		self.__btAgent = pes.system.BluetoothAgent()
 		self.__windowed = windowed
 		self.__running = True
 		self.__player1Controller = None
