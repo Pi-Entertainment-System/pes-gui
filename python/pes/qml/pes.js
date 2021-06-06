@@ -155,8 +155,6 @@ function updateMainScreen(){
     mainMenuModel.append(consoles[i]);
   }
 
-  remoteIcon.visible = backend.cecEnabled;
-
   gamesAdded = consoles.length > 0;
 
   updateCoverartPanels(0);

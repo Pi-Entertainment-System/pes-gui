@@ -194,6 +194,10 @@ ApplicationWindow {
         id: remoteIcon
         source: "icons/remote.png"
         visible: false
+
+        Component.onCompleted: {
+          remoteIcon.visible = backend.cecEnabled;
+        }
       }
 
       Text {
