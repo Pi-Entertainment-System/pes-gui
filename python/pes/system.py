@@ -125,17 +125,28 @@ class DbusBroker(QObject):
     def __init__(self, parent=None):
         super(DbusBroker, self).__init__(parent)
         self._bus = QDBusConnection.systemBus()
-        self._adapterPath = self._getBtAdapter()
-        if self._adapterPath == None:
-            logging.warning("DbusBroker.__init__: could not find BT adapter")
+        self._adapterPath = None
+        # look for Bluez service
+        bluezFound = False
+        for service in self._bus.interface().registeredServiceNames().value():
+            if service == BT_SERVICE:
+                bluezFound = True
+                break
+
+        if bluezFound:
+            self._adapterPath = self._getBtAdapter()
+            if self._adapterPath == None:
+                logging.warning("DbusBroker.__init__: could not find BT adapter")
+            else:
+                logging.debug("DbusBroker.__init__: found BT adapter %s" % self._adapterPath)
+                # listen for devices being added
+                if not self._bus.connect("", "", "org.freedesktop.DBus.ObjectManager", "InterfacesAdded", self.btDeviceAdded):
+                    raise Exception("DbusBroker.__init__: failed to connect to org.freedesktop.DBus.ObjectManager:InterfacesAdded")
+                # listen for all Bluez related property changes
+                if not self._bus.connect(BT_SERVICE, "", DBUS_PROPERTIES_INTERFACE, "PropertiesChanged", self.btPropertyChange):
+                    raise Exception("DbusBroker.__init__: failed to connected to org.freedesktop.DBus.Properties:PropertiesChanged for %s" % BT_SERVICE)
         else:
-            logging.debug("DbusBroker.__init__: found BT adapter %s" % self._adapterPath)
-            # listen for devices being added
-            if not self._bus.connect("", "", "org.freedesktop.DBus.ObjectManager", "InterfacesAdded", self.btDeviceAdded):
-                raise Exception("DbusBroker.__init__: failed to connect to org.freedesktop.DBus.ObjectManager:InterfacesAdded")
-            # listen for all Bluez related property changes
-            if not self._bus.connect(BT_SERVICE, "", DBUS_PROPERTIES_INTERFACE, "PropertiesChanged", self.btPropertyChange):
-                raise Exception("DbusBroker.__init__: failed to connected to org.freedesktop.DBus.Properties:PropertiesChanged for %s" % BT_SERVICE)
+            logging.warning("DbusBroker.__init__: could not find %s" % BT_SERVICE)
 
     def _getBtAdapter(self):
         adapterPath = None
@@ -163,13 +174,9 @@ class DbusBroker(QObject):
             return
         raise Exception("DbusBroker._setBtAdapterProperty: Bluetooth adapter not found when seting '%s'" % property)
 
-    @pyqtProperty(str)
-    def btApdapter(self):
-        return self._adapterPath
-
-    @btApdapter.setter
-    def btAdapter(self, s):
-        raise Exception("DbusBroker.btAdapter: this is a read-only property")
+    @pyqtSlot(result=bool)
+    def btAvailable(self):
+        return self._adapterPath != None
 
     @pyqtSlot(QDBusMessage)
     def btDeviceAdded(self, message):
