@@ -185,7 +185,10 @@ class PESGuiApplication(QGuiApplication):
 	def __init__(self, argv, windowed=False):
 		super(PESGuiApplication, self).__init__(argv)
 		self.__dbusBroker = pes.system.DbusBroker()
-		self.__btAgent = pes.system.BluetoothAgent()
+		if self.__dbusBroker.btAdapter != None:
+			self.__btAgent = pes.system.BluetoothAgent()
+		else:
+			self.__btAgent = None
 		self.__windowed = windowed
 		self.__running = True
 		self.__player1Controller = None
