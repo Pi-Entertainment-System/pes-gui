@@ -109,12 +109,13 @@ class BluetoothAgent(QObject):
         if not self._bus.registerObject(BluetoothAgent.PATH, self):
             raise Exception("BluetoothAgent.__init__: failed to register object")
         logging.debug("BluetoothAgent.__init__: registered object")
-        result = agentManager.call("RegisterAgent", QDBusObjectPath(BluetoothAgent.PATH), "DisplayYesNo").arguments()
-        if result[0] != None:
-            raise Exception("BluetoothAgent.__init__: failed to register agent: %s" % result[0])
-        result = agentManager.call("RequestDefaultAgent", QDBusObjectPath(BluetoothAgent.PATH)).arguments()
-        if result[0] != None:
-            raise Exception("BluetoothAgent.__init__: failed to register default agent: %s" % result[0])
+        msg = agentManager.call("RegisterAgent", QDBusObjectPath(BluetoothAgent.PATH), "DisplayYesNo")
+        if msg.type() == QDBusMessage.MessageType.ErrorMessage:
+            logging.warning("DbusBroker.__init__: Failed to register Bluetooth agent: %s" % msg.errorMessage())
+        else:
+            result = agentManager.call("RequestDefaultAgent", QDBusObjectPath(BluetoothAgent.PATH)).arguments()
+            if result[0] != None:
+                raise Exception("BluetoothAgent.__init__: failed to register default agent: %s" % result[0])
 
 class DbusBroker(QObject):
     """
@@ -139,21 +140,15 @@ class DbusBroker(QObject):
     def _getBtAdapter(self):
         adapterPath = None
         connection = QDBusInterface(BT_SERVICE, "/", "org.freedesktop.DBus.ObjectManager", self._bus)
-        for path, value in connection.call("GetManagedObjects").arguments()[0].items():
-            if BT_ADAPTER_INTERFACE in value:
-                adapterPath = path
-                break
+        msg = connection.call("GetManagedObjects")
+        if msg.type() == QDBusMessage.MessageType.ErrorMessage:
+            logging.warning("DbusBroker._getBtAdapter: %s" % msg.errorMessage())
+        else:
+            for path, value in msg.arguments()[0].items():
+                if BT_ADAPTER_INTERFACE in value:
+                    adapterPath = path
+                    break
         return adapterPath
-
-    @pyqtSlot(result=QVariant)
-    def getBtGamingDevices(self):
-        devices = {}
-        connection = QDBusInterface(BT_SERVICE, "/", "org.freedesktop.DBus.ObjectManager", self._bus)
-        for path, value in connection.call("GetManagedObjects").arguments()[0].items():
-            if BT_DEVICE_INTERFACE in value:
-                if value[BT_DEVICE_INTERFACE]["Alias"] in CONTROLLERS:
-                    devices[value[BT_DEVICE_INTERFACE]["Address"]] = value[BT_DEVICE_INTERFACE]["Alias"]
-        return devices
 
     def _getBtAdapterProperty(self, property):
         if self._adapterPath:
@@ -167,6 +162,14 @@ class DbusBroker(QObject):
             connection.call("Set", BT_ADAPTER_INTERFACE, property, QDBusVariant(value)).arguments()
             return
         raise Exception("DbusBroker._setBtAdapterProperty: Bluetooth adapter not found when seting '%s'" % property)
+
+    @pyqtProperty(str)
+    def btApdapter(self):
+        return self._adapterPath
+
+    @btApdapter.setter
+    def btAdapter(self, s):
+        raise Exception("DbusBroker.btAdapter: this is a read-only property")
 
     @pyqtSlot(QDBusMessage)
     def btDeviceAdded(self, message):
@@ -235,3 +238,13 @@ class DbusBroker(QObject):
         logging.debug("DbusBroker.btStartDiscovery: starting")
         connection = QDBusInterface(BT_SERVICE, self._adapterPath, "org.bluez.Adapter1", self._bus, self)
         connection.call("StartDiscovery").arguments()[0]
+
+    @pyqtSlot(result=QVariant)
+    def getBtGamingDevices(self):
+        devices = {}
+        connection = QDBusInterface(BT_SERVICE, "/", "org.freedesktop.DBus.ObjectManager", self._bus)
+        for path, value in connection.call("GetManagedObjects").arguments()[0].items():
+            if BT_DEVICE_INTERFACE in value:
+                if value[BT_DEVICE_INTERFACE]["Alias"] in CONTROLLERS:
+                    devices[value[BT_DEVICE_INTERFACE]["Address"]] = value[BT_DEVICE_INTERFACE]["Alias"]
+        return devices
