@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #
 #    This file is part of the Pi Entertainment System (PES).
@@ -57,12 +57,18 @@ if __name__ == "__main__":
     timer.start()
     timer.timeout.connect(lambda: None)
 
-    logging.info("Powered: %s" % broker.btPowered)
-    logging.info("Discoverable: %s" % broker.btDiscoverable)
-    logging.info("Pairable: %s" % broker.btPairable)
-    broker.btPowered = True
-    broker.btDiscoverable = True
-    broker.btPairable = True
-    broker.btStartDiscovery()
+    if broker.btApdapter != None:
+        logging.info("Powered: %s" % broker.btPowered)
+        logging.info("Discoverable: %s" % broker.btDiscoverable)
+        logging.info("Pairable: %s" % broker.btPairable)
+        broker.btPowered = True
+        broker.btDiscoverable = True
+        broker.btPairable = True
+        broker.btStartDiscovery()
+    else:
+        logging.info("No Bluetooth adapter found")
+        broker.btAdapter = 'goo'
+        print(broker.btAdapter)
+        sys.exit()
 
     app.exec()
