@@ -50,7 +50,6 @@ if __name__ == "__main__":
 
     app = QCoreApplication(sys.argv)
     broker = pes.system.DbusBroker()
-    agent = pes.system.BluetoothAgent()
 
     signal.signal(signal.SIGINT, handleSignal)
     timer = QTimer()
@@ -58,6 +57,8 @@ if __name__ == "__main__":
     timer.timeout.connect(lambda: None)
 
     if broker.btApdapter != None:
+        agent = pes.system.BluetoothAgent()
+        logging.info("Adapter: %s" % broker.btAdapter)
         logging.info("Powered: %s" % broker.btPowered)
         logging.info("Discoverable: %s" % broker.btDiscoverable)
         logging.info("Pairable: %s" % broker.btPairable)
@@ -67,8 +68,6 @@ if __name__ == "__main__":
         broker.btStartDiscovery()
     else:
         logging.info("No Bluetooth adapter found")
-        broker.btAdapter = 'goo'
-        print(broker.btAdapter)
         sys.exit()
 
     app.exec()
