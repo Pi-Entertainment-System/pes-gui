@@ -56,7 +56,7 @@ if __name__ == "__main__":
     timer.start()
     timer.timeout.connect(lambda: None)
 
-    if broker.btApdapter != None:
+    if broker.btAvailable():
         agent = pes.system.BluetoothAgent()
         logging.info("Adapter: %s" % broker.btAdapter)
         logging.info("Powered: %s" % broker.btPowered)
