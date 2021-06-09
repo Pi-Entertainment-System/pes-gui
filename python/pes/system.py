@@ -176,6 +176,7 @@ class DbusBroker(QObject):
 
     @pyqtSlot(result=bool)
     def btAvailable(self):
+        logging.debug("DbusBroker.btAvailale: %s" % (self._adapterPath != None))
         return self._adapterPath != None
 
     @pyqtSlot(QDBusMessage)
