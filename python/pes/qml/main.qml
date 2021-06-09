@@ -150,10 +150,11 @@ ApplicationWindow {
 
 	// layout
   Rectangle {
+    id: headerRect
     x: 0
     y: 0
     color: Colour.bg
-    height: 31
+    height: 40
     width: mainWindow.width
 
     RowLayout {
@@ -187,6 +188,16 @@ ApplicationWindow {
         Component.onCompleted: {
           visible = backend.gamepadTotal;
           backend.gamepadTotalSignal.connect(visibleHandler);
+        }
+      }
+
+      Image {
+        id: bluetoothIcon
+        source: "icons/bluetooth.png"
+        visible: false
+
+        Component.onCompleted: {
+          visible = backend.btAvailable();
         }
       }
 
@@ -225,7 +236,7 @@ ApplicationWindow {
 	Rectangle {
 		id: headerLine
 		x: 0
-		y: 32
+		y: headerRect.height
 		height: 2
 		width: mainWindow.width
 		color: Colour.line
