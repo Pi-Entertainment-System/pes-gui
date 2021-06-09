@@ -78,12 +78,21 @@ class BackEnd(QObject):
 
 	def __init__(self, parent=None):
 		super(BackEnd, self).__init__(parent)
+		self.__dbusBroker = pes.system.DbusBroker()
+		if self.__dbusBroker.btAvailable():
+			self.__btAgent = pes.system.BluetoothAgent()
+		else:
+			self.__btAgent = None
 		self.__gamepadTotal = 0
 		logging.debug("Backend.__init__: connecting to database: %s" % pes.userDb)
 		#self.__romscanThread = None
 		engine = pes.sql.connect()
 		self.__session = sqlalchemy.orm.sessionmaker(bind=engine)()
 		pes.sql.createAll(engine)
+
+	@pyqtSlot(result=bool)
+	def btAvailable(self):
+		return self.__dbusBroker.btAvailable()
 
 	@pyqtProperty(bool, constant=True)
 	def cecEnabled(self):
@@ -184,11 +193,6 @@ class PESGuiApplication(QGuiApplication):
 
 	def __init__(self, argv, windowed=False):
 		super(PESGuiApplication, self).__init__(argv)
-		self.__dbusBroker = pes.system.DbusBroker()
-		if self.__dbusBroker.btAvailable():
-			self.__btAgent = pes.system.BluetoothAgent()
-		else:
-			self.__btAgent = None
 		self.__windowed = windowed
 		self.__running = True
 		self.__player1Controller = None
