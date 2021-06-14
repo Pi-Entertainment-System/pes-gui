@@ -205,7 +205,6 @@ class PESGuiApplication(QGuiApplication):
 		self.__engine = None
 		self.__backend = BackEnd()
 		self.__backend.closeSignal.connect(self.close)
-		#qmlRegisterType(pes.romscan.RomScanThread, 'RomScanThread', 1, 0, 'RomScanThread')
 		qmlRegisterType(pes.romscan.RomScanMonitorThread, 'RomScanMonitorThread', 1, 0, 'RomScanMonitorThread')
 		self.__engine = QQmlApplicationEngine()
 		self.__engine.rootContext().setContextProperty("backend", self.__backend)
