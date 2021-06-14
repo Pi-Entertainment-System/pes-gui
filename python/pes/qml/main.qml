@@ -211,6 +211,16 @@ ApplicationWindow {
         }
       }
 
+      Image {
+        id: networkIcon
+        source: "icons/network.png"
+        visible: false
+
+        Component.onCompleted: {
+          networkIcon.visible = backend.getNetworkAvailable();
+        }
+      }
+
       Text {
         id: clockTxt
         text: "Time"

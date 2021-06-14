@@ -43,10 +43,10 @@ except ImportError as e:
 	pass
 
 import pes
+import pes.common
 import pes.romscan
 import pes.sql
 import pes.system
-from pes.common import checkDir, checkFile, initConfig, mkdir, ConsoleSettings
 
 def getLitteEndianFromHex(x):
 	return int("%s%s" % (x[2:4], x[0:2]), 16)
@@ -140,6 +140,10 @@ class BackEnd(QObject):
 		for c in result:
 			consoleList.append(c.getJson())
 		return consoleList
+
+	@pyqtSlot(result=bool)
+	def getNetworkAvailable(self):
+		return pes.common.getIpAddress() != "127.0.0.1"
 
 	@pyqtSlot(int, int, result=list)
 	def getRecentlyAddedGames(self, consoleId=None, limit=10):
