@@ -49,7 +49,7 @@ class Console(Base, CustomBase):
 	id = Column(Integer, primary_key=True)
 	name = Column(String)
 	gamesDbId = Column(Integer, ForeignKey('gamesdb_platform.id')) # FBA and MAMA use the same ID
-	retroId = Column(Integer, ForeignKey('retroachievement_console.id')) # Mega Drive & Gensis use same ID
+	retroId = Column(Integer, ForeignKey('retroachievement_console.id'), default=0) # Mega Drive & Gensis use same ID
 	nocoverart = Column(String)
 	art = Column(String)
 
@@ -65,7 +65,7 @@ class Game(Base, CustomBase):
 	id = Column(Integer, primary_key=True)
 	name = Column(Text)
 	consoleId = Column(Integer, ForeignKey('console.id'))
-	rasum = Column(String, index=True)
+	rasum = Column(String, index=True, default=0)
 	gamesDbId = Column(Integer, ForeignKey('gamesdb_game.id'), index=True, default=0)
 	retroId = Column(Integer, ForeignKey('retroachievement_game.id'), index=True, default=0)
 	path = Column(Text)
