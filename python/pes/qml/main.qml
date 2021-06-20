@@ -115,6 +115,7 @@ ApplicationWindow {
       model: popupMenu
       navSound: navSound
       delegate: MenuDelegate {
+        width: popupMenuView.width
 				Keys.onReturnPressed: PES.optionsDialogEvent(text);
 			}
       keyNavigationEnabled: true
@@ -304,6 +305,7 @@ ApplicationWindow {
                 navSound: navSound
                 soundOn: false
 		            delegate: MenuDelegate {
+                  width: mainMenuView.width
 									Keys.onReturnPressed: PES.mainMenuEvent(mainMenuModel.get(mainMenuView.currentIndex));
                   Keys.onRightPressed: PES.setCoverartPanelFocus()
 								}

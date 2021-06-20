@@ -26,7 +26,7 @@ import "../Style/" 1.0
 Rectangle {
 	id: menuDelegateRect
 	height: 50
-	width: parent.width
+	width: 300
 	color: focus ? Colour.menuFocus : Colour.menuBg
 	property alias text: menuDelegateText.text
 
