@@ -134,9 +134,9 @@ class BackEnd(QObject):
 		logging.debug("BackEnd.getConsoles: getting consoles, withGames = %s" % withGames)
 		consoleList = []
 		if withGames:
-			result = self.__session.query(pes.sql.Console).join(pes.sql.Game).all()
+			result = self.__session.query(pes.sql.Console).join(pes.sql.Game).order_by(pes.sql.Console.name).all()
 		else:
-			result = self.__session.query(pes.sql.Console).all()
+			result = self.__session.query(pes.sql.Console).order_by(pes.sql.Console.name).all()
 		for c in result:
 			consoleList.append(c.getJson())
 		return consoleList
