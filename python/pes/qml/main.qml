@@ -306,7 +306,7 @@ ApplicationWindow {
                 soundOn: false
 		            delegate: MenuDelegate {
                   width: mainMenuView.width
-									Keys.onReturnPressed: PES.mainMenuEvent(mainMenuModel.get(mainMenuView.currentIndex));
+                  Keys.onReturnPressed: PES.mainMenuEvent(mainMenuModel.get(mainMenuView.currentIndex));
                   Keys.onRightPressed: PES.setCoverartPanelFocus()
 								}
                 onItemHighlighted: {
