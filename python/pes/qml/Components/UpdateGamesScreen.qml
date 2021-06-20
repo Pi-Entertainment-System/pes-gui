@@ -30,8 +30,9 @@ import RomScanMonitorThread 1.0
 
 Rectangle {
     id: updateGamesRect
-
     color: Colour.panelBg
+
+    signal scanCompleted()
 
     function abortRomScan() {
         romScanMonitorThread.stop();
@@ -104,6 +105,7 @@ Rectangle {
                     s = "complete";
                 }
                 statusTxt.text = "<p>Scan " + s + "!</p><p>Added: " + romScanMonitorThread.added + "</p><p>Updated: " + romScanMonitorThread.updated + "</p><p>Skipped: " + romScanMonitorThread.skipped + "</p><p>Deleted: " + romScanMonitorThread.deleted + "</p><p>Time taken: " + romScanMonitorThread.timeTaken + "s</p>";
+                updateGamesRect.scanCompleted();
             }
             else if (state == "update") {
                 updateRomsProgressBar.visible = true;

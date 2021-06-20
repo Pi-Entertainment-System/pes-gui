@@ -432,6 +432,10 @@ ApplicationWindow {
         id: updateGamesScreen
         Layout.fillWidth: true
         Layout.fillHeight: true
+
+        Component.onCompleted: {
+          scanCompleted.connect(PES.updateMainScreen);
+        }
       }
 
       // Console screen
