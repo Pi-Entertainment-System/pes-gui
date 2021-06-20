@@ -76,8 +76,11 @@ def getRasum(path, retroAchievementId):
 	if not os.path.exists(path):
 		raise FileNotFoundError("getRasum: %s does not exist" % path)
 	if not os.path.isfile(path):
-		raise Exception("getRasum: %s is not a file" % path)
-	rtn, stdout, stderr = pes.common.runCommand("%s -i %d \"%s\"" % (pes.rasumExe, int(retroAchievementId), path))
+		raise ValueError("getRasum: %s is not a file" % path)
+	if retroAchievementId == None:
+		raise ValueError("getRasum: retroAchievementId is None")
+	command = "rasum -i %d \"%s\"" % (int(retroAchievementId), path)
+	rtn, stdout, stderr = pes.common.runCommand(command)
 	if rtn != 0:
 		raise Exception("Failed to run '%s'\nstdout: %s\nstderr: %s" % (command, stdout, stderr))
 	return stdout.replace("\n", "")

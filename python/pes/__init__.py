@@ -34,7 +34,6 @@ romScrapers = ['theGamesDb.net'] # list of ROM scrapers, default scraper is assu
 
 moduleDir = os.path.dirname(os.path.realpath(__file__))
 baseDir = os.path.abspath('%s%s../../' % (moduleDir, os.sep))
-rasumExe = os.path.join("%s/bin/rasum" % baseDir)
 confDir = os.path.join(baseDir, 'conf.d')
 themeDir = os.path.join(baseDir, 'themes')
 qmlDir = os.path.join(moduleDir, 'qml')

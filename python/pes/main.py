@@ -30,6 +30,7 @@ from pes.common import *
 from pes.gui import BackEnd, PESGuiApplication
 import pes.sql
 import sdl2
+import shutil
 
 cecImported = False
 try:
@@ -89,7 +90,9 @@ if __name__ == "__main__":
 	checkFile(pes.userDb)
 	checkFile(pes.userConsolesConfigFile)
 	checkFile(pes.userGameControllerFile)
-	#checkFile(pes.rasumExe)
+	# look for rasum in $PATH
+	if shutil.which("rasum") == None:
+		pesExit("Error: could not find rasum executable in $PATH", True)
 
 	logging.info("loading settings...")
 	checkFile(pes.userPesConfigFile)
