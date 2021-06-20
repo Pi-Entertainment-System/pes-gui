@@ -241,6 +241,7 @@ class GamesDbRomTask(RomTask):
 		result = session.query(pes.sql.Game).filter(pes.sql.Game.path == self._rom).first()
 		game = None
 		newGame = True
+		rasum = None
 		if result:
 			logging.debug("%s already in database" % logPrefix)
 			game = result
@@ -254,37 +255,43 @@ class GamesDbRomTask(RomTask):
 			romTaskResult.coverart = game.coverart
 		else:
 			logging.debug("%s new game" % logPrefix)
-			# find a game with matching rasum
-			rasum = pes.retroachievement.getRasum(self._rom, self._console.retroId)
-			logging.debug("%s rasum for %s is %s" % (logPrefix, self._rom, rasum))
-			result = session.query(pes.sql.RetroAchievementGame).join(pes.sql.RetroAchievementGameHash).filter(pes.sql.RetroAchievementGame.retroConsoleId == self._console.retroId).filter(pes.sql.RetroAchievementGameHash.rasum == rasum).first()
-			if result:
-				logging.debug("%s found match for rasum: %s" % (logPrefix, rasum))
-				# now is there a GamesDbGame match?
-				if result.gamesDbGame and len(result.gamesDbGame) > 0:
-					gamesDbGame = result.gamesDbGame[0]
-					game = pes.sql.Game(
-						consoleId=self._console.id,
-						added=datetime.datetime.now(),
-						name=gamesDbGame.name,
-						rasum=rasum,
-						gamesDbId=gamesDbGame.id,
-						retroId=gamesDbGame.retroId,
-						path=self._rom,
-						fileSize=self._romFileSize,
-						found=True
-					)
-					with self._lock:
-						session.add(game)
-						session.commit()
-					logging.debug("%s saved new record" % logPrefix)
-					romTaskResult.state = RomTaskResult.STATE_ADDED
-				else:
-					logging.debug("%s no GamesDbGame associated with RetroAchievementGame %d" % (logPrefix, result.id))
+			if self._console.retroId:
+				# find a game with matching rasum
+				rasum = pes.retroachievement.getRasum(self._rom, self._console.retroId)
+				logging.debug("%s rasum for %s is %s" % (logPrefix, self._rom, rasum))
+				result = session.query(pes.sql.RetroAchievementGame).join(pes.sql.RetroAchievementGameHash).filter(pes.sql.RetroAchievementGame.retroConsoleId == self._console.retroId).filter(pes.sql.RetroAchievementGameHash.rasum == rasum).first()
+				if result:
+					logging.debug("%s found match for rasum: %s" % (logPrefix, rasum))
+					# now is there a GamesDbGame match?
+					if result.gamesDbGame and len(result.gamesDbGame) > 0:
+						gamesDbGame = result.gamesDbGame[0]
+						game = pes.sql.Game(
+							consoleId=self._console.id,
+							added=datetime.datetime.now(),
+							name=gamesDbGame.name,
+							rasum=rasum,
+							gamesDbId=gamesDbGame.id,
+							retroId=gamesDbGame.retroId,
+							path=self._rom,
+							fileSize=self._romFileSize,
+							found=True
+						)
+						with self._lock:
+							session.add(game)
+							session.commit()
+						logging.debug("%s saved new record" % logPrefix)
+						romTaskResult.state = RomTaskResult.STATE_ADDED
+					else:
+						logging.debug("%s no GamesDbGame associated with RetroAchievementGame %d" % (logPrefix, result.id))
+			else:
+				logging.debug("%s %s has no retroId" % (logPrefix, self._console.name))
 			
 			if game == None: 
 				# try searching by name
-				logging.debug("%s no match for rasum: %s, trying name match" % (logPrefix, rasum))
+				if rasum:
+					logging.debug("%s no match for rasum: %s, trying name match" % (logPrefix, rasum))
+				else:
+					logging.debug("%s trying name match")
 				gamesDbGame = session.query(pes.sql.GamesDbGame).filter(sqlalchemy.func.lower(sqlalchemy.func.replace(pes.sql.GamesDbGame.name, " ", "")) == romName.replace(" ", "").lower()).first()
 				if gamesDbGame:
 					logging.debug("%s found match for name: \"%s\"" % (logPrefix, romName))
