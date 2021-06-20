@@ -41,7 +41,7 @@ def createAll(engine):
 
 class CustomBase(object):
 	def getJson(self):
-		return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+		return {c.name: getattr(self, c.name) if getattr(self, c.name) != None else "" for c in self.__table__.columns}
 
 class Console(Base, CustomBase):
 	__tablename__ = "console"
