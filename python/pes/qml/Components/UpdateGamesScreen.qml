@@ -92,6 +92,7 @@ Rectangle {
             if (state == "done") {
                 beginScanTxt.visible = false;
                 abortScanBtn.visible = false;
+                homeBtn.visible = true;
                 scanPreviewImg.visible = false;
                 scanPreviewTxt.visible = false;
                 updateRomsProgressBar.visible = false;
@@ -106,6 +107,7 @@ Rectangle {
                 }
                 statusTxt.text = "<p>Scan " + s + "!</p><p>Added: " + romScanMonitorThread.added + "</p><p>Updated: " + romScanMonitorThread.updated + "</p><p>Skipped: " + romScanMonitorThread.skipped + "</p><p>Deleted: " + romScanMonitorThread.deleted + "</p><p>Time taken: " + romScanMonitorThread.timeTaken + "s</p>";
                 updateGamesRect.scanCompleted();
+                homeBtn.forceActiveFocus();
             }
             else if (state == "update") {
                 updateRomsProgressBar.visible = true;
@@ -223,6 +225,17 @@ Rectangle {
             Layout.leftMargin: 30
             Layout.topMargin: 20
             Keys.onReturnPressed: updateGamesRect.abortRomScan()
+        }
+
+        UiButton {
+            id: homeBtn
+            btnText: "Home"
+            visible: false
+            Layout.preferredWidth: 100
+            Layout.preferredHeight: 50
+            Layout.leftMargin: 30
+            Layout.topMargin: 20
+            Keys.onReturnPressed: PES.goHome()
         }
     }
 }
