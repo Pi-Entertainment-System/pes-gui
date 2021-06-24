@@ -124,7 +124,7 @@ Rectangle {
                 id: listView
                 property QtObject navSound: null;
                 Keys.onDownPressed: {
-                    if (mainRect.KeyNavigation.down) {
+                    if (mainRect.KeyNavigation.down && mainRect.KeyNavigation.down.visible) {
                         mainRect.KeyNavigation.down.forceActiveFocus();
                         mainRect.loseFocus();
                     }
@@ -137,7 +137,7 @@ Rectangle {
                         currentIndex -= 1;
                     }
                     else {
-                        if (mainRect.KeyNavigation.left) {
+                        if (mainRect.KeyNavigation.left && mainRect.KeyNavigation.left.visible) {
                             mainRect.KeyNavigation.left.forceActiveFocus();
                             mainRect.loseFocus();
                         }
@@ -151,14 +151,14 @@ Rectangle {
                         currentIndex += 1;
                     }
                     else {
-                        if (mainRect.KeyNavigation.right) {
+                        if (mainRect.KeyNavigation.right && mainRect.KeyNavigation.right.visible) {
                             mainRect.KeyNavigation.right.forceActiveFocus();
                             mainRect.loseFocus();
                         }
                     }
                 }
                 Keys.onUpPressed: {
-                    if (mainRect.KeyNavigation.up) {
+                    if (mainRect.KeyNavigation.up && mainRect.KeyNavigation.up.visible) {
                         mainRect.KeyNavigation.up.forceActiveFocus();
                         mainRect.loseFocus();
                     }
