@@ -44,13 +44,13 @@ class CustomBase(object):
 		j = {}
 		for c in self.__table__.columns:
 			val = getattr(self, c.name)
+			t = type(c.type)
 			if val:
-				if type(c.type) is DateTime:
+				if t is DateTime:
 					j[c.name] = int(val.timestamp())
 				else:
 					j[c.name] = val
 			else:
-				t = type(c.type)
 				if t is DateTime:
 					j[c.name] = 0
 				elif t is Integer:
