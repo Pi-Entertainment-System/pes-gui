@@ -41,7 +41,23 @@ def createAll(engine):
 
 class CustomBase(object):
 	def getJson(self):
-		return {c.name: getattr(self, c.name) if getattr(self, c.name) != None else "" for c in self.__table__.columns}
+		j = {}
+		for c in self.__table__.columns:
+			val = getattr(self, c.name)
+			if val:
+				if type(c.type) is DateTime:
+					j[c.name] = int(val.timestamp())
+				else:
+					j[c.name] = val
+			else:
+				t = type(c.type)
+				if t is DateTime:
+					j[c.name] = 0
+				elif t is Integer:
+					j[c.name] = 0
+				else:
+					j[c.name] = ""
+		return j
 
 class Console(Base, CustomBase):
 	__tablename__ = "console"
