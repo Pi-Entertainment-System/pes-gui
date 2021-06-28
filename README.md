@@ -23,4 +23,5 @@ bin/populate-db -k default -m -d data -r --match -v
 
 # Acknowledgements
 
-GUI sound effects provided by: [Octave](https://github.com/scopegate/octave)
+* GUI sound effects provided by: [Octave](https://github.com/scopegate/octave)
+* Icons provided by: [Game-Icons.net](https://game-icons.net)
