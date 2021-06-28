@@ -70,6 +70,30 @@ ApplicationWindow {
     onYesButtonPressed: mainWindow.close()
   }
 
+  // reboot dialog
+  YesNoDialog {
+    id: poweroffDialog
+    navSound: navSound
+    text: "Are you sure you want to shutdown?"
+    onNoButtonPressed: powerDialog.forceActiveFocus()
+    onYesButtonPressed: {
+      mainWindow.close();
+      backend.shutdown();
+    }
+  }
+
+  // reboot dialog
+  YesNoDialog {
+    id: rebootDialog
+    navSound: navSound
+    text: "Are you sure you want to reboot?"
+    onNoButtonPressed: powerDialog.forceActiveFocus()
+    onYesButtonPressed: {
+      mainWindow.close();
+      backend.reboot();
+    }
+  }
+
 	// options dialog
   Dialog {
     id: optionsDialog
@@ -160,10 +184,10 @@ ApplicationWindow {
   }
 
   // shortcuts
-  //Shortcut {
-  //  sequence: "Home"
-  //  onActivated: optionsDialog.open()
-  //}
+  Shortcut {
+    sequence: "Home"
+    onActivated: PES.goHome()
+  }
 
   Shortcut {
     sequence: "Esc"

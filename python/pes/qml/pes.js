@@ -43,17 +43,17 @@ function getConsolesWithGames() {
   return backend.getConsoles(true);
 }
 
-function goHome() {
-  screenStack.currentIndex = 0;
-  mainMenuScrollView.forceActiveFocus();
-}
-
 function getRecentlyAddedGames(consoleId) {
   return backend.getRecentlyAddedGames(consoleId, 10)
 }
 
 function getRecentlyPlayedGames(consoleId) {
   return backend.getRecentlyPlayedGames(consoleId, 10)
+}
+
+function goHome() {
+  screenStack.currentIndex = 0;
+  mainMenuScrollView.forceActiveFocus();
 }
 
 function mainMenuEvent(item) {
@@ -81,12 +81,12 @@ function powerDialogEvent(text) {
 			break;
 		}
     case "Reboot": {
-      mainWindow.close();
-      backend.reboot();
+      rebootDialog.open();
+      break;
     }
     case "Power Off": {
-      mainWindow.close();
-      backend.shutdown();
+      poweroffDialog.open();
+      break;
     }
 	}
 }
