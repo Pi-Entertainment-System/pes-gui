@@ -60,9 +60,6 @@ function mainMenuEvent(item) {
   if (item.name == "Home" || item.id) {
     PES.setCoverartPanelFocus();
   }
-  else if (item.name == "Options") {
-    optionsDialog.open();
-  }
 }
 
 function optionsDialogEvent(text) {
@@ -73,8 +70,13 @@ function optionsDialogEvent(text) {
       updateGamesScreen.reset();
 			break;
 		}
+	}
+}
+
+function powerDialogEvent(text) {
+	switch(text) {
 		case "Exit": {
-			optionsDialog.close();
+			powerDialog.close();
 			closeDialog.open();
 			break;
 		}

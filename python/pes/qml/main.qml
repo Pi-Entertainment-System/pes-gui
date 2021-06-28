@@ -75,7 +75,7 @@ ApplicationWindow {
     id: optionsDialog
     modal: true
     width: 500
-    height: 274
+    height: 65 * optionsPopupMenu.count
     x: (parent.width - width) / 2
     y: (parent.height - height) / 2
 
@@ -85,7 +85,7 @@ ApplicationWindow {
     }
 
     ListModel {
-      id: popupMenu
+      id: optionsPopupMenu
 
       ListElement {
         name: "Update Games"
@@ -94,13 +94,48 @@ ApplicationWindow {
       ListElement {
         name: "Settings"
       }
+    }
+
+    SoundListView {
+      id: optionsPopupMenuView
+      anchors.fill: parent
+      focus: true
+      model: optionsPopupMenu
+      navSound: navSound
+      delegate: MenuDelegate {
+        width: optionsPopupMenuView.width
+				Keys.onReturnPressed: PES.optionsDialogEvent(text);
+			}
+      keyNavigationEnabled: true
+      keyNavigationWraps: true
+    }
+
+		onOpened: optionsPopupMenuView.forceActiveFocus()
+  }
+
+	// power dialog
+  Dialog {
+    id: powerDialog
+    modal: true
+    width: 500
+    height: 65 * powerPopupMenu.count
+    x: (parent.width - width) / 2
+    y: (parent.height - height) / 2
+
+    background: Rectangle {
+      color: Colour.menuBg
+      border.color: Colour.line
+    }
+
+    ListModel {
+      id: powerPopupMenu
 
       ListElement {
         name: "Reboot"
       }
 
       ListElement {
-        name: "Shutdown"
+        name: "Power Off"
       }
 
       ListElement {
@@ -109,31 +144,30 @@ ApplicationWindow {
     }
 
     SoundListView {
-      id: popupMenuView
+      id: powerPopupMenuView
       anchors.fill: parent
       focus: true
-      model: popupMenu
+      model: powerPopupMenu
       navSound: navSound
       delegate: MenuDelegate {
-        width: popupMenuView.width
-				Keys.onReturnPressed: PES.optionsDialogEvent(text);
+        width: powerPopupMenuView.width
+				Keys.onReturnPressed: PES.powerDialogEvent(text);
 			}
       keyNavigationEnabled: true
       keyNavigationWraps: true
     }
-
-		onOpened: popupMenuView.forceActiveFocus()
+		onOpened: powerPopupMenuView.forceActiveFocus()
   }
 
   // shortcuts
-  Shortcut {
-    sequence: "Home"
-    onActivated: optionsDialog.open()
-  }
+  //Shortcut {
+  //  sequence: "Home"
+  //  onActivated: optionsDialog.open()
+  //}
 
   Shortcut {
     sequence: "Esc"
-    onActivated: closeDialog.open()
+    onActivated: powerDialog.open()
   }
 
 	// models
@@ -142,10 +176,6 @@ ApplicationWindow {
 
 		ListElement {
 			name: "Home"
-		}
-
-    ListElement {
-			name: "Options"
 		}
 	}
 
@@ -283,32 +313,48 @@ ApplicationWindow {
 
 					color: Colour.menuBg
 
-					Rectangle {
-		        x: 0
-		        y: parent.y
-		        width: parent.width
-		        height: parent.height - this.y
-		        color: parent.color
+          ColumnLayout {
 
-		        ScrollView {
+            RowLayout {
+              UiIconButton {
+                id: powerBtn
+                source: "icons/power-button.png"
+                KeyNavigation.right: settingsBtn
+                KeyNavigation.down: mainMenuScrollView
+                Keys.onReturnPressed: powerDialog.open()
+              }
+
+              UiIconButton {
+                id: settingsBtn
+                source: "icons/cog.png"
+                KeyNavigation.left: powerBtn
+                KeyNavigation.down: mainMenuScrollView
+                Keys.onReturnPressed: optionsDialog.open()
+              }
+            }
+
+            ScrollView {
               id: mainMenuScrollView
-		          width: parent.width
-		          height: parent.height
-		          clip: true
-		          focus: true
+              Layout.topMargin: 10
+              Layout.fillWidth: true
+              Layout.fillHeight: true
+              Layout.minimumWidth: mainMenuRect.Layout.minimumWidth
+              clip: true
+              focus: true
 
-		          SoundListView {
-		            id: mainMenuView
-		            anchors.fill: parent
-		            focus: false
-		            model: mainMenuModel
+              SoundListView {
+                id: mainMenuView
+                anchors.fill: parent
+                focus: false
+                focusTop: powerBtn
+                model: mainMenuModel
                 navSound: navSound
                 soundOn: false
-		            delegate: MenuDelegate {
+                delegate: MenuDelegate {
                   width: mainMenuView.width
                   Keys.onReturnPressed: PES.mainMenuEvent(mainMenuModel.get(mainMenuView.currentIndex));
                   Keys.onRightPressed: PES.setCoverartPanelFocus()
-								}
+                }
                 onItemHighlighted: {
                   // console objects in the model will have ID set
                   if (item.id) {
@@ -318,11 +364,12 @@ ApplicationWindow {
                     PES.updateCoverartPanels(0);
                   }
                 }
-		          }
-		        }
-					}
-					Component.onCompleted: PES.updateMainScreen()
-				}
+              }
+            }
+
+            Component.onCompleted: PES.updateMainScreen()
+          }
+        }
 
 				Rectangle {
 					id: mainScreenDisplayRect
