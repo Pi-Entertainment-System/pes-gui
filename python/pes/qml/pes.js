@@ -80,6 +80,14 @@ function powerDialogEvent(text) {
 			closeDialog.open();
 			break;
 		}
+    case "Reboot": {
+      mainWindow.close();
+      backend.reboot();
+    }
+    case "Power Off": {
+      mainWindow.close();
+      backend.shutdown();
+    }
 	}
 }
 

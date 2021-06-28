@@ -78,6 +78,7 @@ class BackEnd(QObject):
 
 	def __init__(self, parent=None):
 		super(BackEnd, self).__init__(parent)
+		self.__userSettings = pes.common.UserSettings(pes.userPesConfigFile)
 		self.__dbusBroker = pes.system.DbusBroker()
 		if self.__dbusBroker.btAvailable():
 			self.__btAgent = pes.system.BluetoothAgent()
@@ -192,6 +193,16 @@ class BackEnd(QObject):
 			return { "result": True, "msg": "Loading %s" % game.name }
 		logging.error("BackEnd.playGame: coult not find game ID %d" % id)
 		return { "result": False, "msg": "Could not find game %d" % id }
+
+	@pyqtSlot()
+	def reboot(self):
+		logging.info("Rebooting")
+		pes.common.runCommand(self.__userSettings.get("commands", "reboot"))
+
+	@pyqtSlot()
+	def shutdown(self):
+		logging.info("Shutting down...")
+		pes.common.runCommand(self.__userSettings.get("commands", "shutdown"))
 
 class PESGuiApplication(QGuiApplication):
 
