@@ -118,6 +118,7 @@ Rectangle {
     Keys.onPressed: {
         if (event.key == Qt.Key_Backspace) {
             PES.goHome();
+            event.accepted = true;
         }
     }
 
