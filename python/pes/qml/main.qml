@@ -129,6 +129,13 @@ ApplicationWindow {
       delegate: MenuDelegate {
         width: optionsPopupMenuView.width
 				Keys.onReturnPressed: PES.optionsDialogEvent(text);
+        Keys.onPressed: {
+          // no onBackspace event that I can see!
+          if (event.key == Qt.Key_Backspace) {
+            optionsDialog.close();
+            event.accepted = true;
+          }
+        }
 			}
       keyNavigationEnabled: true
       keyNavigationWraps: true
@@ -176,6 +183,13 @@ ApplicationWindow {
       delegate: MenuDelegate {
         width: powerPopupMenuView.width
 				Keys.onReturnPressed: PES.powerDialogEvent(text);
+        Keys.onPressed: {
+          // no onBackspace event that I can see!
+          if (event.key == Qt.Key_Backspace) {
+            powerDialog.close();
+            event.accepted = true;
+          }
+        }
 			}
       keyNavigationEnabled: true
       keyNavigationWraps: true
