@@ -44,11 +44,11 @@ function getConsolesWithGames() {
 }
 
 function getRecentlyAddedGames(consoleId) {
-  return backend.getRecentlyAddedGames(consoleId, 10)
+  return backend.getRecentlyAddedGames(consoleId, 10, false);
 }
 
 function getRecentlyPlayedGames(consoleId) {
-  return backend.getRecentlyPlayedGames(consoleId, 10)
+  return backend.getRecentlyPlayedGames(consoleId, 10, false);
 }
 
 function goHome() {
