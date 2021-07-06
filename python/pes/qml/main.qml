@@ -74,7 +74,7 @@ ApplicationWindow {
   YesNoDialog {
     id: poweroffDialog
     navSound: navSound
-    text: "Are you sure you want to shutdown?"
+    text: "Are you sure you want to power off?"
     onNoButtonPressed: powerDialog.forceActiveFocus()
     onYesButtonPressed: {
       mainWindow.close();
