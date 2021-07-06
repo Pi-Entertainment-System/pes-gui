@@ -29,7 +29,7 @@ import "../Style/" 1.0
 Dialog {
   id: dialog
   modal: true
-  width: 500
+  width: 530
   height: 150
   x: (parent.width - width) / 2
   y: (parent.height - height) / 2
@@ -41,6 +41,12 @@ Dialog {
   // additional properties
   property alias text: promptTxt.text
   property QtObject navSound: null
+
+  // private properties
+  QtObject {
+    id: internal
+    property int initialHeight: 0
+  }
 
   function _playSound() {
     if (navSound) {
@@ -55,13 +61,17 @@ Dialog {
   }
 
   ColumnLayout {
+    id: colLayout
     anchors.fill: parent
     spacing: 10
     Text {
       id: promptTxt
       color: Colour.text
+      elide: Text.ElideRight
       font.pixelSize: FontStyle.dialogSize
       text: "Prompt"
+      Layout.maximumWidth: dialog.width - parent.spacing
+      wrapMode: Text.NoWrap
     }
 
     RowLayout {
@@ -133,7 +143,17 @@ Dialog {
     }
   }
 
+  Component.onCompleted: {
+    if (internal.initialHeight == 0){ 
+      internal.initialHeight = dialog.height;
+    }
+  }
+
   onOpened: {
+    if (promptTxt.width >= dialog.width - colLayout.spacing) {
+      dialog.height = promptTxt.height + internal.initialHeight;
+      promptTxt.wrapMode = Text.WordWrap;
+    }
     exitYesBtn.forceActiveFocus()
   }
 }
