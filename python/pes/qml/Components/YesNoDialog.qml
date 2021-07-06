@@ -42,6 +42,12 @@ Dialog {
   property alias text: promptTxt.text
   property QtObject navSound: null
 
+  function _playSound() {
+    if (navSound) {
+      navSound.play();
+    }
+  }
+
   background: Rectangle {
     color: Colour.dialogBg
     anchors.fill: parent
@@ -76,16 +82,23 @@ Dialog {
         btnText: "Yes"
         focus: true
 
-        Keys.onRightPressed: {
-          if (dialog.navSound) {
-            dialog.navSound.play();
+        Keys.onPressed: {
+          if (event.key == Qt.Key_Return) {
+            dialog._playSound();
+            event.accepted = true;
+            dialog.yesButtonPressed();
           }
-          event.accepted = true;
-          exitNoBtn.forceActiveFocus();
-        }
-
-        Keys.onReturnPressed: {
-          dialog.yesButtonPressed();
+          else if (event.key == Qt.Key_Backspace) {
+            dialog._playSound();
+            event.accepted = true;
+            dialog.close();
+            dialog.noButtonPressed();
+          }
+          else if (event.key == Qt.Key_Right) {
+            dialog._playSound();
+            event.accepted = true;
+            exitNoBtn.forceActiveFocus();
+          }
         }
       }
 
@@ -98,17 +111,18 @@ Dialog {
         Layout.minimumHeight: 50
         btnText: "No"
 
-        Keys.onLeftPressed: {
-          if (dialog.navSound) {
-            dialog.navSound.play();
+        Keys.onPressed: {
+          if (event.key == Qt.Key_Backspace || event.key == Qt.Key_Return) {
+            dialog._playSound();
+            event.accepted = true;
+            dialog.close();
+            dialog.noButtonPressed();
           }
-          event.accepted = true;
-          exitYesBtn.forceActiveFocus();
-        }
-
-        Keys.onReturnPressed: {
-          dialog.close();
-          dialog.noButtonPressed();
+          else if (event.key == Qt.Key_Left) {
+            dialog._playSound();
+            event.accepted = true;
+            exitYesBtn.forceActiveFocus();
+          }
         }
       }
 
