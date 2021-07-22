@@ -115,7 +115,7 @@ function updateCoverartPanels(consoleId) {
   recentlyAddedMainPanel.removeAll();
   recentlyPlayedMainPanel.removeAll();
 
-  var games = getRecentlyAddedGames(consoleId);
+  var games = getRecentlyAddedGames(consoleId, true);
   if (games.length == 0) {
     recentlyAddedMainPanel.visible = false;
   }
@@ -126,7 +126,7 @@ function updateCoverartPanels(consoleId) {
     recentlyAddedMainPanel.visible = true;
   }
 
-  games = getRecentlyPlayedGames(consoleId);
+  games = getRecentlyPlayedGames(consoleId, true);
   if (games.length == 0) {
     recentlyPlayedMainPanel.visible = false;
   }
@@ -174,6 +174,9 @@ function updateMainScreen(){
   }
 
   gamesAdded = consoles.length > 0;
+
+  // purge recently added covert art cache
+  recentlyAddedCovertArtCache = {};
 
   updateCoverartPanels(0);
 
