@@ -21,6 +21,8 @@
 */
 
 var consoleArtCache = {};
+var recentlyAddedCovertArtCache = {};
+var recentlyPlayedCovertArtCache = {};
 var currentConsoleId = null;
 var gamesAdded = false;
 
@@ -43,12 +45,18 @@ function getConsolesWithGames() {
   return backend.getConsoles(true);
 }
 
-function getRecentlyAddedGames(consoleId) {
-  return backend.getRecentlyAddedGames(consoleId, 10, false);
+function getRecentlyAddedGames(consoleId, useCache) {
+  if (!useCache || !(consoleId in recentlyAddedCovertArtCache)) {
+    recentlyAddedCovertArtCache[consoleId] = backend.getRecentlyAddedGames(consoleId, 10);
+  }
+  return recentlyAddedCovertArtCache[consoleId];
 }
 
-function getRecentlyPlayedGames(consoleId) {
-  return backend.getRecentlyPlayedGames(consoleId, 10, false);
+function getRecentlyPlayedGames(consoleId, useCache) {
+  if (!useCache || !(consoleId in recentlyPlayedCovertArtCache)) {
+    recentlyPlayedCovertArtCache[consoleId] = backend.getRecentlyPlayedGames(consoleId, 10);
+  }
+  return recentlyPlayedCovertArtCache[consoleId];
 }
 
 function goHome() {

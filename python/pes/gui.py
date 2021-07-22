@@ -90,8 +90,6 @@ class BackEnd(QObject):
 		engine = pes.sql.connect()
 		self.__session = sqlalchemy.orm.sessionmaker(bind=engine)()
 		pes.sql.createAll(engine)
-		self.__recentlyAddedGamesCache = {}
-		self.__recentlyPlayedGamesCache = {}
 
 	@pyqtSlot(result=bool)
 	def btAvailable(self):
@@ -148,43 +146,35 @@ class BackEnd(QObject):
 	def getNetworkAvailable(self):
 		return pes.common.getIpAddress() != "127.0.0.1"
 
-	@pyqtSlot(int, int, bool, result=list)
-	def getRecentlyAddedGames(self, consoleId=None, limit=10, purgeCache=False):
+	@pyqtSlot(int, int, result=list)
+	def getRecentlyAddedGames(self, consoleId=None, limit=10):
 		if consoleId:
 			logging.debug("BackEnd.getRecentlyAddedGames: getting games for console %d" % consoleId)
 		else:
 			logging.debug("BackEnd.getRecentlyAddedGames: getting games for all consoles")
-		if purgeCache or consoleId not in self.__recentlyAddedGamesCache:
-			logging.debug("BackEnd.getRecentlyAddedGames: getting live values")
-			self.__recentlyAddedGamesCache[consoleId] = []
-			if not consoleId or consoleId == 0:
-				result = self.__session.query(pes.sql.Game).order_by(pes.sql.Game.added.desc()).limit(limit)
-			else:
-				result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).order_by(pes.sql.Game.added.desc()).limit(limit)
-			for g in result:
-				self.__recentlyAddedGamesCache[consoleId].append(g.getJson())
+		games = []
+		if not consoleId or consoleId == 0:
+			result = self.__session.query(pes.sql.Game).order_by(pes.sql.Game.added.desc()).limit(limit)
 		else:
-			logging.debug("BackEnd.getRecentlyAddedGames: returning cached values")
-		return self.__recentlyAddedGamesCache[consoleId]
+			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).order_by(pes.sql.Game.added.desc()).limit(limit)
+		for g in result:
+			games.append(g.getJson())
+		return games
 
-	@pyqtSlot(int, int, bool, result=list)
-	def getRecentlyPlayedGames(self, consoleId=None, limit=10, purgeCache=False):
+	@pyqtSlot(int, int, result=list)
+	def getRecentlyPlayedGames(self, consoleId=None, limit=10):
 		if consoleId:
 			logging.debug("BackEnd.getRecentlyPlayedGames: getting games for console %d" % consoleId)
 		else:
 			logging.debug("BackEnd.getRecentlyPlayedGames: getting games for all consoles")
-		if purgeCache or consoleId not in self.__recentlyPlayedGamesCache:
-			logging.debug("BackEnd.getRecentlyPlayedGames: getting live values")
-			self.__recentlyPlayedGamesCache[consoleId] = []	
-			if not consoleId or consoleId == 0:
-				result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.lastPlayed != None).order_by(pes.sql.Game.lastPlayed.desc()).limit(limit)
-			else:
-				result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).filter(pes.sql.Game.playCount > 0).order_by(pes.sql.Game.lastPlayed.desc()).limit(limit)
-			for g in result:
-				self.__recentlyPlayedGamesCache[consoleId].append(g.getJson())
+		games = []
+		if not consoleId or consoleId == 0:
+			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.lastPlayed != None).order_by(pes.sql.Game.lastPlayed.desc()).limit(limit)
 		else:
-			logging.debug("BackEnd.getRecentlyPlayedGames: return cached values")
-		return self.__recentlyPlayedGamesCache[consoleId]
+			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).filter(pes.sql.Game.playCount > 0).order_by(pes.sql.Game.lastPlayed.desc()).limit(limit)
+		for g in result:
+			games.append(g.getJson())
+		return games
 
 	@pyqtSlot(result=str)
 	def getTime(self):
