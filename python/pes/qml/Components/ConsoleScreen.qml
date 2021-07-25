@@ -30,6 +30,8 @@ import "../pes.js" as PES
 
 RowLayout {
     property alias background: backgroundImg.source
+    property alias headerText: headerText.text
+    property alias menuIndex: menuView.currentIndex
 
     function forceActiveFocus() {
         menuView.forceActiveFocus();
@@ -134,7 +136,7 @@ RowLayout {
             spacing: 10
 
             HeaderText {
-            id: welcomeText
+            id: headerText
             text: "Console"
 
             Layout.fillWidth: true

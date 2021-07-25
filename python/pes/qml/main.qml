@@ -505,7 +505,10 @@ ApplicationWindow {
               KeyNavigation.up: recentlyAddedMainPanel.visible ? recentlyAddedMainPanel : recentlyPlayedMainPanel
 
               Keys.onReturnPressed: {
-                consoleScreen.background = PES.getConsoleArt(PES.currentConsoleId);
+                var currentConsole = PES.getCurrentConsole();
+                consoleScreen.headerText = currentConsole.name;
+                consoleScreen.background = PES.getConsoleArt(currentConsole.id);
+                consoleScreen.menuIndex = 0;
                 screenStack.currentIndex = 2;
                 consoleScreen.forceActiveFocus();
               }

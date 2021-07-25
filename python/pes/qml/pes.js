@@ -20,6 +20,7 @@
     along with PES.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+var allConsoles = null;
 var consoleArtCache = {};
 var recentlyAddedCovertArtCache = {};
 var recentlyPlayedCovertArtCache = {};
@@ -43,6 +44,10 @@ function getConsoleArt(consoleId) {
 
 function getConsolesWithGames() {
   return backend.getConsoles(true);
+}
+
+function getCurrentConsole() {
+  return allConsoles[currentConsoleId];
 }
 
 function getRecentlyAddedGames(consoleId, useCache) {
@@ -161,6 +166,13 @@ function updateHomeScreen() {
 }
 
 function updateMainScreen(){
+  if (allConsoles == null) {
+    allConsoles = {};
+    var consoles = backend.getConsoles(false);
+    for (var i = 0; i < consoles.length; i++) {
+      allConsoles[consoles[i].id] = consoles[i];
+    }
+  }
   // main menu model
   // remove existing entries
   if (mainMenuModel.count > 1) {
