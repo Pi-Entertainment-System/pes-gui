@@ -142,6 +142,15 @@ class BackEnd(QObject):
 			consoleList.append(c.getJson())
 		return consoleList
 
+	@pyqtSlot(int, result=list)
+	def getGames(self, consoleId):
+		logging.debug("BackEnd.getGames: getting games for console %d" % consoleId)
+		games = []
+		result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).order_by(pes.sql.Game.name)
+		for g in result:
+			games.append(g.getJson())
+		return games
+
 	@pyqtSlot(result=bool)
 	def getNetworkAvailable(self):
 		return pes.common.getIpAddress() != "127.0.0.1"
