@@ -50,6 +50,10 @@ function getCurrentConsole() {
   return allConsoles[currentConsoleId];
 }
 
+function getGames(consoleId) {
+  return backend.getGames(consoleId);
+}
+
 function getRecentlyAddedGames(consoleId, useCache) {
   if (!useCache || !(consoleId in recentlyAddedCovertArtCache)) {
     recentlyAddedCovertArtCache[consoleId] = backend.getRecentlyAddedGames(consoleId, 10);
