@@ -56,9 +56,7 @@ Rectangle {
     }
 
     function removeAll() {
-        while (myModel.count > 0) {
-            myModel.remove(myModel.count - 1);
-        }
+        myModel.clear();
     }
 
     ListModel {
