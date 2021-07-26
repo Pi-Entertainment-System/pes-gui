@@ -29,18 +29,37 @@ import "../Style/" 1.0
 import "../pes.js" as PES
 
 RowLayout {
+    property int consoleId: 0
     property alias background: backgroundImg.source
     property alias headerText: headerText.text
     property alias menuIndex: menuView.currentIndex
 
+    function addGame(game) {
+        gameModel.append(game);
+    }
+
     function forceActiveFocus() {
         menuView.forceActiveFocus();
+    }
+
+    function refresh() {
+        gameModel.clear();
+        if (menuModel.get(menuView.currentIndex).name == "Browse") {
+            var games = PES.getGames(consoleId);
+            for (var i = 0; i < games.length; i++) {
+                addGame(games[i]);
+            }
+        }
     }
 
     Keys.onPressed: {
         if (event.key == Qt.Key_Backspace) {
             PES.goHome();
         }
+    }
+
+    ListModel {
+        id: gameModel
     }
 
     ListModel {
@@ -64,6 +83,45 @@ RowLayout {
 
         ListElement {
             name: "Most Played"
+        }
+    }
+
+    Component {
+        id: gridDelegate
+
+        Rectangle {
+            border.color: Colour.line
+            border.width: focus ? 2: 0
+            color: focus ? Colour.menuFocus : "transparent"
+            height: 225
+            width: 220
+
+            Keys.onReturnPressed: {
+                
+            }
+
+            Image {
+                id: img
+                x: 10
+                y: 10
+                height: 180
+                width: 200
+                source: 'file://' + coverart
+            }
+
+            Text {
+                x: 10
+                y: img.y + img.height
+                color: Colour.text
+                elide: Text.ElideRight
+                font.pixelSize: FontStyle.bodySmallSize
+                font.bold: true
+                font.family: FontStyle.font
+                maximumLineCount: 1
+                text: name
+                wrapMode: Text.Wrap
+                width: parent.width
+            }
         }
     }
 
@@ -101,7 +159,9 @@ RowLayout {
                     //navSound: navSound
                     soundOn: false
                     delegate: MenuDelegate {
-                        //Keys.onReturnPressed: PES.mainMenuEvent(mainMenuModel.get(mainMenuView.currentIndex));
+                        Keys.onReturnPressed: {
+                            gridView.forceActiveFocus();
+                        }
                         //Keys.onRightPressed: PES.setCoverartPanelFocus()
                     }
                 }
@@ -136,10 +196,23 @@ RowLayout {
             spacing: 10
 
             HeaderText {
-            id: headerText
-            text: "Console"
+                id: headerText
+                text: "Console"
+                Layout.fillWidth: true
+            }
 
-            Layout.fillWidth: true
+            ScrollView {
+                clip: true
+                Layout.fillWidth: true
+                Layout.preferredHeight: screenDisplayRect.height - headerText.height
+
+                GridView {
+                    id: gridView
+                    cellWidth: 250
+                    cellHeight: 250
+                    model: gameModel
+                    delegate: gridDelegate
+                }
             }
         }
     }

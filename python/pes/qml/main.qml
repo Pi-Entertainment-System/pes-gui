@@ -506,9 +506,11 @@ ApplicationWindow {
 
               Keys.onReturnPressed: {
                 var currentConsole = PES.getCurrentConsole();
+                consoleScreen.consoleId = currentConsole.id;
                 consoleScreen.headerText = currentConsole.name;
                 consoleScreen.background = PES.getConsoleArt(currentConsole.id);
                 consoleScreen.menuIndex = 0;
+                consoleScreen.refresh();
                 screenStack.currentIndex = 2;
                 consoleScreen.forceActiveFocus();
               }
