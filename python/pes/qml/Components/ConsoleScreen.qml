@@ -33,6 +33,7 @@ RowLayout {
     property alias background: backgroundImg.source
     property alias headerText: headerText.text
     property alias menuIndex: menuView.currentIndex
+    property alias gameIndex: gridView.currentIndex
 
     function addGame(game) {
         gameModel.append(game);
@@ -40,6 +41,17 @@ RowLayout {
 
     function forceActiveFocus() {
         menuView.forceActiveFocus();
+    }
+
+    function gridFocus() {
+        if (internal.gameIndex == -1) {
+            gameIndex = 0;
+            internal.gameIndex = 0;
+        }
+        else {
+            gameIndex = internal.gameIndex;
+        }
+        gridView.forceActiveFocus();
     }
 
     function refresh() {
@@ -50,12 +62,13 @@ RowLayout {
                 addGame(games[i]);
             }
         }
+        gridView.currentIndex = -1;
+        internal.gameIndex = -1;
     }
 
-    Keys.onPressed: {
-        if (event.key == Qt.Key_Backspace) {
-            PES.goHome();
-        }
+    QtObject {
+        id: internal
+        property int gameIndex: -1
     }
 
     ListModel {
@@ -149,7 +162,12 @@ RowLayout {
                 width: parent.width
                 height: parent.height
                 clip: true
-                //focus: true
+
+                Keys.onPressed: {
+                   if (event.key == Qt.Key_Backspace) {
+                        PES.goHome();
+                    }
+                }
 
                 SoundListView {
                     id: menuView
@@ -159,10 +177,8 @@ RowLayout {
                     //navSound: navSound
                     soundOn: false
                     delegate: MenuDelegate {
-                        Keys.onReturnPressed: {
-                            gridView.forceActiveFocus();
-                        }
-                        //Keys.onRightPressed: PES.setCoverartPanelFocus()
+                        Keys.onReturnPressed: gridFocus()
+                        Keys.onRightPressed: gridFocus()
                     }
                 }
             }
@@ -212,6 +228,15 @@ RowLayout {
                     cellHeight: 250
                     model: gameModel
                     delegate: gridDelegate
+
+                    Keys.onPressed: {
+                        if (event.key == Qt.Key_Backspace) {
+                            internal.gameIndex = currentIndex;
+                            menuView.forceActiveFocus();
+                            currentItem.focus = false;
+                            currentIndex = -1;
+                        }
+                    }
                 }
             }
         }
