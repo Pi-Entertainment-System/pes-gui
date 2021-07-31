@@ -73,9 +73,21 @@ function goHome() {
   mainMenuScrollView.forceActiveFocus();
 }
 
-function mainMenuEvent(item) {
-  if (item.name == "Home" || item.id) {
-    PES.setCoverartPanelFocus();
+function loadConsoleScreen(console) {
+  consoleScreen.consoleId = console.id;
+  consoleScreen.headerText = console.name;
+  consoleScreen.background = PES.getConsoleArt(console.id);
+  consoleScreen.menuIndex = 0;
+  consoleScreen.refresh();
+  screenStack.currentIndex = 2;
+  consoleScreen.forceActiveFocus();
+}
+
+function mainMenuEvent() {
+  // if a console is selected, then load the console screen
+  var i = mainMenuModel.get(mainMenuView.currentIndex);
+  if (i.id) {
+    PES.loadConsoleScreen(PES.allConsoles[i.id]);
   }
 }
 

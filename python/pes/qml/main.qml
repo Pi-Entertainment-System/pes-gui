@@ -45,8 +45,7 @@ ApplicationWindow {
 	    target: backend
 
 			function onHomeButtonPress() {
-				//pesDialog.open();
-	      //popupMenuView.forceActiveFocus();
+        PES.goHome();
 			}
 
 			function onControlPadButtonPress() {
@@ -390,7 +389,7 @@ ApplicationWindow {
                 soundOn: false
                 delegate: MenuDelegate {
                   width: mainMenuView.width
-                  Keys.onReturnPressed: PES.mainMenuEvent(mainMenuModel.get(mainMenuView.currentIndex));
+                  Keys.onReturnPressed: PES.mainMenuEvent()
                   Keys.onRightPressed: PES.setCoverartPanelFocus()
                 }
                 onItemHighlighted: {
@@ -505,14 +504,7 @@ ApplicationWindow {
               KeyNavigation.up: recentlyAddedMainPanel.visible ? recentlyAddedMainPanel : recentlyPlayedMainPanel
 
               Keys.onReturnPressed: {
-                var currentConsole = PES.getCurrentConsole();
-                consoleScreen.consoleId = currentConsole.id;
-                consoleScreen.headerText = currentConsole.name;
-                consoleScreen.background = PES.getConsoleArt(currentConsole.id);
-                consoleScreen.menuIndex = 0;
-                consoleScreen.refresh();
-                screenStack.currentIndex = 2;
-                consoleScreen.forceActiveFocus();
+                PES.loadConsoleScreen(PES.getCurrentConsole());
               }
             }
           }
