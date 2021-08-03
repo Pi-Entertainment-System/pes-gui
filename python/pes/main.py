@@ -23,11 +23,10 @@
 #
 
 import argparse
-import datetime
 import logging
 import pes
 from pes.common import *
-from pes.gui import BackEnd, PESGuiApplication
+from pes.gui import PESGuiApplication
 import pes.sql
 import sdl2
 import shutil
