@@ -26,8 +26,9 @@ import argparse
 import logging
 import pes
 from pes.common import *
-from pes.gui import PESGuiApplication
+from pes.gui import Backend, PESGuiApplication
 import pes.sql
+import pes.web
 import sdl2
 import shutil
 
@@ -70,6 +71,7 @@ if __name__ == "__main__":
 	checkDir(pes.baseDir)
 	checkFile(pes.qmlMain)
 	checkDir(pes.qmlDir)
+	checkDir(pes.webDir)
 	logging.debug("config dir: %s" % pes.confDir)
 	checkDir(pes.confDir)
 	logging.debug("user dir: %s" % pes.userDir)
@@ -116,6 +118,22 @@ if __name__ == "__main__":
 	elif romScraper not in pes.romScrapers:
 		pesExit("Unknown romScraper value: \"%s\" in \"settings\" section in %s" % (romScraper, userPesConfigFile, romScrapers[0]))
 
+	backend = Backend()
+
+	# enable web server?
+	if userSettings.get("settings", "webServer"):
+		try:
+			webPort = int(userSettings.get("webServer", "port"))
+		except Exception as e:
+			logging.error("Could not determine web port from %s" % userPesConfigFile)
+		try:
+			webThread = pes.web.WebThread(webPort, backend)
+			webThread.start()
+		except Exception as e:
+			logging.error("Failed to start web server: %s" % e)
+	else:
+		logging.info("web server disabled")
+
 	if sdl2.SDL_Init(sdl2.SDL_INIT_JOYSTICK | sdl2.SDL_INIT_GAMECONTROLLER) != 0:
 		pesExit("Failed to initialise SDL")
 
@@ -125,7 +143,7 @@ if __name__ == "__main__":
 		pes.common.pesExit("failed to load SDL2 control pad mappings from: %s" % pes.userGameControllerFile)
 	logging.debug("loaded %d control pad mappings" % mappingsLoaded)
 
-	app = PESGuiApplication(sys.argv)
+	app = PESGuiApplication(sys.argv, backend)
 
 	if cecImported:
 		logging.debug("creating CEC config...")

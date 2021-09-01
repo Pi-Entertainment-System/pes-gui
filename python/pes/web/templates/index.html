@@ -1,0 +1,36 @@
+{% include 'header.html' %}
+            <div class="row">
+                <div class="col-12">
+                    <h1 class="h1">Home</h1>
+
+                    <p>Welcome to the PES web interface. This web interface allows you to browse your game collection and to control PES.</p>
+                    {%- if recentlyAdded|length == 0 -%}
+                    <div class="alert alert-warning" role="alert">You have not added any games yet!</div>
+                    {%- endif -%}
+                </div>
+            </div>
+            {%- if recentlyPlayed|length > 0 -%}
+            <div class="row">
+                <div class="col-12">
+                    <h2>Recently Played Games</h2>
+                </div>
+            </div>
+            <div class="row">
+            {%- for g in recentlyPlayed -%}
+                <div class="col"><center><p><a href="game?id={{ g.id }}"><img width="100px" src="coverart?id={{ g.id }}"/></p><p>{{ g.name }}</p></a></center></div>
+            {%- endfor -%}
+            </div>
+            {%- endif -%}
+            {%- if recentlyAdded|length > 0 -%}
+            <div class="row">
+                <div class="col-12">
+                    <h2>Recently Added Games</h2>
+                </div>
+            </div>
+            <div class="row">
+            {%- for g in recentlyAdded -%}
+                <div class="col"><center><p><a href="game?id={{ g.id }}"><img width="100px" src="coverart?id={{ g.id }}"/></p><p>{{ g.name }}</p></a></center></div>
+            {%- endfor -%}
+            </div>
+            {%- endif -%}
+{% include 'footer.html' %}

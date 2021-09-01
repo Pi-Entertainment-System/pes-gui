@@ -1,0 +1,25 @@
+{% include 'header.html' %}
+            <h1 class="h1">{{ console.name }}: Games</h1>
+            {% if games|length == 1 %}
+            <p>Showing 1 game.</p>
+            {% else %}
+            <p>Showing {{ games|length }} games.</p>
+            {% endif %}
+            {%- set count = namespace(value=0) -%}
+            {%- for g in games -%}
+                {%- if count.value % 3 == 0 %}
+                <div class="row">
+                {%- endif %}
+                    <div class="col"><center><p><a href="game?id={{ g.id }}"><img width="200px" src="coverart?id={{ g.id }}"/></p><p>{{ g.name }}</p></a></center></div>
+                {%- if count.value % 3 == 2 %}
+                </div>
+                {%- endif -%}
+                {%- set count.value = count.value + 1 -%}
+            {%- endfor -%}
+            {%- for i in range(3 - (count.value % 3)) %}
+                <div class="col">&nbsp;</div>
+            {%- endfor -%}
+            {%- if count.value % 3 != 0 %}
+                </div>
+            {%- endif -%}
+{% include 'footer.html' %}

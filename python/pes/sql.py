@@ -97,6 +97,26 @@ class Game(Base, CustomBase):
 	gamesDbGame = relationship("GamesDbGame", back_populates="games")
 	retroAchievementGame = relationship("RetroAchievementGame", back_populates="games")
 
+	def getJson(self):
+		j = super().getJson()
+		if self.gamesDbGame:
+			j["overview"] = self.gamesDbGame.overview
+			j["releaseDate"] = self.gamesDbGame.releaseDate
+		else:
+			j["overview"] = ""
+			j["releaseDate"] = "N/A"
+		if j["added"] > 0:
+			j["addedStr"] = self.added.strftime("%H:%M %d/%m/%Y")
+		else:
+			j["addedStr"] = "Unknown"
+		if j["lastPlayed"] > 0:
+			j["lastPlayedStr"] = self.lastPlayed.strftime("%H:%M %d/%m/%Y")
+		elif self.playCount == 0:
+			j["lastPlayedStr"] = "Not played"
+		else:
+			j["lastPlayedStr"] = "Unknown"
+		return j
+
 class GamesDbGame(Base, CustomBase):
 	__tablename__ = "gamesdb_game"
 

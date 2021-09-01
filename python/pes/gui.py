@@ -69,7 +69,7 @@ def getJoystickDeviceInfoFromGUID(guid):
 	productId = getLitteEndianFromHex(productId)
 	return (vendorId, productId)
 
-class BackEnd(QObject):
+class Backend(QObject):
 
 	closeSignal = pyqtSignal()
 	controlPadButtonPress = pyqtSignal(int, arguments=['button'])
@@ -77,7 +77,7 @@ class BackEnd(QObject):
 	gamepadTotalSignal = pyqtSignal(int, arguments=['total'])
 
 	def __init__(self, parent=None):
-		super(BackEnd, self).__init__(parent)
+		super(Backend, self).__init__(parent)
 		self.__userSettings = pes.common.UserSettings(pes.userPesConfigFile)
 		self.__dbusBroker = pes.system.DbusBroker()
 		if self.__dbusBroker.btAvailable():
@@ -101,7 +101,7 @@ class BackEnd(QObject):
 
 	@pyqtSlot()
 	def close(self):
-		logging.debug("BackEnd.close: closing...")
+		logging.debug("Backend.close: closing...")
 		self.closeSignal.emit()
 
 	def emitHomeButtonPress(self):
@@ -130,9 +130,18 @@ class BackEnd(QObject):
 		logging.error("Backend.getConsoleArt: could not find console with ID: %d" % consoleId)
 		return None
 
+	@pyqtSlot(int, result=str)
+	def getConsole(self, consoleId):
+		logging.debug("Backend.getConsole: getting console with ID: %d" % consoleId)
+		console = self.__session.query(pes.sql.Console).get(consoleId)
+		if console:
+			return console.getJson()
+		logging.error("Backend.getConsole: could not find console with ID: %d" % consoleId)
+		return None
+
 	@pyqtSlot(bool, result=list)
 	def getConsoles(self, withGames=False):
-		logging.debug("BackEnd.getConsoles: getting consoles, withGames = %s" % withGames)
+		logging.debug("Backend.getConsoles: getting consoles, withGames = %s" % withGames)
 		consoleList = []
 		if withGames:
 			result = self.__session.query(pes.sql.Console).join(pes.sql.Game).order_by(pes.sql.Console.name).all()
@@ -142,9 +151,17 @@ class BackEnd(QObject):
 			consoleList.append(c.getJson())
 		return consoleList
 
+	@pyqtSlot(int, result=str)
+	def getGame(self, gameId):
+		logging.debug("Backend.getGame: getting game: %d" % gameId)
+		game = self.__session.query(pes.sql.Game).get(gameId)
+		if game:
+			return game.getJson()
+		logging.error("Backend.getGame: could not find game for: %d" % gameId)
+
 	@pyqtSlot(int, result=list)
 	def getGames(self, consoleId):
-		logging.debug("BackEnd.getGames: getting games for console %d" % consoleId)
+		logging.debug("Backend.getGames: getting games for console %d" % consoleId)
 		games = []
 		result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).order_by(pes.sql.Game.name)
 		for g in result:
@@ -158,9 +175,9 @@ class BackEnd(QObject):
 	@pyqtSlot(int, int, result=list)
 	def getRecentlyAddedGames(self, consoleId=None, limit=10):
 		if consoleId:
-			logging.debug("BackEnd.getRecentlyAddedGames: getting games for console %d" % consoleId)
+			logging.debug("Backend.getRecentlyAddedGames: getting games for console %d" % consoleId)
 		else:
-			logging.debug("BackEnd.getRecentlyAddedGames: getting games for all consoles")
+			logging.debug("Backend.getRecentlyAddedGames: getting games for all consoles")
 		games = []
 		if not consoleId or consoleId == 0:
 			result = self.__session.query(pes.sql.Game).order_by(pes.sql.Game.added.desc()).limit(limit)
@@ -173,9 +190,9 @@ class BackEnd(QObject):
 	@pyqtSlot(int, int, result=list)
 	def getRecentlyPlayedGames(self, consoleId=None, limit=10):
 		if consoleId:
-			logging.debug("BackEnd.getRecentlyPlayedGames: getting games for console %d" % consoleId)
+			logging.debug("Backend.getRecentlyPlayedGames: getting games for console %d" % consoleId)
 		else:
-			logging.debug("BackEnd.getRecentlyPlayedGames: getting games for all consoles")
+			logging.debug("Backend.getRecentlyPlayedGames: getting games for all consoles")
 		games = []
 		if not consoleId or consoleId == 0:
 			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.lastPlayed != None).order_by(pes.sql.Game.lastPlayed.desc()).limit(limit)
@@ -193,14 +210,14 @@ class BackEnd(QObject):
 	def playGame(self, id):
 		game = self.__session.query(pes.sql.Game).get(id)
 		if game:
-			logging.debug("BackEnd.playGame: found game ID %d" % id)
+			logging.debug("Backend.playGame: found game ID %d" % id)
 			game.playCount += 1
 			game.lastPlayed = datetime.datetime.now()
 			self.__session.add(game)
 			self.__session.commit()
 			self.close()
 			return { "result": True, "msg": "Loading %s" % game.name }
-		logging.error("BackEnd.playGame: coult not find game ID %d" % id)
+		logging.error("Backend.playGame: coult not find game ID %d" % id)
 		return { "result": False, "msg": "Could not find game %d" % id }
 
 	@pyqtSlot()
@@ -215,7 +232,7 @@ class BackEnd(QObject):
 
 class PESGuiApplication(QGuiApplication):
 
-	def __init__(self, argv, windowed=False):
+	def __init__(self, argv, backend, windowed=False):
 		super(PESGuiApplication, self).__init__(argv)
 		self.__windowed = windowed
 		self.__running = True
@@ -223,7 +240,7 @@ class PESGuiApplication(QGuiApplication):
 		self.__player1ControllerIndex = None
 		self.__controlPadTotal = 0
 		self.__engine = None
-		self.__backend = BackEnd()
+		self.__backend = backend
 		self.__backend.closeSignal.connect(self.close)
 		qmlRegisterType(pes.romscan.RomScanMonitorThread, 'RomScanMonitorThread', 1, 0, 'RomScanMonitorThread')
 		self.__engine = QQmlApplicationEngine()

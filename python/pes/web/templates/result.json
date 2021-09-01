@@ -1,0 +1,5 @@
+{% if result %}
+{ "result": true, "msg": "{{ msg }}" }
+{% else %}
+{ "result": false, "msg": "{{ msg }}" }
+{% endif %}

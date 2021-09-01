@@ -1,0 +1,48 @@
+{% include 'header.html' %}
+            <h1 class="h1">{{ game.name }}</h1>
+            <div class="row">
+                <div class="col-3">
+                    <img src="coverart?id={{ game.id }}" />
+                </div>
+                <div class="col-9">
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <th scope="col">Overview:</th>
+                                <td>{{ game.overview }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="col">Released:</th>
+                                <td>{{ game.releaseDate }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="col">Path:</th>
+                                <td>{{ game.path }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="col">Size:</th>
+                                <td>{{ game.fileSize }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="col">Added:</th>
+                                <td>{{ game.addedStr }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="col">Last Played:</th>
+                                <td>{{ game.lastPlayedStr }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="col">Play Count:</th>
+                                <td>{{ game.playCount }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-1">
+                    <a class="btn btn-primary btn-block" href="Javascript:play({{ game.id }})">Play</a>
+                </div>
+            </div>
+
+{% include 'footer.html' %}
