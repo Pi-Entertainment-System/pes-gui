@@ -40,7 +40,7 @@ def createAll(engine):
 	Base.metadata.create_all(engine)
 
 class CustomBase(object):
-	def getJson(self):
+	def getDict(self):
 		j = {}
 		for c in self.__table__.columns:
 			val = getattr(self, c.name)
@@ -97,8 +97,8 @@ class Game(Base, CustomBase):
 	gamesDbGame = relationship("GamesDbGame", back_populates="games")
 	retroAchievementGame = relationship("RetroAchievementGame", back_populates="games")
 
-	def getJson(self):
-		j = super().getJson()
+	def getDict(self):
+		j = super().getDict()
 		if self.gamesDbGame:
 			j["overview"] = self.gamesDbGame.overview
 			j["releaseDate"] = self.gamesDbGame.releaseDate

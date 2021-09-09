@@ -135,7 +135,7 @@ class Backend(QObject):
 		logging.debug("Backend.getConsole: getting console with ID: %d" % consoleId)
 		console = self.__session.query(pes.sql.Console).get(consoleId)
 		if console:
-			return console.getJson()
+			return console.getDict()
 		logging.error("Backend.getConsole: could not find console with ID: %d" % consoleId)
 		return None
 
@@ -148,7 +148,7 @@ class Backend(QObject):
 		else:
 			result = self.__session.query(pes.sql.Console).order_by(pes.sql.Console.name).all()
 		for c in result:
-			consoleList.append(c.getJson())
+			consoleList.append(c.getDict())
 		return consoleList
 
 	@pyqtSlot(int, result=str)
@@ -156,8 +156,9 @@ class Backend(QObject):
 		logging.debug("Backend.getGame: getting game: %d" % gameId)
 		game = self.__session.query(pes.sql.Game).get(gameId)
 		if game:
-			return game.getJson()
+			return game.getDict()
 		logging.error("Backend.getGame: could not find game for: %d" % gameId)
+		return None
 
 	@pyqtSlot(int, result=list)
 	def getGames(self, consoleId):
@@ -165,7 +166,7 @@ class Backend(QObject):
 		games = []
 		result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).order_by(pes.sql.Game.name)
 		for g in result:
-			games.append(g.getJson())
+			games.append(g.getDict())
 		return games
 
 	@pyqtSlot(result=bool)
@@ -184,7 +185,7 @@ class Backend(QObject):
 		else:
 			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).order_by(pes.sql.Game.added.desc()).limit(limit)
 		for g in result:
-			games.append(g.getJson())
+			games.append(g.getDict())
 		return games
 
 	@pyqtSlot(int, int, result=list)
@@ -199,7 +200,7 @@ class Backend(QObject):
 		else:
 			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).filter(pes.sql.Game.playCount > 0).order_by(pes.sql.Game.lastPlayed.desc()).limit(limit)
 		for g in result:
-			games.append(g.getJson())
+			games.append(g.getDict())
 		return games
 
 	@pyqtSlot(result=str)
