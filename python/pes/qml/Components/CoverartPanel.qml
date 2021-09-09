@@ -74,7 +74,7 @@ Rectangle {
             width: 220
 
             Keys.onReturnPressed: {
-                mainRect.itemSelected(id);
+                mainRect.gameSelected(id);
             }
 
             Image {
