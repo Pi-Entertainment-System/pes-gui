@@ -466,7 +466,7 @@ ApplicationWindow {
               navSound: navSound
               visible: false
 
-              onItemSelected: function(gameId) {
+              onGameSelected: function(gameId) {
                 var r = backend.playGame(gameId);
                 if (!r.result) {
                   // @TODO: implement error message dialog
@@ -486,7 +486,7 @@ ApplicationWindow {
               navSound: navSound
               visible: false
 
-              onItemSelected: function(gameId) {
+              onGameSelected: function(gameId) {
                 var r = backend.playGame(gameId);
                 if (!r.result) {
                   // @TODO: implement error message dialog

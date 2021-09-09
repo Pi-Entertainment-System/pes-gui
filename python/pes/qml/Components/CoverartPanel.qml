@@ -37,7 +37,7 @@ Rectangle {
     property alias navSound: listView.navSound
 
     // custom signals
-    signal itemSelected(int gameId)
+    signal gameSelected(int gameId)
 
     onFocusChanged: {
         scrollView.forceActiveFocus();
