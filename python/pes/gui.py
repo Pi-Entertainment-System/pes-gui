@@ -151,7 +151,7 @@ class Backend(QObject):
 			consoleList.append(c.getDict())
 		return consoleList
 
-	@pyqtSlot(int, result=str)
+	@pyqtSlot(int, result=QVariant)
 	def getGame(self, gameId):
 		logging.debug("Backend.getGame: getting game: %d" % gameId)
 		game = self.__session.query(pes.sql.Game).get(gameId)
