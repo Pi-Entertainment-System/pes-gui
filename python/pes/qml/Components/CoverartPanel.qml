@@ -28,10 +28,10 @@ import "../Style/" 1.0
 
 Rectangle {
     id: mainRect
-    KeyNavigation.down: null
-    KeyNavigation.left: null
-    KeyNavigation.right: null
-    KeyNavigation.up: null
+    property Item keyDown: null
+    property Item keyLeft: null
+    property Item keyRight: null
+    property Item keyUp: null
 
     property alias headerText: headerText.text
     property alias navSound: listView.navSound
@@ -46,6 +46,17 @@ Rectangle {
 
     function addGame(game) {
         myModel.append(game);
+    }
+
+    function gainFocus() {
+        if (listView.currentIndex == -1) {
+            listView.currentIndex = 0;
+        }
+        scrollView.forceActiveFocus();
+    }
+
+    function isGameSelected() {
+        return listView.currentIndex != -1;
     }
 
     function loseFocus() {
@@ -122,8 +133,8 @@ Rectangle {
                 id: listView
                 property QtObject navSound: null;
                 Keys.onDownPressed: {
-                    if (mainRect.KeyNavigation.down && mainRect.KeyNavigation.down.visible) {
-                        mainRect.KeyNavigation.down.forceActiveFocus();
+                    if (mainRect.keyDown && mainRect.keyDown.visible) {
+                        mainRect.keyDown.forceActiveFocus();
                         mainRect.loseFocus();
                     }
                 }
@@ -135,8 +146,8 @@ Rectangle {
                         currentIndex -= 1;
                     }
                     else {
-                        if (mainRect.KeyNavigation.left && mainRect.KeyNavigation.left.visible) {
-                            mainRect.KeyNavigation.left.forceActiveFocus();
+                        if (mainRect.keyLeft && mainRect.keyLeft.visible) {
+                            mainRect.keyLeft.forceActiveFocus();
                             mainRect.loseFocus();
                         }
                     }
@@ -149,15 +160,15 @@ Rectangle {
                         currentIndex += 1;
                     }
                     else {
-                        if (mainRect.KeyNavigation.right && mainRect.KeyNavigation.right.visible) {
-                            mainRect.KeyNavigation.right.forceActiveFocus();
+                        if (mainRect.keyRight && mainRect.keyRight.visible) {
+                            mainRect.keyRight.forceActiveFocus();
                             mainRect.loseFocus();
                         }
                     }
                 }
                 Keys.onUpPressed: {
-                    if (mainRect.KeyNavigation.up && mainRect.KeyNavigation.up.visible) {
-                        mainRect.KeyNavigation.up.forceActiveFocus();
+                    if (mainRect.keyUp && mainRect.keyUp.visible) {
+                        mainRect.keyUp.forceActiveFocus();
                         mainRect.loseFocus();
                     }
                 }

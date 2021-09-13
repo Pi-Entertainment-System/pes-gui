@@ -28,12 +28,19 @@ import QtMultimedia 5.12
 import "../Style/" 1.0
 import "../pes.js" as PES
 
-RowLayout {
+Rectangle {
+
+    id: mainRect
+    color: "transparent"
+
     property int consoleId: 0
     property alias background: backgroundImg.source
     property alias headerText: headerText.text
     property alias menuIndex: menuView.currentIndex
     property alias gameIndex: gridView.currentIndex
+
+    // custom signals
+    signal gameSelected(int gameId)
 
     function addGame(game) {
         gameModel.append(game);
@@ -71,174 +78,180 @@ RowLayout {
         property int gameIndex: -1
     }
 
-    ListModel {
-        id: gameModel
-    }
+    RowLayout {
 
-    ListModel {
-        id: menuModel
+        anchors.fill: parent
 
-        ListElement {
-            name: "Browse"
+        ListModel {
+            id: gameModel
         }
 
-        ListElement {
-            name: "Favourites"
-        }
+        ListModel {
+            id: menuModel
 
-        ListElement {
-            name: "Recently Played"
-        }
-
-        ListElement {
-            name: "Recently Added"
-        }
-
-        ListElement {
-            name: "Most Played"
-        }
-    }
-
-    Component {
-        id: gridDelegate
-
-        Rectangle {
-            border.color: Colour.line
-            border.width: focus ? 2: 0
-            color: focus ? Colour.menuFocus : "transparent"
-            height: 225
-            width: 220
-
-            Keys.onReturnPressed: {
-                
+            ListElement {
+                name: "Browse"
             }
 
-            Image {
-                id: img
-                x: 10
-                y: 10
-                height: 180
-                width: 200
-                source: 'file://' + coverart
+            ListElement {
+                name: "Favourites"
             }
 
-            Text {
-                x: 10
-                y: img.y + img.height
-                color: Colour.text
-                elide: Text.ElideRight
-                font.pixelSize: FontStyle.bodySmallSize
-                font.bold: true
-                font.family: FontStyle.font
-                maximumLineCount: 1
-                text: name
-                wrapMode: Text.Wrap
-                width: parent.width
+            ListElement {
+                name: "Recently Played"
+            }
+
+            ListElement {
+                name: "Recently Added"
+            }
+
+            ListElement {
+                name: "Most Played"
             }
         }
-    }
 
-    Rectangle {
-        id: menuRect
-        Layout.preferredWidth: 300
-        Layout.minimumWidth: 300
-        Layout.maximumWidth: 300
-        Layout.topMargin: 30
-        Layout.bottomMargin: 30
-        Layout.fillHeight: true
-        Layout.fillWidth: false
+        Component {
+            id: gridDelegate
 
-        color: Colour.menuBg
+            Rectangle {
+                border.color: Colour.line
+                border.width: focus ? 2: 0
+                color: focus ? Colour.menuFocus : "transparent"
+                height: 225
+                width: 220
 
-        Rectangle {
-            x: 0
-            y: parent.y
-            width: parent.width
-            height: parent.height - this.y
-            color: parent.color
-
-            ScrollView {
-                id: menuScrollView
-                width: parent.width
-                height: parent.height
-                clip: true
-
-                Keys.onPressed: {
-                   if (event.key == Qt.Key_Backspace) {
-                        PES.goHome();
-                    }
+                Keys.onReturnPressed: {
+                    internal.gameIndex = gridView.currentIndex;
+                    mainRect.gameSelected(id);
                 }
 
-                SoundListView {
-                    id: menuView
-                    anchors.fill: parent
-                    focus: false
-                    model: menuModel
-                    //navSound: navSound
-                    soundOn: false
-                    delegate: MenuDelegate {
-                        Keys.onReturnPressed: gridFocus()
-                        Keys.onRightPressed: gridFocus()
-                    }
+                Image {
+                    id: img
+                    x: 10
+                    y: 10
+                    height: 180
+                    width: 200
+                    source: 'file://' + coverart
+                }
+
+                Text {
+                    x: 10
+                    y: img.y + img.height
+                    color: Colour.text
+                    elide: Text.ElideRight
+                    font.pixelSize: FontStyle.bodySmallSize
+                    font.bold: true
+                    font.family: FontStyle.font
+                    maximumLineCount: 1
+                    text: name
+                    wrapMode: Text.Wrap
+                    width: parent.width
                 }
             }
         }
-    }
 
-    Rectangle {
-        id: screenDisplayRect
-        color: Colour.panelBg
+        Rectangle {
+            id: menuRect
+            Layout.preferredWidth: 300
+            Layout.minimumWidth: 300
+            Layout.maximumWidth: 300
+            Layout.topMargin: 30
+            Layout.bottomMargin: 30
+            Layout.fillHeight: true
+            Layout.fillWidth: false
 
-        width: 500
-        height: 500
-        Layout.fillWidth: true
-        Layout.fillHeight: true
+            color: Colour.menuBg
 
-        Image {
-            id: backgroundImg
-            x: 0
-            y: 0
-            anchors.fill: parent
-            opacity: 0.2
-            source: ""
-            visible: source != ""
-        }
+            Rectangle {
+                x: 0
+                y: parent.y
+                width: parent.width
+                height: parent.height - this.y
+                color: parent.color
 
-        ColumnLayout {
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.leftMargin: 10
-            anchors.rightMargin: 10
-            spacing: 10
-
-            HeaderText {
-                id: headerText
-                text: "Console"
-                Layout.fillWidth: true
-            }
-
-            ScrollView {
-                clip: true
-                Layout.fillWidth: true
-                Layout.preferredHeight: screenDisplayRect.height - headerText.height
-
-                GridView {
-                    id: gridView
-                    cellWidth: 250
-                    cellHeight: 250
-                    model: gameModel
-                    delegate: gridDelegate
+                ScrollView {
+                    id: menuScrollView
+                    width: parent.width
+                    height: parent.height
+                    clip: true
 
                     Keys.onPressed: {
-                        if (event.key == Qt.Key_Backspace) {
-                            internal.gameIndex = currentIndex;
-                            menuView.forceActiveFocus();
-                            currentItem.focus = false;
-                            currentIndex = -1;
+                    if (event.key == Qt.Key_Backspace) {
+                            PES.goHome();
+                        }
+                    }
+
+                    SoundListView {
+                        id: menuView
+                        anchors.fill: parent
+                        focus: false
+                        model: menuModel
+                        //navSound: navSound
+                        soundOn: false
+                        delegate: MenuDelegate {
+                            Keys.onReturnPressed: gridFocus()
+                            Keys.onRightPressed: gridFocus()
                         }
                     }
                 }
             }
         }
-    }
-}    		
+
+        Rectangle {
+            id: screenDisplayRect
+            color: Colour.panelBg
+
+            width: 500
+            height: 500
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            Image {
+                id: backgroundImg
+                x: 0
+                y: 0
+                anchors.fill: parent
+                opacity: 0.2
+                source: ""
+                visible: source != ""
+            }
+
+            ColumnLayout {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+                spacing: 10
+
+                HeaderText {
+                    id: headerText
+                    text: "Console"
+                    Layout.fillWidth: true
+                }
+
+                ScrollView {
+                    clip: true
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: screenDisplayRect.height - headerText.height
+
+                    GridView {
+                        id: gridView
+                        cellWidth: 250
+                        cellHeight: 250
+                        model: gameModel
+                        delegate: gridDelegate
+
+                        Keys.onPressed: {
+                            if (event.key == Qt.Key_Backspace || (event.key == Qt.Key_Left && currentIndex == 0)) {
+                                internal.gameIndex = currentIndex;
+                                menuView.forceActiveFocus();
+                                currentItem.focus = false;
+                                currentIndex = -1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }    		
+}

@@ -83,6 +83,19 @@ function loadConsoleScreen(console) {
   consoleScreen.forceActiveFocus();
 }
 
+function loadGameScreen(stackView, screen, gameId) {
+  var game = backend.getGame(gameId);
+  if (game) {
+    screen.headerText = game.name;
+    screen.coverartSrc = "file://" + game.coverart;
+    screen.visible = true;
+    stackView.push(screen);
+  }
+  else {
+    console.error("Could not load game ID " + gameId);
+  }
+}
+
 function mainMenuEvent() {
   // if a console is selected, then load the console screen
   var i = mainMenuModel.get(mainMenuView.currentIndex);
