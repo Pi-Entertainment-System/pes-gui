@@ -168,7 +168,6 @@ class RetroAchievementGame(Base, CustomBase):
 	def __repr__(self):
 		return "<RetroAchievementGame id=%d rasum=%s name=%s retroConsoleId=%d>" % (self.id, self.rasum, self.name, self.retroConsoleId)
 
-# start here, each game can have more than one hash!
 class RetroAchievementGameHash(Base, CustomBase):
 	__tablename__ = "retroachievement_game_hash"
 	id = Column(Integer, ForeignKey('retroachievement_game.id'), primary_key=True)
