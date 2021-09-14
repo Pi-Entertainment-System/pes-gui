@@ -297,7 +297,7 @@ if __name__ == "__main__":
 					if data["status"] != "Success":
 						pesExit("Got bad status value: %s" % data["status"])
 					if "data" not in data or "games" not in data["data"]:
-						peExit("Invalued JSON: %s" % data)
+						pesExit("Invalued JSON: %s" % data)
 					# save JSON to cache for parsing later (if needed to save API requests)
 					jsonFileCache = os.path.join(jsonCacheDir, "games_%s.json" % page)
 					logging.debug("saving JSON to: %s" % jsonFileCache)
