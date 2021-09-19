@@ -46,6 +46,64 @@ from pes.common import checkDir, checkFile, mkdir, pesExit, ConsoleSettings
 from sqlalchemy import func
 from sqlalchemy.orm import sessionmaker
 
+def getGamesDbImages(cacheDir):
+	result = session.query(pes.sql.GamesDbGame).all()
+	if not result:
+		logging.warning("found no GamesDbGames!")
+		return
+	gameIds = []
+
+	imageDir = os.path.join(cacheDir, "images")
+	mkdir(imageDir)
+
+	requestNumber = 1
+	for game in result:
+		gameIds.append(game.id)
+		# get 200 ids at a time
+		if len(gameIds) == 200:
+			getGamesDbImageJson(gameIds, imageDir, requestNumber)
+			gameIds = []
+			requestNumber += 1
+	if len(gameIds) > 0:
+		getGamesDbImageJson(gameIds, imageDir, requestNumber)
+
+def getGamesDbImageJson(ids, imageDir, requestNumber):
+	page = 1
+
+	while True:
+		logging.info("downloading page %d from results" % page)
+		params = {
+			'apikey': '%s' % args.tgdbKey,
+			'games_id': ','.join(str(i) for i in ids),
+			'filter': 'boxart,screenshot',
+			'page': page
+		}
+
+		response = requests.get(
+			"%s/Games/Images" % GAMESDB_API_URL,
+			params=params,
+			headers=HEADERS,
+			timeout=URL_TIMEOUT,
+			stream=True
+		)
+		if response.status_code == requests.codes.ok:
+			data = response.json()
+			if data["status"] != "Success":
+				pesExit("Got bad status value: %s" % data["status"])
+			if "data" not in data or "images" not in data["data"]:
+				pesExit("Invalid JSON: %s" % data)
+			# save JSON to cache for parsing later (if needed to save API requests)
+			jsonFileCache = os.path.join(imageDir, "images-%d_%s.json" % (requestNumber, page))
+			logging.debug("saving JSON to: %s" % jsonFileCache)
+			with open(jsonFileCache, 'w') as f:
+				json.dump(data, f)
+			if data["pages"]["next"]:
+				page += 1
+			else:
+				break
+		else:
+			pesExit("failed, status code: %s" % response.status_code)
+
 def processGamesDbJson(newDb, session, data, platformId):
 	for game in data["data"]["games"]:
 		logging.info("processing game: %s, %s" % (game["id"], game["game_title"]))
@@ -74,6 +132,59 @@ def processGamesDbJson(newDb, session, data, platformId):
 		else:
 			logging.warning("-> no cover art for game %s" % game["id"])
 		session.add(gamesDbGame)
+	session.commit()
+
+def processGamesDbImageJson(newDb, session, cacheDir):
+	logging.info("processing GamesDB image JSON files")
+	jsonDir = os.path.join(cacheDir, "images")
+	checkDir(jsonDir)
+	logging.debug("using JSON files from: %s" % cacheDir)
+	# remove existing sceen shots
+	session.query(pes.sql.GamesDbScreenshot).delete()
+	requestNumber = 1
+	page = 1
+	newRequest = False
+	while True:
+		jsonPath = os.path.join(jsonDir, "images-%d_%d.json" % (requestNumber, page))
+		if os.path.exists(jsonPath) and os.path.isfile(jsonPath):
+			logging.debug("processing: %s" % jsonPath)
+			newRequest = False
+			with open(jsonPath, 'r') as f:
+				try:
+					data = json.load(f)["data"]
+				except Exception as e:
+					pesExit("Failed to load JSON from %s due to:\n%s" % (jsonPath, e))
+				for gameId, images in data["images"].items():
+					# look up game
+					gameId = int(gameId)
+					gamesDbGame = session.query(pes.sql.GamesDbGame).get(gameId)
+					if not gamesDbGame:
+						pesExit("Could not find GamesDbGame with id: %d" % gameId)
+					logging.debug("processing images for: %s" % gamesDbGame.name)
+					for image in images:
+						if image["type"] == "boxart" and image["side"] == "back":
+							gamesDbGame.boxArtBackOriginal = "%s%s" % (data["base_url"]["original"], image["filename"])
+							gamesDbGame.boxArtBackMedium = "%s%s" % (data["base_url"]["medium"], image["filename"])
+							gamesDbGame.boxArtBackLarge = "%s%s" % (data["base_url"]["large"], image["filename"])
+							session.add(gamesDbGame)
+						if image["type"] == "screenshot":
+							screenshot = pes.sql.GamesDbScreenshot(
+								gameId=gameId,
+								original="%s%s" % (data["base_url"]["original"], image["filename"]),
+								medium="%s%s" % (data["base_url"]["medium"], image["filename"]),
+								large="%s%s" % (data["base_url"]["large"], image["filename"])
+							)
+							session.add(screenshot)
+
+		elif not newRequest:
+			logging.debug("finished processing batch: %d" % requestNumber)
+			requestNumber += 1
+			page = 1
+			newRequest = True
+		else:
+			logging.debug("no more files to process")
+			break
+		page += 1
 	session.commit()
 
 def processRetroAchievementsJson(newDb, session, gameHashes, consoleRetroId):
@@ -251,6 +362,7 @@ if __name__ == "__main__":
 					logging.debug("no more files to process")
 					break
 				page += 1
+		processGamesDbImageJson(newDb, session, args.tgdbDir)
 
 	if args.tgdbKey:
 		if args.tgdbKey == 'default':
@@ -297,7 +409,7 @@ if __name__ == "__main__":
 					if data["status"] != "Success":
 						pesExit("Got bad status value: %s" % data["status"])
 					if "data" not in data or "games" not in data["data"]:
-						pesExit("Invalued JSON: %s" % data)
+						pesExit("Invalid JSON: %s" % data)
 					# save JSON to cache for parsing later (if needed to save API requests)
 					jsonFileCache = os.path.join(jsonCacheDir, "games_%s.json" % page)
 					logging.debug("saving JSON to: %s" % jsonFileCache)
@@ -310,6 +422,10 @@ if __name__ == "__main__":
 						break
 				else:
 					pesExit("failed, status code: %s" % response.status_code)
+		# now we have the games, let's get the extra image JSON
+		logging.inf("downloading GamesDB image JSON")
+		getGamesDbImages(gamesDbCacheDir)
+		processGamesDbImageJson(newDb, session, gamesDbCacheDir)
 
 	if args.retroachievementsDir:
 		checkDir(args.retroachievementsDir)

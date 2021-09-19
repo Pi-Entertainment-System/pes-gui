@@ -80,6 +80,7 @@ if __name__ == "__main__":
 	mkdir(pes.userBiosDir)
 	mkdir(pes.userConfDir)
 	mkdir(pes.userCoverartDir)
+	mkdir(pes.userScreenshotDir)
 	mkdir(pes.userRetroArchConfDir)
 	mkdir(pes.userRetroArchJoysticksConfDir)
 	mkdir(pes.userRomDir)
@@ -109,6 +110,7 @@ if __name__ == "__main__":
 	for c in consoles:
 		mkdir(os.path.join(pes.userRomDir, c.name))
 		mkdir(os.path.join(pes.userCoverartDir, c.name))
+		mkdir(os.path.join(pes.userScreenshotDir, c.name))
 
 	romScraper = userSettings.get("settings", "romScraper")
 	if romScraper == None:

@@ -126,6 +126,9 @@ class GamesDbGame(Base, CustomBase):
 	name = Column(Text)
 	releaseDate = Column(String)
 	overview = Column(Text)
+	boxArtBackOriginal = Column(Text)
+	boxArtBackMedium = Column(Text)
+	boxArtBackLarge = Column(Text)
 	boxArtFrontOriginal = Column(Text)
 	boxArtFrontMedium = Column(Text)
 	boxArtFrontLarge = Column(Text)
@@ -144,6 +147,19 @@ class GamesDbPlatform(Base, CustomBase):
 
 	def __repr__(self):
 		return "<GamesDbPlatform id=%d name=%s>" % (self.id, self.name)
+
+class GamesDbScreenshot(Base, CustomBase):
+	__tablename__ = "gamesdb_screenshot"
+	id = Column(Integer, primary_key=True)
+	gameId = Column(Integer, ForeignKey('gamesdb_game.id'), index=True)
+	original = Column(Text)
+	medium = Column(Text)
+	large = Column(Text)
+
+	game = relationship("GamesDbGame", back_populates="screenshots")
+
+	def __repr__(self):
+		return "<GamesDbScreenShot id=%d gameId=%d url=\"%s\">" % (self.id, self.gameId, self.url)
 
 class MameGame(Base, CustomBase):
 	__tablename__ = "mame_game"
@@ -176,11 +192,12 @@ class RetroAchievementGameHash(Base, CustomBase):
 	game = relationship("RetroAchievementGame", back_populates="hashes")
 
 	def __repr__(self):
-		return "<RetroAchievementGameHash id=%d rasum=%s>" % (self.id, self.rasum)
+		return "<RetroAchievementGameHash id=%d rasum=%s>" % (self.id, self.rasum)		
 
 Console.games = relationship("Game", order_by=Game.id, back_populates="console")
 Console.retroAchievementConsoles = relationship("RetroAchievementConsole", order_by=RetroAchievementConsole.id, back_populates="console")
 GamesDbGame.games = relationship("Game", order_by=Game.id, back_populates="gamesDbGame")
+GamesDbGame.screenshots = relationship("GamesDbScreenshot", order_by=GamesDbScreenshot.id, back_populates="game")
 GamesDbPlatform.consoles = relationship("Console", order_by=Console.id, back_populates="platform")
 GamesDbPlatform.games = relationship("GamesDbGame", order_by=GamesDbGame.id, back_populates="platform")
 RetroAchievementConsole.consoles = relationship("Console", order_by=Console.id, back_populates="retroAchievementConsole")
