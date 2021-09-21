@@ -253,7 +253,7 @@ class GamesDbRomTask(RomTask):
 			newGame = False
 			romTaskResult.state = RomTaskResult.STATE_SKIPPED
 			romTaskResult.name = game.name
-			romTaskResult.coverart = game.coverart
+			romTaskResult.coverart = game.coverartFront
 		else:
 			logging.debug("%s new game" % logPrefix)
 			if self._console.retroId:
@@ -307,7 +307,7 @@ class GamesDbRomTask(RomTask):
 						retroId=gamesDbGame.retroId,
 						path=self._rom,
 						fileSize=self._romFileSize,
-						coverart=self._getNocoverart(),
+						coverartFront=self._getNocoverart(),
 						found=True
 					)
 				else:
@@ -319,7 +319,7 @@ class GamesDbRomTask(RomTask):
 						rasum=rasum,
 						path=self._rom,
 						fileSize=self._romFileSize,
-						coverart=self._getNocoverart(),
+						coverartFront=self._getNocoverart(),
 						found=True
 					)
 				with self._lock:
@@ -334,7 +334,7 @@ class GamesDbRomTask(RomTask):
 
 			url = None
 			if game.gamesDbGame:
-				# create list of URLs to try
+				# create list of URLs to try for front coverart
 				urls = []
 				if game.gamesDbGame.boxArtFrontLarge:
 					urls.append(game.gamesDbGame.boxArtFrontLarge)
@@ -348,7 +348,7 @@ class GamesDbRomTask(RomTask):
 				if len(urls) > 0:
 					i = 0
 					for url in urls:
-						logging.debug("%s URL attempt %d for %s is %s" % (logPrefix, (i + 1), self._rom, url))
+						logging.debug("%s URL attempt %d for %s (front) is %s" % (logPrefix, (i + 1), self._rom, url))
 						response = requests.get(
 							url,
 							headers=self.HEADERS,
@@ -356,7 +356,7 @@ class GamesDbRomTask(RomTask):
 						)
 						if response.status_code == requests.codes.ok:
 							extension = url[url.rfind('.'):]
-							path = os.path.join(pes.userCoverartDir, self._console.name, "%s%s" % (romName, extension))
+							path = os.path.join(pes.userCoverartDir, self._console.name, "%s-front%s" % (romName, extension))
 							logging.debug("%s saving to %s" % (logPrefix, path))
 							with open(path, "wb") as f:
 								f.write(response.content)
@@ -364,18 +364,52 @@ class GamesDbRomTask(RomTask):
 							if not newGame:
 								romTaskResult.state = RomTaskResult.STATE_UPDATED
 							if newGame:
-								game.coverart = path
-								romTaskResult.coverart = game.coverart
+								game.coverartFront = path
+								romTaskResult.coverart = game.coverartFront
 								with self._lock:
 									session.add(game)
 									session.commit()
 							break
 						else:
-							logging.warning("%s unable to download %s" % (logPrefix, url))
-							game.coverart = self._getNocoverart()
+							if newGame:
+								logging.warning("%s unable to download %s" % (logPrefix, url))
+								game.coverartFront = self._getNocoverart()
+								with self._lock:
+									session.add(game)
+									session.commit()
 						i += 1
+					# get rear cover art
+					urls = []
+					if game.gamesDbGame.boxArtBackLarge:
+						urls.append(game.gamesDbGame.boxArtBackLarge)
+					if game.gamesDbGame.boxArtBackMedium:
+						urls.append(game.gamesDbGame.boxArtBackMedium)
+					if game.gamesDbGame.boxArtBackOriginal:
+						urls.append(game.gamesDbGame.boxArtBackOriginal)
+
+					if len(urls) > 0:
+						for url in urls:
+							logging.debug("%s URL attempt %d for %s (back) is %s" % (logPrefix, (i + 1), self._rom, url))
+							response = requests.get(
+								url,
+								headers=self.HEADERS,
+								timeout=self.URL_TIMEOUT
+							)
+							if response.status_code == requests.codes.ok:
+								extension = url[url.rfind('.'):]
+								path = os.path.join(pes.userCoverartDir, self._console.name, "%s-back%s" % (romName, extension))
+								logging.debug("%s saving to %s" % (logPrefix, path))
+								with open(path, "wb") as f:
+									f.write(response.content)
+								self._scaleImage(path)
+								if newGame:
+									game.coverartBack = path
+									with self._lock:
+										session.add(game)
+										session.commit()
+								break
 				else:
-					logging.warning("%s no cover art URL for %s (%d)" % (logPrefix, self._rom, game.gamesDbId))
+					logging.warning("%s no cover art URL for %s (%d)" % (logPrefix, self._rom, game.gamesDbId))				
 
 		return romTaskResult
 

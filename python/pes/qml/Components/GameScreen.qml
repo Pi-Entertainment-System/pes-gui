@@ -34,7 +34,8 @@ Rectangle {
     color: Colour.panelBg
 
     property alias headerText: headerText.text
-    property alias coverartSrc: covertartImg.source
+    property alias coverartFrontSrc: covertartFrontImg.source
+    property alias coverartBackSrc: covertartBackImg.source
 
     ColumnLayout {
         spacing: 10
@@ -44,9 +45,19 @@ Rectangle {
             Layout.fillWidth: true
         }
 
-        Image {
-            id: covertartImg
-            Layout.margins: 10
+        RowLayout {
+            spacing: 10
+            
+            Image {
+                id: covertartFrontImg
+                Layout.margins: 10
+            }
+
+            Image {
+                id: covertartBackImg
+                Layout.margins: 10
+                visible: (src != null) || (src == "")
+            }
         }
     }
 }

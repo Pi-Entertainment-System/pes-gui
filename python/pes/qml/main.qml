@@ -569,32 +569,6 @@ ApplicationWindow {
           }
         }
       }
-
-      // Game screen
-      /*GameScreen {
-        id: gameScreen
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-
-        Keys.onPressed: {
-          if (activeFocus && event.key == Qt.Key_Backspace) {
-            if (PES.currentConsoleId == 0) {
-              screenStack.currentIndex = 0;
-              if (recentlyPlayedMainPanel.visible && recentlyPlayedMainPanel.isGameSelected()) {
-                recentlyPlayedMainPanel.gainFocus();
-              }
-              else if (recentlyAddedMainPanel.isGameSelected()) {
-                recentlyAddedMainPanel.gainFocus();
-              }
-            }
-            else {
-              screenStack.currentIndex = 2;
-              // set focus back to the selected game
-              consoleScreen.gridFocus();
-            }
-          }
-        }
-      }*/
 		}
 	}
 }

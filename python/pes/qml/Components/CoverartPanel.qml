@@ -94,7 +94,7 @@ Rectangle {
                 y: 10
                 height: 180
                 width: 200
-                source: 'file://' + coverart
+                source: 'file://' + coverartFront
             }
 
             Text {

@@ -21,6 +21,7 @@
 #
 
 import logging
+import os
 import pes
 
 from sqlalchemy.ext.declarative import declarative_base
@@ -85,7 +86,8 @@ class Game(Base, CustomBase):
 	gamesDbId = Column(Integer, ForeignKey('gamesdb_game.id'), index=True, default=0)
 	retroId = Column(Integer, ForeignKey('retroachievement_game.id'), index=True, default=0)
 	path = Column(Text)
-	coverart = Column(Text)
+	coverartFront = Column(Text)
+	coverartBack = Column(Text)
 	lastPlayed = Column(DateTime)
 	added = Column(DateTime)
 	favourite = Column(Boolean, default=False)
@@ -115,6 +117,9 @@ class Game(Base, CustomBase):
 			j["lastPlayedStr"] = "Not played"
 		else:
 			j["lastPlayedStr"] = "Unknown"
+		if not os.path.exists(j["coverartFront"]):
+			logging.warning("%s does not exist!" % self.coverartFront)
+			j["coverartFront"] = os.path.join(pes.resourcesDir, self.console.nocoverart)
 		return j
 
 class GamesDbGame(Base, CustomBase):

@@ -87,7 +87,8 @@ function loadGameScreen(stackView, screen, gameId) {
   var game = backend.getGame(gameId);
   if (game) {
     screen.headerText = game.name;
-    screen.coverartSrc = "file://" + game.coverart;
+    screen.coverartFrontSrc = "file://" + game.coverartFront;
+    screen.coverartBackSrc = "file://" + game.coverartBack;
     screen.visible = true;
     stackView.push(screen);
   }
