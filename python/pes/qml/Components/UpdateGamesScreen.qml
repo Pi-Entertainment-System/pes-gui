@@ -150,7 +150,7 @@ Rectangle {
                 Layout.preferredHeight: 50
                 Layout.leftMargin: 30
 
-                Keys.onReturnPressed: updateGamesRect.beginRomScan(false)
+                Keys.onReturnPressed: beginRomScan(false)
                 KeyNavigation.down: beginFullScanBtn
             }
 
@@ -173,7 +173,7 @@ Rectangle {
                 Layout.preferredHeight: 50
                 Layout.leftMargin: 30
 
-                Keys.onReturnPressed: PES.beginRomScan(true)
+                Keys.onReturnPressed: beginRomScan(true)
                 KeyNavigation.down: beginScanBtn
             }
 
