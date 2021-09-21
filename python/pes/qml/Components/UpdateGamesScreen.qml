@@ -60,6 +60,7 @@ Rectangle {
         beginScanBtn.forceActiveFocus();
         beginScanTxt.visible = true;
         abortScanBtn.visible = false;
+        homeBtn.visible = false;
         updateRomsProgressBar.visible = false;
         statusTxt.visible = false;
     }
