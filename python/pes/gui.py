@@ -23,7 +23,6 @@
 import datetime
 import logging
 import os
-import sys
 
 import sdl2
 import sdl2.ext
@@ -31,7 +30,7 @@ import sdl2.joystick
 
 from PyQt5.QtGui import QGuiApplication, QKeyEvent
 from PyQt5.QtQml import QQmlApplicationEngine, qmlRegisterType
-from PyQt5.QtCore import Qt, QUrl, pyqtProperty, pyqtSignal, pyqtSlot, QFile, QIODevice, QObject, QEvent, QThread, QVariant, QTimer
+from PyQt5.QtCore import Qt, pyqtProperty, pyqtSignal, pyqtSlot, QObject, QEvent, QVariant
 
 import sqlalchemy.orm
 
