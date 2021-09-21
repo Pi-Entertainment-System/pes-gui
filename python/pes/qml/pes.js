@@ -88,8 +88,15 @@ function loadGameScreen(stackView, screen, gameId) {
   if (game) {
     screen.headerText = game.name;
     screen.coverartFrontSrc = "file://" + game.coverartFront;
-    screen.coverartBackSrc = "file://" + game.coverartBack;
+    if (game.coverartBack && game.coverartBack != "") {
+      screen.coverartBackSrc = "file://" + game.coverartBack;
+    }
+    else {
+      screen.coverartBackSrc = "";
+    }
+    screen.overviewText = game.overview;
     screen.visible = true;
+    screen.reset();
     stackView.push(screen);
   }
   else {
