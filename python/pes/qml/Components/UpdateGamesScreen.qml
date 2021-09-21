@@ -135,7 +135,7 @@ Rectangle {
         BodyText {
             id: beginScanTxt
             Layout.fillWidth: true
-            Layout.preferredWidth: panelRect.width
+            Layout.preferredWidth: updateGamesRect.width
             text: "Select the type of scan that you would like to perfrom using the buttons below. A working Inernet connection is required to download game cover art and badges for achievements."
         }
 
@@ -158,7 +158,7 @@ Rectangle {
                 text: "Add new ROMs and remove any deleted ROMs from the database as well as downloading cover art and badges"
                 Layout.fillWidth: true
                 // horrible hack to fix text wrapping/width
-                Layout.preferredWidth: panelRect.width - beginScanBtn.Layout.preferredWidth - beginScanBtn.Layout.leftMargin
+                Layout.preferredWidth: updateGamesRect.width - beginScanBtn.Layout.preferredWidth - beginScanBtn.Layout.leftMargin
             }
         }
 
@@ -181,7 +181,7 @@ Rectangle {
                 text: "Same as a normal scan but also refresh covert art and badges from the Internet"
                 Layout.fillWidth: true
                 // horrible hack to fix text wrapping/width
-                Layout.preferredWidth: panelRect.width - beginScanBtn.Layout.preferredWidth - beginScanBtn.Layout.leftMargin
+                Layout.preferredWidth: updateGamesRect.width - beginScanBtn.Layout.preferredWidth - beginScanBtn.Layout.leftMargin
             }
         }
 
@@ -197,7 +197,7 @@ Rectangle {
             progress: 0
             Layout.leftMargin: 30
             Layout.rightMargin: 30
-            Layout.preferredWidth: panelRect.width - 60
+            Layout.preferredWidth: updateGamesRect.width - 60
             Layout.preferredHeight: 50
         }
 
@@ -215,7 +215,7 @@ Rectangle {
             text: ""
             visible: false
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
-            Layout.preferredWidth: panelRect.width
+            Layout.preferredWidth: updateGamesRect.width
         }
 
         UiButton {
