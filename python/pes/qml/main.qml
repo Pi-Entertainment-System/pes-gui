@@ -64,7 +64,7 @@ ApplicationWindow {
 	// closing dialog
   YesNoDialog {
     id: closeDialog
-    navSound: navSound
+    //navSound: navSound
     text: "Are you sure you want to exit?"
     onYesButtonPressed: mainWindow.close()
   }
@@ -72,7 +72,7 @@ ApplicationWindow {
   // reboot dialog
   YesNoDialog {
     id: poweroffDialog
-    navSound: navSound
+    //navSound: navSound
     text: "Are you sure you want to power off?"
     onNoButtonPressed: powerDialog.forceActiveFocus()
     onYesButtonPressed: {
@@ -84,7 +84,7 @@ ApplicationWindow {
   // reboot dialog
   YesNoDialog {
     id: rebootDialog
-    navSound: navSound
+    //navSound: navSound
     text: "Are you sure you want to reboot?"
     onNoButtonPressed: powerDialog.forceActiveFocus()
     onYesButtonPressed: {
@@ -124,7 +124,7 @@ ApplicationWindow {
       anchors.fill: parent
       focus: true
       model: optionsPopupMenu
-      navSound: navSound
+      //navSound: navSound
       delegate: MenuDelegate {
         width: optionsPopupMenuView.width
 				Keys.onReturnPressed: PES.optionsDialogEvent(text);
@@ -178,7 +178,7 @@ ApplicationWindow {
       anchors.fill: parent
       focus: true
       model: powerPopupMenu
-      navSound: navSound
+      //navSound: navSound
       delegate: MenuDelegate {
         width: powerPopupMenuView.width
 				Keys.onReturnPressed: PES.powerDialogEvent(text);
@@ -389,7 +389,7 @@ ApplicationWindow {
                   focus: false
                   focusTop: powerBtn
                   model: mainMenuModel
-                  navSound: navSound
+                  //navSound: navSound
                   soundOn: false
                   delegate: MenuDelegate {
                     width: mainMenuView.width
@@ -467,7 +467,7 @@ ApplicationWindow {
                 keyLeft: mainMenuScrollView
                 keyDown: recentlyAddedMainPanel
                 Layout.fillWidth: true
-                navSound: navSound
+                //navSound: navSound
                 visible: false
 
                 onGameSelected: function(gameId) {
@@ -488,7 +488,7 @@ ApplicationWindow {
                 keyUp: recentlyPlayedMainPanel
                 keyDown: exploreBtn
                 Layout.fillWidth: true
-                navSound: navSound
+                //navSound: navSound
                 visible: false
 
                 onGameSelected: function(gameId) {
