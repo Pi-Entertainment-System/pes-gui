@@ -163,8 +163,6 @@ Rectangle {
             color: Colour.menuBg
 
             Rectangle {
-                x: 0
-                y: parent.y
                 width: parent.width
                 height: parent.height - this.y
                 color: parent.color
@@ -201,8 +199,6 @@ Rectangle {
             id: screenDisplayRect
             color: Colour.panelBg
 
-            width: 500
-            height: 500
             Layout.fillWidth: true
             Layout.fillHeight: true
 
