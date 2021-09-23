@@ -120,7 +120,22 @@ class Game(Base, CustomBase):
 		if not os.path.exists(j["coverartFront"]):
 			logging.warning("%s does not exist!" % self.coverartFront)
 			j["coverartFront"] = os.path.join(pes.resourcesDir, self.console.nocoverart)
+		j["filename"] = os.path.basename(self.path)
+		j["screenshots"] = []
+		for screenshot in self.screenshots:
+			j["screenshots"].append(screenshot.path)
 		return j
+
+class GameScreenshot(Base, CustomBase):
+	__tablename__ = "game_screenshot"
+	id = Column(Integer, primary_key=True)
+	gameId = Column(Integer, ForeignKey('game.id'), index=True)
+	path = Column(Text)
+
+	game = relationship("Game", back_populates="screenshots")
+
+	def __repr__(self):
+		return "<GameScreenshot id=%d gameId=%d path=\"%s\">" % (self.id, self.gameId, self.path)
 
 class GamesDbGame(Base, CustomBase):
 	__tablename__ = "gamesdb_game"
@@ -201,6 +216,7 @@ class RetroAchievementGameHash(Base, CustomBase):
 
 Console.games = relationship("Game", order_by=Game.id, back_populates="console")
 Console.retroAchievementConsoles = relationship("RetroAchievementConsole", order_by=RetroAchievementConsole.id, back_populates="console")
+Game.screenshots = relationship("GameScreenshot", order_by=GameScreenshot.id, back_populates="game", cascade="all,delete")
 GamesDbGame.games = relationship("Game", order_by=Game.id, back_populates="gamesDbGame")
 GamesDbGame.screenshots = relationship("GamesDbScreenshot", order_by=GamesDbScreenshot.id, back_populates="game")
 GamesDbPlatform.consoles = relationship("Console", order_by=Console.id, back_populates="platform")

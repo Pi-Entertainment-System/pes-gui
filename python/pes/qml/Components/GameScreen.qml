@@ -31,12 +31,49 @@ import "../pes.js" as PES
 Rectangle {
 
     id: mainRect
-    color: Colour.panelBg
+    color: "transparent"
 
-    property alias headerText: headerText.text
-    property alias overviewText: overviewText.text
-    property alias coverartFrontSrc: covertartFrontImg.source
-    property alias coverartBackSrc: covertartBackImg.source
+    property var game: null
+
+    signal backPressed()
+
+    function forceActiveFocus() {
+        menuView.forceActiveFocus();
+    }
+
+    onGameChanged: function() {
+        if (game) {
+            headerText.text = game.name;
+            coverartFrontImg.source = "file://" + game.coverartFront;
+            if (game.coverartBack && game.coverartBack != "") {
+                coverartBackImg.source = "file://" + game.coverartBack;
+            }
+            else {
+                coverartBackImg.source = "";
+            }
+            if (game.screenshots.length > 0) {
+                screenshotImg.source = "file://" + game.screenshots[0];
+            }
+            else {
+                screenshotImg.source = "";
+            }
+            filenameText.text = "Filename: " + game.filename + " (" + PES.humanFileSize(game.fileSize, false, 0) + ")";
+            /*if (game.playCount > 0) {
+                if (game.playCount == 1) {
+                    historyText.text = "History: played " + game.playCount + " time on " + game.lastPlayed;
+                }
+                else {
+                    historyText.text = "History: played " + game.playCount + " times, last time " + game.lastPlayed;
+                }
+            }
+            else {
+                historyText.text = "History: Never played";
+            }*/
+            releasedText.text = "Released: " + game.releaseDate
+            overviewText.text = game.overview;
+            reset();
+        }
+    }
 
     function reset() {
         scrollUpTimer.running = false;
@@ -51,7 +88,7 @@ Rectangle {
 
     Timer {
         id: scrollDownTimer
-        interval: 50
+        interval: 100
         repeat: true
         running: false
         onTriggered: function() {
@@ -85,67 +122,170 @@ Rectangle {
         }
     }
 
-    ColumnLayout {
-        spacing: 10
+    RowLayout {
 
-        HeaderText {
-            id: headerText
-            Layout.fillWidth: true
+        anchors.fill: parent
+
+        ListModel {
+            id: gameModel
         }
 
-        RowLayout {
-            spacing: 10
+        ListModel {
+            id: menuModel
 
-            Image {
-                id: covertartFrontImg
-                Layout.margins: 10
+            ListElement {
+                name: "Play"
             }
 
-            Image {
-                id: covertartBackImg
-                Layout.margins: 10
-                visible: source || (source == "")
+            ListElement {
+                name: "Achievements"
             }
         }
 
-        ScrollView {
-            id: overviewScroll
-            clip: true
-            ScrollBar.vertical.policy: ScrollBar.AlwaysOn
-            //ScrollBar.vertical.position: 1.0
-            Layout.fillWidth: true
-            Layout.preferredHeight: 300
-            // hack for text wrapping
-            Layout.preferredWidth: mainRect.width
-            
-            BodyText {
-                id: overviewText
-                width: overviewScroll.width
+        Rectangle {
+            id: menuRect
+            color: Colour.menuBg
+            Layout.preferredWidth: 300
+            Layout.minimumWidth: 300
+            Layout.maximumWidth: 300
+            Layout.topMargin: 30
+            Layout.bottomMargin: 30
+            Layout.fillHeight: true
+            Layout.fillWidth: false
 
-                onTextChanged: function(){
-                    if (overviewText.height > overviewScroll.height) {
-                        overviewScroll.ScrollBar.vertical.policy = ScrollBar.AlwaysOn;
+            ScrollView {
+                id: menuScrollView
+                width: parent.width
+                height: parent.height
+                clip: true
+
+                Keys.onPressed: {
+                if (event.key == Qt.Key_Backspace) {
+                        mainRect.backPressed();
                     }
-                    else {
-                        overviewScroll.ScrollBar.vertical.policy = ScrollBar.AlwaysOff;
+                }
+
+                SoundListView {
+                    id: menuView
+                    anchors.fill: parent
+                    focus: false
+                    model: menuModel
+                    //navSound: navSound
+                    soundOn: false
+                    delegate: MenuDelegate {
+                        
                     }
                 }
             }
+        }
 
-            function getContentHeight() {
-                return contentItem.height;
-            }
+        Rectangle {
+            color: Colour.panelBg
+            Layout.fillWidth: true
+            Layout.fillHeight: true
 
-            function getContentItemY() {
-                return contentItem.contentY;
-            }
+            ColumnLayout {
+                spacing: 10
+                anchors.fill: parent
 
-            function scrollToTop() {
-                setContentItemY(0);
-            }
+                HeaderText {
+                    id: headerText
+                    Layout.fillWidth: true
+                }
 
-            function setContentItemY(x) {
-                contentItem.contentY = x;
+                RowLayout {
+                    spacing: 10
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                    Image {
+                        id: coverartFrontImg
+                        Layout.margins: 10
+                        Layout.maximumHeight: 300
+                    }
+
+                    Image {
+                        id: coverartBackImg
+                        Layout.margins: 10
+                        Layout.maximumHeight: 300
+                        visible: source || (source == "")
+                    }
+
+                    Image {
+                        id: screenshotImg
+                        Layout.margins: 10
+                        Layout.maximumHeight: 300
+                        visible: source || (source == "")
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+                }
+
+                /*BodyText {
+                    id: historyText
+                }*/
+
+                BodyText {
+                    id: filenameText
+                    Layout.fillWidth: true
+                }
+
+                BodyText {
+                    id: releasedText
+                    Layout.fillWidth: true
+                }
+
+                BodyText {
+                    id: overviewLabel
+                    text: "Overview:"
+                    visible: overviewText.text != ""
+                    Layout.fillWidth: true
+                }
+
+                ScrollView {
+                    id: overviewScroll
+                    clip: true
+                    ScrollBar.vertical.policy: ScrollBar.AlwaysOn
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.margins: 10
+                    // hack for text wrapping
+                    Layout.preferredWidth: mainRect.width - menuRect.width - 20
+                    
+                    BodyText {
+                        id: overviewText
+                        width: overviewScroll.width
+
+                        onTextChanged: function(){
+                            if (overviewText.height > overviewScroll.height) {
+                                overviewScroll.ScrollBar.vertical.policy = ScrollBar.AlwaysOn;
+                            }
+                            else {
+                                overviewScroll.ScrollBar.vertical.policy = ScrollBar.AlwaysOff;
+                            }
+                        }
+                    }
+
+                    function getContentHeight() {
+                        return contentItem.height;
+                    }
+
+                    function getContentItemY() {
+                        return contentItem.contentY;
+                    }
+
+                    function scrollToTop() {
+                        setContentItemY(0);
+                    }
+
+                    function setContentItemY(x) {
+                        contentItem.contentY = x;
+                    }
+                }
             }
         }
     }

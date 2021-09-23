@@ -521,7 +521,7 @@ ApplicationWindow {
           id: mainGameScreen
           visible: false
 
-          Keys.onPressed: {
+          onBackPressed: {
             mainScreenStackView.pop();
             mainGameScreen.visible = false;
             if (recentlyPlayedMainPanel.visible && recentlyPlayedMainPanel.isGameSelected()) {
@@ -562,7 +562,7 @@ ApplicationWindow {
           id: consoleGameScreen
           visible: false
 
-          Keys.onPressed: {
+          onBackPressed: {
             consoleStackView.pop();
             consoleGameScreen.visible = false;
             consoleScreen.gridFocus();

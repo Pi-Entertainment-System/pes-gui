@@ -386,10 +386,43 @@ class GamesDbRomTask(RomTask):
 						urls.append(game.gamesDbGame.boxArtBackMedium)
 					if game.gamesDbGame.boxArtBackOriginal:
 						urls.append(game.gamesDbGame.boxArtBackOriginal)
+					i = 0
+					for url in urls:
+						logging.debug("%s URL attempt %d for %s (back) is %s" % (logPrefix, (i + 1), self._rom, url))
+						response = requests.get(
+							url,
+							headers=self.HEADERS,
+							timeout=self.URL_TIMEOUT
+						)
+						if response.status_code == requests.codes.ok:
+							extension = url[url.rfind('.'):]
+							path = os.path.join(pes.userCoverartDir, self._console.name, "%s-back%s" % (romName, extension))
+							logging.debug("%s saving to %s" % (logPrefix, path))
+							with open(path, "wb") as f:
+								f.write(response.content)
+							self._scaleImage(path)
+							if newGame:
+								game.coverartBack = path
+								with self._lock:
+									session.add(game)
+									session.commit()
+							break
+						i += 1
+					# get screen shots
+					count = 0
+					screenshots = []
+					for screenshot in game.gamesDbGame.screenshots:
+						urls = []
+						if screenshot.large:
+							urls.append(screenshot.large)
+						if screenshot.medium:
+							urls.append(screenshot.medium)
+						if screenshot.original:
+							urls.append(screenshot.original)
 
-					if len(urls) > 0:
+						i = 0
 						for url in urls:
-							logging.debug("%s URL attempt %d for %s (back) is %s" % (logPrefix, (i + 1), self._rom, url))
+							logging.debug("%s URL attempt %d for %s (screenshot) is %s" % (logPrefix, (i + 1), self._rom, url))
 							response = requests.get(
 								url,
 								headers=self.HEADERS,
@@ -397,17 +430,29 @@ class GamesDbRomTask(RomTask):
 							)
 							if response.status_code == requests.codes.ok:
 								extension = url[url.rfind('.'):]
-								path = os.path.join(pes.userCoverartDir, self._console.name, "%s-back%s" % (romName, extension))
+								path = os.path.join(pes.userScreenshotDir, self._console.name, "%s-%d%s" % (romName, (count + 1), extension))
 								logging.debug("%s saving to %s" % (logPrefix, path))
 								with open(path, "wb") as f:
 									f.write(response.content)
 								self._scaleImage(path)
-								if newGame:
-									game.coverartBack = path
-									with self._lock:
-										session.add(game)
-										session.commit()
+								mustSave = True
+								if not newGame:
+									# does the DB entry already exist?
+									if session.query(pes.sql.GameScreenshot).filter(pes.sql.GameScreenshot.path == path):
+										mustSave = False
+								if mustSave:
+									screenshots.append(pes.sql.GameScreenshot(path=path))									
+								count += 1
 								break
+							i += 1
+						# only save a max of three screen shots per game
+						if count > 3:
+							break
+					if len(screenshots) > 0:
+						game.screenshots = screenshots
+						with self._lock:
+							session.add(game)
+							session.commit()
 				else:
 					logging.warning("%s no cover art URL for %s (%d)" % (logPrefix, self._rom, game.gamesDbId))				
 
