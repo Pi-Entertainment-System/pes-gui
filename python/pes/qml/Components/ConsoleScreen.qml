@@ -33,11 +33,8 @@ Rectangle {
     id: mainRect
     color: "transparent"
 
-    property int consoleId: 0
-    property alias background: backgroundImg.source
-    property alias headerText: headerText.text
-    property alias menuIndex: menuView.currentIndex
-    property alias gameIndex: gridView.currentIndex
+    // can't use "console" as a variable name!
+    property var consoleObj: null
 
     // custom signals
     signal gameSelected(int gameId)
@@ -52,30 +49,74 @@ Rectangle {
 
     function gridFocus() {
         if (internal.gameIndex == -1) {
-            gameIndex = 0;
+            gridView.currentIndex = 0;
             internal.gameIndex = 0;
         }
         else {
-            gameIndex = internal.gameIndex;
+            gridView.currentIndex = internal.gameIndex;
         }
         gridView.forceActiveFocus();
     }
 
     function refresh() {
         gameModel.clear();
-        if (menuModel.get(menuView.currentIndex).name == "Browse") {
-            var games = PES.getGames(consoleId);
-            for (var i = 0; i < games.length; i++) {
-                addGame(games[i]);
+        var games = null;
+        switch (menuModel.get(menuView.currentIndex).name) {
+            case "Browse": {
+                games = PES.getGames(consoleObj.id), internal.useGameCache;
+                internal.useGameCache = true;
+                break;
+            }
+            case "Recently Added": {
+                games = PES.getRecentlyAddedGames(consoleObj.id, 0, internal.useRecentlyAddedCache);
+                internal.useRecentlyAddedCache = true;
+                break;
+            }
+            case "Recently Played": {
+                games = PES.getRecentlyPlayedGames(consoleObj.id, 0, internal.useRecentlyPlayedCache);
+                internal.useRecentlyPlayedCache = true;
+                break;
+            }
+            case "Most Played": {
+                games = PES.getMostPlayedGames(consoleObj.id, 0, internal.useMostPlayedCache);
+                internal.useMostPlayedCache = true;
+                break;
+            }
+            case "Favourites": {
+                games = PES.getFavouriteGames(consoleObj.id, internal.useFavouriteCache);
+                internal.useFavouriteCache = true;
+                break;
             }
         }
+
+        for (var i = 0; i < games.length; i++) {
+            addGame(games[i]);
+        }
+
         gridView.currentIndex = -1;
         internal.gameIndex = -1;
+    }
+
+    onConsoleObjChanged: {
+        headerText.text = consoleObj.name;
+        backgroundImg.source = PES.getConsoleArt(consoleObj.id);
+        menuView.currentIndex = 0;
+        internal.useRecentlyAddedCache = false;
+        internal.useRecentlyPlayedCache = false;
+        internal.useMostPlayedCache = false;
+        internal.useGameCache = false;
+        internal.useFavouriteCache = false;
+        refresh();
     }
 
     QtObject {
         id: internal
         property int gameIndex: -1
+        property bool useRecentlyAddedCache: false
+        property bool useRecentlyPlayedCache: false
+        property bool useMostPlayedCache: false
+        property bool useGameCache: false
+        property bool useFavouriteCache: false;
     }
 
     RowLayout {
@@ -189,6 +230,9 @@ Rectangle {
                         delegate: MenuDelegate {
                             Keys.onReturnPressed: gridFocus()
                             Keys.onRightPressed: gridFocus()
+                        }
+                        onItemHighlighted: {
+                            refresh();
                         }
                     }
                 }

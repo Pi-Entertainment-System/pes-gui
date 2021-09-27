@@ -22,8 +22,11 @@
 
 var allConsoles = null;
 var consoleArtCache = {};
-var recentlyAddedCovertArtCache = {};
-var recentlyPlayedCovertArtCache = {};
+var recentlyAddedCache = {};
+var recentlyPlayedCache = {};
+var mostPlayedCache = {};
+var gamesCache = {};
+var favouriteCache = {};
 var currentConsoleId = null;
 var gamesAdded = false;
 
@@ -50,22 +53,39 @@ function getCurrentConsole() {
   return allConsoles[currentConsoleId];
 }
 
-function getGames(consoleId) {
-  return backend.getGames(consoleId);
+function getFavouriteGames(consoleId, useCache) {
+  if (!useCache || !(consoleId in favouriteCache)) {
+    favouriteCache[consoleId] = backend.getFavouriteGames(consoleId);
+  }
+  return favouriteCache[consoleId];
 }
 
-function getRecentlyAddedGames(consoleId, useCache) {
-  if (!useCache || !(consoleId in recentlyAddedCovertArtCache)) {
-    recentlyAddedCovertArtCache[consoleId] = backend.getRecentlyAddedGames(consoleId, 10);
+function getGames(consoleId, useCache) {
+  if (!useCache || !(consoleId in gamesCache)) {
+    gamesCache[consoleId] = backend.getGames(consoleId);
   }
-  return recentlyAddedCovertArtCache[consoleId];
+  return gamesCache[consoleId];
 }
 
-function getRecentlyPlayedGames(consoleId, useCache) {
-  if (!useCache || !(consoleId in recentlyPlayedCovertArtCache)) {
-    recentlyPlayedCovertArtCache[consoleId] = backend.getRecentlyPlayedGames(consoleId, 10);
+function getMostPlayedGames(consoleId, count, useCache) {
+  if (!useCache || !(consoleId in mostPlayedCache)) {
+    mostPlayedCache[consoleId] = backend.getMostPlayedGames(consoleId, count);
   }
-  return recentlyPlayedCovertArtCache[consoleId];
+  return mostPlayedCache[consoleId];
+}
+
+function getRecentlyAddedGames(consoleId, count, useCache) {
+  if (!useCache || !(consoleId in recentlyAddedCache)) {
+    recentlyAddedCache[consoleId] = backend.getRecentlyAddedGames(consoleId, count);
+  }
+  return recentlyAddedCache[consoleId];
+}
+
+function getRecentlyPlayedGames(consoleId, count, useCache) {
+  if (!useCache || !(consoleId in recentlyPlayedCache)) {
+    recentlyPlayedCache[consoleId] = backend.getRecentlyPlayedGames(consoleId, count);
+  }
+  return recentlyPlayedCache[consoleId];
 }
 
 function goHome() {
@@ -105,13 +125,8 @@ function humanFileSize(bytes, si=false, dp=1) {
   return bytes.toFixed(dp) + ' ' + units[u];
 }
 
-
-function loadConsoleScreen(console) {
-  consoleScreen.consoleId = console.id;
-  consoleScreen.headerText = console.name;
-  consoleScreen.background = PES.getConsoleArt(console.id);
-  consoleScreen.menuIndex = 0;
-  consoleScreen.refresh();
+function loadConsoleScreen(consoleObj) {
+  consoleScreen.consoleObj = consoleObj;
   screenStack.currentIndex = 2;
   consoleScreen.forceActiveFocus();
 }
@@ -181,7 +196,7 @@ function updateCoverartPanels(consoleId) {
   recentlyAddedMainPanel.removeAll();
   recentlyPlayedMainPanel.removeAll();
 
-  var games = getRecentlyAddedGames(consoleId, true);
+  var games = getRecentlyAddedGames(consoleId, 10, true);
   if (games.length == 0) {
     recentlyAddedMainPanel.visible = false;
   }
@@ -192,7 +207,7 @@ function updateCoverartPanels(consoleId) {
     recentlyAddedMainPanel.visible = true;
   }
 
-  games = getRecentlyPlayedGames(consoleId, true);
+  games = getRecentlyPlayedGames(consoleId, 10, true);
   if (games.length == 0) {
     recentlyPlayedMainPanel.visible = false;
   }
@@ -249,7 +264,7 @@ function updateMainScreen(){
   gamesAdded = consoles.length > 0;
 
   // purge recently added covert art cache
-  recentlyAddedCovertArtCache = {};
+  recentlyAddedCache = {};
 
   updateCoverartPanels(0);
 

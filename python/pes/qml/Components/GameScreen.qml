@@ -249,7 +249,7 @@ Rectangle {
                 ScrollView {
                     id: overviewScroll
                     clip: true
-                    ScrollBar.vertical.policy: ScrollBar.AlwaysOn
+                    ScrollBar.vertical.policy: ScrollBar.AlwaysOff
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     Layout.margins: 10
@@ -260,14 +260,14 @@ Rectangle {
                         id: overviewText
                         width: overviewScroll.width
 
-                        onTextChanged: function(){
+                        /*onTextChanged: function(){
                             if (overviewText.height > overviewScroll.height) {
                                 overviewScroll.ScrollBar.vertical.policy = ScrollBar.AlwaysOn;
                             }
                             else {
                                 overviewScroll.ScrollBar.vertical.policy = ScrollBar.AlwaysOff;
                             }
-                        }
+                        }*/
                     }
 
                     function getContentHeight() {

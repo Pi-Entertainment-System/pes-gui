@@ -160,10 +160,40 @@ class Backend(QObject):
 		return None
 
 	@pyqtSlot(int, result=list)
+	def getFavouriteGames(self, consoleId=None):
+		games = []
+		if not consoleId or consoleId == 0:
+			logging.debug("Backand.getFavouriteGames: getting favourite games for all consoles")
+			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.favourite == True).order_by(pes.sql.Game.name)
+		else:
+			logging.debug("Backend.getFavouriteGames: getting favourite games for console %d" % consoleId)
+			result = self.__session.query(pes.sql.Game).filter(sqlalchemy.sql.expression.and_(pes.sql.Game.consoleId == consoleId, pes.sql.Game.favourite == True)).order_by(pes.sql.Game.name)
+		for g in result:
+			games.append(g.getDict())
+		return games
+
+	@pyqtSlot(int, result=list)
 	def getGames(self, consoleId):
 		logging.debug("Backend.getGames: getting games for console %d" % consoleId)
 		games = []
 		result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).order_by(pes.sql.Game.name)
+		for g in result:
+			games.append(g.getDict())
+		return games
+
+	@pyqtSlot(int, int, result=list)
+	def getMostPlayedGames(self, consoleId=None, limit=10):
+		games = []
+		if not consoleId or consoleId == 0:
+			logging.debug("Backand.getMostPlayedGames: getting most played games for all consoles")
+			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.playCount > 0).order_by(pes.sql.Game.playCount)
+			if limit > 0:
+				result = result.limit(limit)
+		else:
+			logging.debug("Backend.getMostPlayedGames: getting most played games for console %d" % consoleId)
+			result = self.__session.query(pes.sql.Game).filter(sqlalchemy.sql.expression.and_(pes.sql.Game.consoleId == consoleId, pes.sql.Game.playCount > 0)).order_by(pes.sql.Game.playCount)
+			if limit > 0:
+				result = result.limit(limit)
 		for g in result:
 			games.append(g.getDict())
 		return games
@@ -174,30 +204,34 @@ class Backend(QObject):
 
 	@pyqtSlot(int, int, result=list)
 	def getRecentlyAddedGames(self, consoleId=None, limit=10):
-		if consoleId:
-			logging.debug("Backend.getRecentlyAddedGames: getting games for console %d" % consoleId)
-		else:
-			logging.debug("Backend.getRecentlyAddedGames: getting games for all consoles")
 		games = []
 		if not consoleId or consoleId == 0:
-			result = self.__session.query(pes.sql.Game).order_by(pes.sql.Game.added.desc()).limit(limit)
+			logging.debug("Backend.getRecentlyAddedGames: getting games for all consoles")
+			result = self.__session.query(pes.sql.Game).order_by(pes.sql.Game.added.desc())
+			if limit > 0:
+				result = result.limit(limit)
 		else:
-			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).order_by(pes.sql.Game.added.desc()).limit(limit)
+			logging.debug("Backend.getRecentlyAddedGames: getting games for console %d" % consoleId)
+			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).order_by(pes.sql.Game.added.desc())
+			if limit > 0:
+				result = result.limit(limit)
 		for g in result:
 			games.append(g.getDict())
 		return games
 
 	@pyqtSlot(int, int, result=list)
 	def getRecentlyPlayedGames(self, consoleId=None, limit=10):
-		if consoleId:
-			logging.debug("Backend.getRecentlyPlayedGames: getting games for console %d" % consoleId)
-		else:
-			logging.debug("Backend.getRecentlyPlayedGames: getting games for all consoles")
 		games = []
 		if not consoleId or consoleId == 0:
-			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.lastPlayed != None).order_by(pes.sql.Game.lastPlayed.desc()).limit(limit)
+			logging.debug("Backend.getRecentlyPlayedGames: getting games for all consoles")
+			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.playCount > 0).order_by(pes.sql.Game.lastPlayed.desc())
+			if limit > 0:
+				result = result.limit(limit)
 		else:
-			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).filter(pes.sql.Game.playCount > 0).order_by(pes.sql.Game.lastPlayed.desc()).limit(limit)
+			logging.debug("Backend.getRecentlyPlayedGames: getting games for console %d" % consoleId)
+			result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).filter(pes.sql.Game.playCount > 0).order_by(pes.sql.Game.lastPlayed.desc())
+			if limit > 0:
+				result = result.limit(limit)
 		for g in result:
 			games.append(g.getDict())
 		return games
