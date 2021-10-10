@@ -43,6 +43,7 @@ Rectangle {
 
     onGameChanged: function() {
         if (game) {
+            backgroundImg.source = PES.getConsoleArt(game.consoleId);
             headerText.text = game.name;
             coverartFrontImg.source = "file://" + game.coverartFront;
             if (game.coverartBack && game.coverartBack != "") {
@@ -183,6 +184,16 @@ Rectangle {
             color: Colour.panelBg
             Layout.fillWidth: true
             Layout.fillHeight: true
+
+            Image {
+                id: backgroundImg
+                x: 0
+                y: 0
+                anchors.fill: parent
+                opacity: 0.2
+                source: ""
+                visible: source != ""
+            }
 
             ColumnLayout {
                 spacing: 10
