@@ -269,6 +269,12 @@ Rectangle {
                     Layout.fillWidth: true
                 }
 
+                BodyText {
+                    id: noGamesText
+                    text: "No games found"
+                    visible: gameModel.count == 0
+                }
+
                 ScrollView {
                     clip: true
                     Layout.fillWidth: true
