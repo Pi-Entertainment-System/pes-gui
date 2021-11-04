@@ -423,7 +423,7 @@ if __name__ == "__main__":
 				else:
 					pesExit("failed, status code: %s" % response.status_code)
 		# now we have the games, let's get the extra image JSON
-		logging.inf("downloading GamesDB image JSON")
+		logging.info("downloading GamesDB image JSON")
 		getGamesDbImages(gamesDbCacheDir)
 		processGamesDbImageJson(newDb, session, gamesDbCacheDir)
 
