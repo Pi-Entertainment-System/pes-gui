@@ -31,7 +31,6 @@ the database.
 """
 
 import argparse
-import configparser
 import datetime
 import json
 import logging
@@ -59,8 +58,8 @@ def getGamesDbImages(cacheDir):
 	requestNumber = 1
 	for game in result:
 		gameIds.append(game.id)
-		# get 200 ids at a time
-		if len(gameIds) == 200:
+		# get 400 ids at a time
+		if len(gameIds) == 400:
 			getGamesDbImageJson(gameIds, imageDir, requestNumber)
 			gameIds = []
 			requestNumber += 1
@@ -104,43 +103,55 @@ def getGamesDbImageJson(ids, imageDir, requestNumber):
 		else:
 			pesExit("failed, status code: %s" % response.status_code)
 
-def processGamesDbJson(newDb, session, data, platformId):
-	for game in data["data"]["games"]:
-		logging.info("processing game: %s, %s" % (game["id"], game["game_title"]))
-		gameId = int(game["id"])
-		gamesDbGame = None
-		if not newDb:
-			gamesDbGame = session.query(pes.sql.GamesDbGame).get(gameId)
-		if gamesDbGame:
-			logging.info("-> updating")
-			gamesDbGame.name = game["game_title"]
-			gamesDbGame.releaseDate = game["release_date"]
-			gamesDbGame.overview = game["overview"]
-		else:
-			logging.info("-> adding")
-			gamesDbGame = pes.sql.GamesDbGame(id=gameId, platformId=platformId, name=game["game_title"], releaseDate=game["release_date"], overview=game["overview"])
+def mkTGDBCacheDir():
+	gamesDbCacheDir = os.path.join(cacheDir, "tgdb-%s" % datetime.datetime.now().strftime('%Y-%m-%d_%H%M'))
+	logging.info("using %s for theGamesDb JSON cache" % gamesDbCacheDir)
+	mkdir(gamesDbCacheDir)
+	return gamesDbCacheDir
 
-		# get coverart
-		if str(gameId) in data["include"]["boxart"]["data"]:
-			for image in data["include"]["boxart"]["data"][str(gameId)]:
-				if image["side"] == "front":
-					logging.info("-> setting cover art URLs...")
-					gamesDbGame.boxArtFrontOriginal = "%s%s" % (data["include"]["boxart"]["base_url"]["original"], image["filename"])
-					gamesDbGame.boxArtFrontLarge = "%s%s" % (data["include"]["boxart"]["base_url"]["large"], image["filename"])
-					gamesDbGame.boxArtFrontMedium = "%s%s" % (data["include"]["boxart"]["base_url"]["medium"], image["filename"])
-					break
-		else:
-			logging.warning("-> no cover art for game %s" % game["id"])
-		session.add(gamesDbGame)
-	session.commit()
+def processGamesDbJson(newDb, session, data):
+	for game in data["data"]["games"]:
+		if game["platform"] in foundGamesDbConsoleIds:
+			gamesDbGame = processGamesDbGame(newDb, session, game)
+			session.add(gamesDbGame)
+		session.commit()
+
+def processGamesDbGame(newDb, session, game):
+	logging.info("processing game: %s, %s" % (game["id"], game["game_title"]))
+	gameId = int(game["id"])
+	gamesDbGame = None
+	if not newDb:
+		gamesDbGame = session.query(pes.sql.GamesDbGame).get(gameId)
+	if gamesDbGame:
+		logging.info("-> updating")
+		gamesDbGame.name = game["game_title"]
+		gamesDbGame.releaseDate = game["release_date"]
+		gamesDbGame.overview = game["overview"]
+	else:
+		logging.info("-> adding")
+		gamesDbGame = pes.sql.GamesDbGame(id=gameId, platformId=game["platform"], name=game["game_title"], releaseDate=game["release_date"], overview=game["overview"])
+
+	# get coverart
+	if str(gameId) in data["include"]["boxart"]["data"]:
+		for image in data["include"]["boxart"]["data"][str(gameId)]:
+			if image["side"] == "front":
+				logging.info("-> setting cover art URLs...")
+				gamesDbGame.boxArtFrontOriginal = "%s%s" % (data["include"]["boxart"]["base_url"]["original"], image["filename"])
+				gamesDbGame.boxArtFrontLarge = "%s%s" % (data["include"]["boxart"]["base_url"]["large"], image["filename"])
+				gamesDbGame.boxArtFrontMedium = "%s%s" % (data["include"]["boxart"]["base_url"]["medium"], image["filename"])
+				break
+	else:
+		logging.warning("-> no cover art for game %s" % game["id"])
+	return gamesDbGame
 
 def processGamesDbImageJson(newDb, session, cacheDir):
 	logging.info("processing GamesDB image JSON files")
 	jsonDir = os.path.join(cacheDir, "images")
 	checkDir(jsonDir)
 	logging.debug("using JSON files from: %s" % cacheDir)
-	# remove existing sceen shots
-	session.query(pes.sql.GamesDbScreenshot).delete()
+	if not newDb:
+		# remove existing sceen shots
+		session.query(pes.sql.GamesDbScreenshot).delete()
 	requestNumber = 1
 	page = 1
 	newRequest = False
@@ -219,8 +230,9 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='Script to pre-populate PES database', add_help=True)
 	parser.add_argument('-v', '--verbose', help='Turn on debug messages', dest='verbose', action='store_true')
 	parser.add_argument('-d', '--data-dir', dest='dataDir', help='Path to data directory', required=True)
+	parser.add_argument('-g', '--tgdb-download', dest='tgdbDownload', help='Download latest theGamesDb.net database dump', action='store_true')
 	parser.add_argument('-l', '--log', help='File to log messages to', type=str, dest='logfile')
-	parser.add_argument('-k', '--tgdb-key', help='theGamesDb.net API key. Specify "default" to use Neil Munday\'s key', type=str, dest='tgdbKey')
+	parser.add_argument('-k', '--tgdb-key', help='theGamesDb.net API key. If not specified Neil Munday\'s key will be used', type=str, dest='tgdbKey')
 	parser.add_argument('-m', '--mame', help='add MAME data', dest='mame', action='store_true')
 	parser.add_argument('-r', '--retroachievements', help='update RetroAchievements data', dest='retroachievements', action='store_true')
 	parser.add_argument('--retroachievements-dir', help='use the given directory of JSON dumps instead of live data from retroachievements.org', dest='retroachievementsDir', type=str)
@@ -244,6 +256,7 @@ if __name__ == "__main__":
 		pesExit("please specify either --retroachievements or --retroachievements-dir not both")
 
 	GAMESDB_API_URL = "https://api.thegamesdb.net/v1"
+	GAMESDB_DUMP_URL = "https://cdn.thegamesdb.net/json/database-latest.json"
 	HEADERS = { "accept": "application/json", 'User-Agent': 'PES Scraper'}
 	URL_TIMEOUT = 30
 
@@ -334,98 +347,137 @@ if __name__ == "__main__":
 		session.commit()
 		logging.info("MAME dictionary saved to database")
 
-	if args.tgdbDir:
-		checkDir(args.tgdbDir)
-		logging.info("using theGamesDb.net JSON cache from: %s" % args.tgdbDir)
-
-		for c in foundGamesDbConsoleIds:
-			gamesDbPlatform = session.query(pes.sql.GamesDbPlatform).get(c)
-			if not gamesDbPlatform:
-				pesExit("could not find %s in GamesDbPlatform table")
-
-			logging.info("processing: %s" % gamesDbPlatform.name)
-			platformPath = os.path.join(args.tgdbDir, str(c))
-			checkDir(platformPath)
-			logging.debug("using data from dir: %s" % platformPath)
-			page = 1
-			while True:
-				jsonPath = os.path.join(platformPath, 'games_%d.json' % page)
-				if os.path.exists(jsonPath) and os.path.isfile(jsonPath):
-					logging.debug("processing: %s" % jsonPath)
-					with open(jsonPath, 'r') as f:
-						try:
-							data = json.load(f)
-						except Exception as e:
-							pesExit("Failed to load JSON from %s due to:\n%s" % (jsonPath, e))
-						processGamesDbJson(newDb, session, data, gamesDbPlatform.id)
-				else:
-					logging.debug("no more files to process")
-					break
-				page += 1
-		processGamesDbImageJson(newDb, session, args.tgdbDir)
-
-	if args.tgdbKey:
-		if args.tgdbKey == 'default':
-			args.tgdbKey = defaultTGDBKey
-			logging.info("using Neil Munday's TGDB API key - rate limited per IP")
-
-		logging.info("accessing theGamesDb.net API")
-
+	if args.tgdbDownload:
+		logging.info("downloading latest TGDB database dump from %s" % GAMESDB_DUMP_URL)
 		# create directory to store JSON cache
-		gamesDbCacheDir = os.path.join(cacheDir, "tgdb-%s" % datetime.datetime.now().strftime('%Y-%m-%d_%H%M'))
-		logging.info("using %s for theGamesDb JSON cache" % gamesDbCacheDir)
-		mkdir(gamesDbCacheDir)
+		gamesDbCacheDir = mkTGDBCacheDir()
 
-		for c in foundGamesDbConsoleIds:
-			gamesDbPlatform = session.query(pes.sql.GamesDbPlatform).get(c)
-			if not gamesDbPlatform:
-				pesExit("could not find %s in GamesDbPlatform table")
+		response = requests.get(
+			GAMESDB_DUMP_URL,
+			headers=HEADERS,
+			timeout=URL_TIMEOUT,
+			stream=True
+		)
+		if response.status_code == requests.codes.ok:
+			data = response.json()
+			jsonDump = os.path.join(gamesDbCacheDir, 'tgdb.json')
+			logging.debug("saving JSON to: %s" % jsonDump)
+			with open(jsonDump, 'w') as f:
+				json.dump(data, f)
+			processGamesDbJson(newDb, session, data)
+		else:
+			pesExit("failed, status code: %s" % response.status_code)
 
-			logging.info("processing: %s" % gamesDbPlatform.name)
-			jsonCacheDir = os.path.join(gamesDbCacheDir, str(gamesDbPlatform.id))
-			mkdir(jsonCacheDir)
-
-			page = 1
-
-			while True:
-				logging.info("downloading page %d from results" % page)
-				params = {
-					'apikey': '%s' % args.tgdbKey,
-					'id': gamesDbPlatform.id,
-					'fields': 'overview',
-					'include': 'boxart',
-					'page': page
-				}
-
-				response = requests.get(
-					"%s/Games/ByPlatformID" % GAMESDB_API_URL,
-					params=params,
-					headers=HEADERS,
-					timeout=URL_TIMEOUT,
-					stream=True
-				)
-				if response.status_code == requests.codes.ok:
-					data = response.json()
-					if data["status"] != "Success":
-						pesExit("Got bad status value: %s" % data["status"])
-					if "data" not in data or "games" not in data["data"]:
-						pesExit("Invalid JSON: %s" % data)
-					# save JSON to cache for parsing later (if needed to save API requests)
-					jsonFileCache = os.path.join(jsonCacheDir, "games_%s.json" % page)
-					logging.debug("saving JSON to: %s" % jsonFileCache)
-					with open(jsonFileCache, 'w') as f:
-						json.dump(data, f)
-					processGamesDbJson(newDb, session, data, gamesDbPlatform.id)
-					if data["pages"]["next"]:
-						page += 1
-					else:
-						break
-				else:
-					pesExit("failed, status code: %s" % response.status_code)
 		# now we have the games, let's get the extra image JSON
+		if not args.tgdbKey or args.tgdbKey == "default":
+			args.tgdbKey = defaultTGDBKey
 		logging.info("downloading GamesDB image JSON")
 		getGamesDbImages(gamesDbCacheDir)
 		processGamesDbImageJson(newDb, session, gamesDbCacheDir)
+
+	if args.tgdbDir:
+		checkDir(args.tgdbDir)
+		logging.info("using theGamesDb.net JSON cache from: %s" % args.tgdbDir)
+		# look for json dump
+		jsonPath = os.path.join(args.tgdbDir, 'tgdb.json')
+		if os.path.exists(jsonPath) and os.path.isfile(jsonPath):
+			logging.info("found TGDB database dump to process: %s" % jsonPath)
+			with open(jsonPath, 'r') as f:
+				try:
+					data = json.load(f)
+				except Exception as e:
+					pesExit("Failed to load JSON from %s due to:\n%s" % (jsonPath, e))
+			processGamesDbJson(newDb, session, data)
+			processGamesDbImageJson(newDb, session, args.tgdbDir)
+		else:
+			pesExit("No previous TGDB dump found in %s" % args.tgdbDir)
+		#	logging.warning("no JSON database dump found, looking for platform downloads instead")
+		#	for c in foundGamesDbConsoleIds:
+		#		gamesDbPlatform = session.query(pes.sql.GamesDbPlatform).get(c)
+		#		if not gamesDbPlatform:
+		#			pesExit("could not find %s in GamesDbPlatform table")
+
+		#		logging.info("processing: %s" % gamesDbPlatform.name)
+		#		platformPath = os.path.join(args.tgdbDir, str(c))
+		#		checkDir(platformPath)
+		#		logging.debug("using data from dir: %s" % platformPath)
+		#		page = 1
+		#		while True:
+		#			jsonPath = os.path.join(platformPath, 'games_%d.json' % page)
+		#			if os.path.exists(jsonPath) and os.path.isfile(jsonPath):
+		#				logging.debug("processing: %s" % jsonPath)
+		#				with open(jsonPath, 'r') as f:
+		#					try:
+		#						data = json.load(f)
+		#					except Exception as e:
+		#						pesExit("Failed to load JSON from %s due to:\n%s" % (jsonPath, e))
+		#					processGamesDbJson(newDb, session, data)
+		#			else:
+		#				logging.debug("no more files to process")
+		#				break
+		#			page += 1
+		#		processGamesDbImageJson(newDb, session, args.tgdbDir)
+
+	#if args.tgdbKey:
+	#	if args.tgdbKey == 'default':
+	#		args.tgdbKey = defaultTGDBKey
+	#		logging.info("using Neil Munday's TGDB API key - rate limited per IP")
+
+	#	logging.info("accessing theGamesDb.net API")
+
+		# create directory to store JSON cache
+	#	gamesDbCacheDir = mkTGDBCacheDir()
+
+	#	for c in foundGamesDbConsoleIds:
+	#		gamesDbPlatform = session.query(pes.sql.GamesDbPlatform).get(c)
+	#		if not gamesDbPlatform:
+	#			pesExit("could not find %s in GamesDbPlatform table")
+
+	#		logging.info("processing: %s" % gamesDbPlatform.name)
+	#		jsonCacheDir = os.path.join(gamesDbCacheDir, str(gamesDbPlatform.id))
+	#		mkdir(jsonCacheDir)
+
+	#		page = 1
+
+	#		while True:
+	#			logging.info("downloading page %d from results" % page)
+	#			params = {
+	#				'apikey': '%s' % args.tgdbKey,
+	#				'id': gamesDbPlatform.id,
+	#				'fields': 'overview',
+	#				'include': 'boxart',
+	#				'page': page
+	#			}
+
+	#			response = requests.get(
+	#				"%s/Games/ByPlatformID" % GAMESDB_API_URL,
+	#				params=params,
+	#				headers=HEADERS,
+	#				timeout=URL_TIMEOUT,
+	#				stream=True
+	#			)
+	#			if response.status_code == requests.codes.ok:
+	#				data = response.json()
+	#				if data["status"] != "Success":
+	#					pesExit("Got bad status value: %s" % data["status"])
+	#				if "data" not in data or "games" not in data["data"]:
+	#					pesExit("Invalid JSON: %s" % data)
+	#				# save JSON to cache for parsing later (if needed to save API requests)
+	#				jsonFileCache = os.path.join(jsonCacheDir, "games_%s.json" % page)
+	#				logging.debug("saving JSON to: %s" % jsonFileCache)
+	#				with open(jsonFileCache, 'w') as f:
+	#					json.dump(data, f)
+	#				processGamesDbJson(newDb, session, data)
+	#				if data["pages"]["next"]:
+	#					page += 1
+	#				else:
+	#					break
+	#			else:
+	#				pesExit("failed, status code: %s" % response.status_code)
+	#	# now we have the games, let's get the extra image JSON
+	#	logging.info("downloading GamesDB image JSON")
+	#	getGamesDbImages(gamesDbCacheDir)
+	#	processGamesDbImageJson(newDb, session, gamesDbCacheDir)
 
 	if args.retroachievementsDir:
 		checkDir(args.retroachievementsDir)
