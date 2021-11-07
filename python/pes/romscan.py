@@ -293,7 +293,7 @@ class GamesDbRomTask(RomTask):
 				if rasum:
 					logging.debug("%s no match for rasum: %s, trying name match" % (logPrefix, rasum))
 				else:
-					logging.debug("%s trying name match")
+					logging.debug("%s trying name match" % logPrefix)
 				with self._lock:
 					gamesDbGame = session.query(pes.sql.GamesDbGame).filter(sqlalchemy.func.lower(sqlalchemy.func.replace(pes.sql.GamesDbGame.name, " ", "")) == romName.replace(" ", "").lower()).first()
 				if gamesDbGame:
