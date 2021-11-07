@@ -10,6 +10,16 @@ Please see the [pes-setup](https://github.com/Pi-Entertainment-System/pes-setup)
 
 The [pes-packages](https://github.com/Pi-Entertainment-System/pes-packages) repository contains the Arch Linux package build files to all off the Arch Linux packages required by PES that are not already provided by Arch Linux.
 
+# Requirements
+
+- Flask
+- QT5
+- PyQT5
+- PySDL2
+- SDL2
+- [rasum](https://github.com/Pi-Entertainment-System/rasum)
+- waitress
+
 # Creating the PES database
 
 PES requires its database to be populated with theGamesDB and RetroAchievements.org data.
@@ -19,6 +29,12 @@ Once you have cloned this repository you can create the database like so:
 ```
 export PYTHONPATH=python
 bin/populate-db -g -m -d data -r --match -v
+```
+
+# Load GUI
+
+```
+bin/pes
 ```
 
 # Acknowledgements
