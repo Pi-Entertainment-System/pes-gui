@@ -37,6 +37,10 @@ if [ -d /opt/pes/lib/python3.9/site-packages ]; then
     export PYTHONPATH=${BASEDIR}/python:/opt/pes/lib/python3.9/site-packages
 fi
 
+if [ -d /opt/pes/bin ]; then
+	export PATH=/opt/pes/bin:$PATH
+fi
+
 export PATH=$BASEDIR:$PATH
 
 $BASEDIR/python/pes/main.py $*
