@@ -81,6 +81,12 @@ class Backend(QObject):
 		self.__dbusBroker = pes.system.DbusBroker()
 		if self.__dbusBroker.btAvailable():
 			self.__btAgent = pes.system.BluetoothAgent()
+			# set-up Bluetooth so it can be paired etc.
+			self.__dbusBroker.btPowered = True
+			self.__dbusBroker.btDiscoverable = True
+			self.__dbusBroker.btDiscoverableTimeout = 0
+			self.__dbusBroker.btPairable = True
+			self.__dbusBroker.btStartDiscovery()
 		else:
 			self.__btAgent = None
 		self.__gamepadTotal = 0
@@ -338,6 +344,19 @@ class PESGuiApplication(QGuiApplication):
 						logging.debug("player 1: Guide")
 						#self.sendEvent(self.focusWindow(), QKeyEvent(QEvent.KeyPress, Qt.Key_Home, Qt.NoModifier))
 						self.__backend.emitHomeButtonPress()
+				elif event.type == sdl2.SDL_CONTROLLERAXISMOTION:
+					# @TODO: to be done
+					pass
+				elif event.type == sdl2.SDL_JOYHATMOTION:
+					# @TODO: fire QT events
+					if event.jhat.value == sdl2.SDL_HAT_UP:
+						logging.debug("player 1: up")
+					elif event.jhat.value == sdl2.SDL_HAT_DOWN:
+						logging.debug("player 1: down")
+					elif event.jhat.value == sdl2.SDL_HAT_LEFT:
+						logging.debug("player 1: left")
+					elif event.jhat.value == sdl2.SDL_HAT_RIGHT:
+						logging.debug("player 1: right")
 
 			if sdl2.timer.SDL_GetTicks() - joystickTick > 1000:
 				tick = sdl2.timer.SDL_GetTicks()
