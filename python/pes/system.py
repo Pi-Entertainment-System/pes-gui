@@ -221,6 +221,16 @@ class DbusBroker(QObject):
         logging.debug("DbusBroker.btDiscoverable: setting to %s" % discoverable)
         self._setBtAdapterProperty("Discoverable", discoverable)
 
+    @pyqtProperty(int)
+    def btDiscoverableTimeout(self) -> int:
+        logging.debug("DbusBroker.btDiscoverable: getting property")
+        return self._getBtAdapterProperty("DiscoverableTimeout")
+
+    @btDiscoverableTimeout.setter
+    def btDiscoverableTimeout(self, timeout: int):
+        logging.debug("DbusBroker.btDiscoverableTimeout: setting to %d" % timeout)
+        self._setBtAdapterProperty("DiscoverableTimeout", timeout)
+
     @pyqtProperty(bool)
     def btPairable(self) -> bool:
         logging.debug("DbusBroker.btPairable: getting property")
