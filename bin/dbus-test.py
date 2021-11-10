@@ -58,9 +58,10 @@ if __name__ == "__main__":
 
     if broker.btAvailable():
         agent = pes.system.BluetoothAgent()
-        logging.info("Adapter: %s" % broker.btAdapter)
+        #logging.info("Adapter: %s" % broker.btAdapter)
         logging.info("Powered: %s" % broker.btPowered)
         logging.info("Discoverable: %s" % broker.btDiscoverable)
+        logging.info("Discoverable timeout: %d" % broker.btDiscoverableTimeout)
         logging.info("Pairable: %s" % broker.btPairable)
         broker.btPowered = True
         broker.btDiscoverable = True
