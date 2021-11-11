@@ -47,7 +47,8 @@ def cecEvent(button, dur):
 	when adding Qt app as the callback.
 	"""
 	global app
-	app.processCecEvent(button, dur)
+	if app:
+		app.processCecEvent(button, dur)
 
 if __name__ == "__main__":
 
@@ -172,3 +173,9 @@ if __name__ == "__main__":
 		logging.warning("CEC module disabled")
 
 	app.run()
+	
+	if cecImported:
+		# remove CEC callbacks to prevent segmentation fault issue #6
+		logging.debug("removing CEC callbacks...")
+		cecconfig.ClearCallbacks()
+	logging.info("exiting...")
