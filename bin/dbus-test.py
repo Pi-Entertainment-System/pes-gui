@@ -64,6 +64,7 @@ if __name__ == "__main__":
         logging.info("Discoverable timeout: %d" % broker.btDiscoverableTimeout)
         logging.info("Pairable: %s" % broker.btPairable)
         broker.btPowered = True
+        broker.btDiscoverableTimeout = 0
         broker.btDiscoverable = True
         broker.btPairable = True
         broker.btStartDiscovery()
