@@ -170,7 +170,9 @@ class DbusBroker(QObject):
     def _setBtAdapterProperty(self, property, value):
         if self._adapterPath:
             connection = QDBusInterface(BT_SERVICE, self._adapterPath, DBUS_PROPERTIES_INTERFACE, self._bus)
-            connection.call("Set", BT_ADAPTER_INTERFACE, property, QDBusVariant(value)).arguments()
+            rslt = connection.call("Set", BT_ADAPTER_INTERFACE, property, QDBusVariant(value)).arguments()
+            if rslt[0] != None:
+                raise Exception("DbusBroker._setBtAdapterProperty: %s" % rslt[0])
             return
         raise Exception("DbusBroker._setBtAdapterProperty: Bluetooth adapter not found when seting '%s'" % property)
 
