@@ -23,8 +23,8 @@
 import logging
 import os
 from dbus.mainloop.pyqt5 import DBusQtMainLoop
-from PyQt5.QtCore import Q_CLASSINFO, QObject, QVariant, pyqtProperty, pyqtSignal, pyqtSlot
-from PyQt5.QtDBus import QDBusConnection, QDBusAbstractAdaptor, QDBusInterface, QDBusVariant, QDBusMessage, QDBusObjectPath, QDBusError
+from PyQt5.QtCore import Q_CLASSINFO, QObject, QVariant, pyqtProperty, pyqtSlot, QMetaType
+from PyQt5.QtDBus import QDBusArgument, QDBusConnection, QDBusAbstractAdaptor, QDBusInterface, QDBusVariant, QDBusMessage, QDBusObjectPath, QDBusError
 
 BT_SERVICE = "org.bluez"
 BT_ADAPTER_INTERFACE = BT_SERVICE  + ".Adapter1"
@@ -170,7 +170,11 @@ class DbusBroker(QObject):
     def _setBtAdapterProperty(self, property, value):
         if self._adapterPath:
             connection = QDBusInterface(BT_SERVICE, self._adapterPath, DBUS_PROPERTIES_INTERFACE, self._bus)
-            rslt = connection.call("Set", BT_ADAPTER_INTERFACE, property, QDBusVariant(value)).arguments()
+            if type(value) == int:
+                # convert integer properties to UInt32
+                rslt = connection.call("Set", BT_ADAPTER_INTERFACE, property, QDBusVariant(QDBusArgument(value, QMetaType.UInt))).arguments()
+            else:
+                rslt = connection.call("Set", BT_ADAPTER_INTERFACE, property, QDBusVariant(value)).arguments()
             if rslt[0] != None:
                 raise Exception("DbusBroker._setBtAdapterProperty: %s" % rslt[0])
             return
