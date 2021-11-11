@@ -35,14 +35,16 @@ if [ -e /sys/firmware/devicetree/base/model ] && grep -q 'Raspberry Pi' /sys/fir
     export QT_SCALE_FACTOR=1.5
 fi
 
+export PYTHONPATH=${BASEDIR}/python
+
 if [ -d /opt/pes/lib/python3.9/site-packages ]; then
-    export PYTHONPATH=${BASEDIR}/python:/opt/pes/lib/python3.9/site-packages
+    export PYTHONPATH=/opt/pes/lib/python3.9/site-packages:$PYTHONPATH
 fi
 
 if [ -d /opt/pes/bin ]; then
 	export PATH=/opt/pes/bin:$PATH
 fi
 
-export PATH=$BASEDIR:$PATH
+export PATH=$BASEDIR/bin:$PATH
 
 $BASEDIR/python/pes/main.py $*
