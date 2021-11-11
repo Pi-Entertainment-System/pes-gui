@@ -71,7 +71,7 @@ class Console(Base, CustomBase):
 	art = Column(String)
 
 	platform = relationship("GamesDbPlatform", back_populates="consoles")
-	retroAchievementConsole = relationship("RetroAchievementConsole", back_populates="consoles")
+	#retroAchievementConsole = relationship("RetroAchievementConsole", back_populates="consoles")
 
 	def __repr__(self):
 		return "<Console id=%s name=%s retroId=%s>" % (self.id, self.name, self.retroId)
@@ -221,7 +221,7 @@ GamesDbGame.games = relationship("Game", order_by=Game.id, back_populates="games
 GamesDbGame.screenshots = relationship("GamesDbScreenshot", order_by=GamesDbScreenshot.id, back_populates="game")
 GamesDbPlatform.consoles = relationship("Console", order_by=Console.id, back_populates="platform")
 GamesDbPlatform.games = relationship("GamesDbGame", order_by=GamesDbGame.id, back_populates="platform")
-RetroAchievementConsole.consoles = relationship("Console", order_by=Console.id, back_populates="retroAchievementConsole")
+#RetroAchievementConsole.consoles = relationship("Console", order_by=Console.id, back_populates="retroAchievementConsole")
 RetroAchievementConsole.games = relationship("RetroAchievementGame", order_by=RetroAchievementGame.id, back_populates="console")
 RetroAchievementGame.games = relationship("Game", order_by=Game.id, back_populates="retroAchievementGame")
 RetroAchievementGame.gamesDbGame = relationship("GamesDbGame", order_by=GamesDbGame.id, back_populates="retroAchievementGame")
