@@ -31,6 +31,8 @@ BASEDIR=`realpath $DIR/..`
 # are we on a Raspberry Pi?
 if [ -e /sys/firmware/devicetree/base/model ] && grep -q 'Raspberry Pi' /sys/firmware/devicetree/base/model; then
     export QT_QPA_PLATFORM=eglfs
+    # scale display (assuming large resolution here)
+    export QT_SCALE_FACTOR=1.5
 fi
 
 if [ -d /opt/pes/lib/python3.9/site-packages ]; then
