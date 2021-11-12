@@ -613,10 +613,14 @@ class RomScanThread(QThread):
 			return 1
 		# process is running
 		# remove posion pills from calculation
+		# but qsize could go negative if we only
+		# have poison pills left!
+		if qsize <= self.__romProcessTotal:
+			# we're processing poison pills now
+			# so we're done
+			return 1
 		qsize -= self.__romProcessTotal
 		progress = float(self.__romTotal - qsize) / float(self.__romTotal)
-		if progress > 1:
-			return 1
 		return progress
 
 	def getSkipped(self) -> int:
