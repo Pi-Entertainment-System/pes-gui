@@ -56,6 +56,8 @@ class CustomBase(object):
 					j[c.name] = 0
 				elif t is Integer:
 					j[c.name] = 0
+				elif t is Boolean:
+					j[c.name] = False
 				else:
 					j[c.name] = ""
 		return j
