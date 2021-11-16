@@ -47,6 +47,9 @@ import pes.romscan
 import pes.sql
 import pes.system
 
+JOYSTICK_AXIS_MIN = -32766
+JOYSTICK_AXIS_MAX = 32766
+
 def getLitteEndianFromHex(x):
 	return int("%s%s" % (x[2:4], x[0:2]), 16)
 
@@ -323,40 +326,56 @@ class PESGuiApplication(QGuiApplication):
 			for event in events:
 				if event.type == sdl2.SDL_CONTROLLERBUTTONUP:
 					if event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP:
-						logging.debug("player 1: up")
-						self.sendEvent(self.focusWindow(), QKeyEvent(QEvent.KeyPress, Qt.Key_Up, Qt.NoModifier))
+						logging.debug("player: up")
+						self.__sendKeyEvent(Qt.Key_Up)
 					elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-						logging.debug("player 1: down")
-						self.sendEvent(self.focusWindow(), QKeyEvent(QEvent.KeyPress, Qt.Key_Down, Qt.NoModifier))
+						logging.debug("player: down")
+						self.__sendKeyEvent(Qt.Key_Down)
 					elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_LEFT:
-						logging.debug("player 1: left")
-						self.sendEvent(self.focusWindow(), QKeyEvent(QEvent.KeyPress, Qt.Key_Left, Qt.NoModifier))
+						logging.debug("player: left")
+						self.__sendKeyEvent(Qt.Key_Left)
 					elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
-						logging.debug("player 1: right")
-						self.sendEvent(self.focusWindow(), QKeyEvent(QEvent.KeyPress, Qt.Key_Right, Qt.NoModifier))
+						logging.debug("player: right")
+						self.__sendKeyEvent(Qt.Key_Right)
 					elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_A:
-						logging.debug("player 1: A")
-						self.sendEvent(self.focusWindow(), QKeyEvent(QEvent.KeyPress, Qt.Key_Backspace, Qt.NoModifier))
+						logging.debug("player: A")
+						self.__sendKeyEvent(Qt.Key_Backspace)
 					elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_B:
-						logging.debug("player 1: B")
-						self.sendEvent(self.focusWindow(), QKeyEvent(QEvent.KeyPress, Qt.Key_Return, Qt.NoModifier))
+						logging.debug("player: B")
+						self.__sendKeyEvent(Qt.Key_Return)
 					elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_GUIDE:
-						logging.debug("player 1: Guide")
-						#self.sendEvent(self.focusWindow(), QKeyEvent(QEvent.KeyPress, Qt.Key_Home, Qt.NoModifier))
+						logging.debug("player: Guide")
 						self.__backend.emitHomeButtonPress()
 				elif event.type == sdl2.SDL_CONTROLLERAXISMOTION:
-					# @TODO: to be done
-					pass
+					if event.caxis.value < JOYSTICK_AXIS_MIN or event.caxis.value > JOYSTICK_AXIS_MAX:
+							logging.debug("player: axis \"%s\" activated: %d" % (sdl2.SDL_GameControllerGetStringForAxis(event.caxis.axis), event.caxis.value))
+							if event.caxis.axis == sdl2.SDL_CONTROLLER_AXIS_LEFTY:
+								if event.caxis.value > 0:
+									logging.debug("player: left axis down")
+									self.__sendKeyEvent(Qt.Key_Down)
+								else:
+									logging.debug("player: left axis up")
+									self.__sendKeyEvent(Qt.Key_Up)
+							elif event.caxis.axis == sdl2.SDL_CONTROLLER_AXIS_LEFTX:
+								if event.caxis.value > 0:
+									logging.debug("player: left axis right")
+									self.__sendKeyEvent(Qt.Key_Right)
+								else:
+									logging.debug("player: left axis left")
+									self.__sendKeyEvent(Qt.Key_Left)
 				elif event.type == sdl2.SDL_JOYHATMOTION:
-					# @TODO: fire QT events
 					if event.jhat.value == sdl2.SDL_HAT_UP:
-						logging.debug("player 1: up")
+						logging.debug("player: up")
+						self.__sendKeyEvent(Qt.Key_Up)
 					elif event.jhat.value == sdl2.SDL_HAT_DOWN:
-						logging.debug("player 1: down")
+						logging.debug("player: down")
+						self.__sendKeyEvent(Qt.Key_Down)
 					elif event.jhat.value == sdl2.SDL_HAT_LEFT:
-						logging.debug("player 1: left")
+						logging.debug("player: left")
+						self.__sendKeyEvent(Qt.Key_Left)
 					elif event.jhat.value == sdl2.SDL_HAT_RIGHT:
-						logging.debug("player 1: right")
+						logging.debug("player: right")
+						self.__sendKeyEvent(Qt.Key_Right)
 
 			if sdl2.timer.SDL_GetTicks() - joystickTick > 1000:
 				tick = sdl2.timer.SDL_GetTicks()
@@ -388,6 +407,9 @@ class PESGuiApplication(QGuiApplication):
 				self.__backend.gamepadTotal = controlPadTotal
 
 			self.processEvents()
+
+	def __sendKeyEvent(self, key):
+		self.sendEvent(self.focusWindow(), QKeyEvent(QEvent.KeyPress, key, Qt.NoModifier))
 
 	def __updateControlPad(self, jsIndex):
 		if jsIndex == self.__player1ControllerIndex:
