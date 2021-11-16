@@ -23,7 +23,6 @@
 import datetime
 import logging
 import os
-
 import sdl2
 import sdl2.ext
 import sdl2.joystick
@@ -47,8 +46,8 @@ import pes.romscan
 import pes.sql
 import pes.system
 
-JOYSTICK_AXIS_MIN = -32766
-JOYSTICK_AXIS_MAX = 32766
+JOYSTICK_AXIS_MIN = -30000
+JOYSTICK_AXIS_MAX =  30000
 
 def getLitteEndianFromHex(x):
 	return int("%s%s" % (x[2:4], x[0:2]), 16)
@@ -297,6 +296,29 @@ class PESGuiApplication(QGuiApplication):
 		sdl2.SDL_Quit()
 		self.exit()
 
+#	@staticmethod
+#	def getControlPadPower(controlpad):
+#		power = sdl2.SDL_JoystickCurrentPowerLevel(sdl2.SDL_GameControllerGetJoystick(controlpad))
+#		if power == sdl2.SDL_JOYSTICK_POWER_UNKNOWN:
+#			logging.debug("PESGuiApplication.getControlPadPower: unknown")
+#			return -1
+#		if power == sdl2.SDL_JOYSTICK_POWER_WIRED:
+#			logging.debug("PESGuiApplication.getControlPadPower: wired")
+#			return 101
+#		if power == sdl2.SDL_JOYSTICK_POWER_MAX:
+#			logging.debug("PESGuiApplication.getControlPadPower: max")
+#			return 100
+#		if power == sdl2.SDL_JOYSTICK_POWER_MEDIUM:
+#			logging.debug("PESGuiApplication.getControlPadPower: medium")
+#			return 70
+#		if power == sdl2.SDL_JOYSTICK_POWER_LOW:
+#			logging.debug("PESGuiApplication.getControlPadPower: low")
+#			return 20
+#		if power == sdl2.SDL_JOYSTICK_POWER_EMPTY:
+#			logging.debug("PESGuiApplication.getControlPadPower: empty")
+#			return 5
+#		return -1
+
 	def processCecEvent(self, button, dur):
 		if not cecImported:
 			raise Exception("PESGuiApplication.processCecEvent: CEC module not imported")
@@ -393,7 +415,7 @@ class PESGuiApplication(QGuiApplication):
 									logging.debug("PESApp.run: switching player 1 to control pad #%d: %s (%s)" % (i, sdl2.SDL_GameControllerNameForIndex(i).decode(), getJoystickGUIDString(sdl2.SDL_JoystickGetDeviceGUID(i))))
 									self.__player1ControllerIndex = i
 									self.__player1Controller = c
-									self.__updateControlPad(self.__player1ControllerIndex)
+									#self.__updateControlPad(self.__player1ControllerIndex)
 									close = False
 							if close:
 								sdl2.SDL_GameControllerClose(c)
@@ -411,13 +433,13 @@ class PESGuiApplication(QGuiApplication):
 	def __sendKeyEvent(self, key):
 		self.sendEvent(self.focusWindow(), QKeyEvent(QEvent.KeyPress, key, Qt.NoModifier))
 
-	def __updateControlPad(self, jsIndex):
-		if jsIndex == self.__player1ControllerIndex:
-			# hack for instances where a dpad is an axis
-			bind = sdl2.SDL_GameControllerGetBindForButton(self.__player1Controller, sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP)
-			if bind:
-				if bind.bindType == sdl2.SDL_CONTROLLER_BINDTYPE_AXIS:
-					self.__dpadAsAxis = True
-					logging.debug("PESWindow.updateControlPad: enabling dpad as axis hack")
-				else:
-					self.__dpadAsAxis = False
+	#def __updateControlPad(self, jsIndex):
+	#	if jsIndex == self.__player1ControllerIndex:
+	#		# hack for instances where a dpad is an axis
+	#		bind = sdl2.SDL_GameControllerGetBindForButton(self.__player1Controller, sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP)
+	#		if bind:
+	#			if bind.bindType == sdl2.SDL_CONTROLLER_BINDTYPE_AXIS:
+	#				self.__dpadAsAxis = True
+	#				logging.debug("PESWindow.updateControlPad: enabling dpad as axis hack")
+	#			else:
+	#				self.__dpadAsAxis = False
