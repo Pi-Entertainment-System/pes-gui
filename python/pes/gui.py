@@ -346,7 +346,7 @@ class PESGuiApplication(QGuiApplication):
 		while self.__running:
 			events = sdl2.ext.get_events()
 			for event in events:
-				if event.type == sdl2.SDL_CONTROLLERBUTTONUP:
+				if event.type == sdl2.SDL_CONTROLLERBUTTONUP and event.cbutton.state == sdl2.SDL_RELEASED:
 					if event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP:
 						logging.debug("player: up")
 						self.__sendKeyEvent(Qt.Key_Up)
@@ -365,6 +365,9 @@ class PESGuiApplication(QGuiApplication):
 					elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_B:
 						logging.debug("player: B")
 						self.__sendKeyEvent(Qt.Key_Return)
+					elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_BACK:
+						logging.debug("player: select (back)")
+						self.__sendKeyEvent(Qt.Key_S)
 					elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_GUIDE:
 						logging.debug("player: Guide")
 						self.__backend.emitHomeButtonPress()
@@ -385,19 +388,20 @@ class PESGuiApplication(QGuiApplication):
 								else:
 									logging.debug("player: left axis left")
 									self.__sendKeyEvent(Qt.Key_Left)
-				elif event.type == sdl2.SDL_JOYHATMOTION:
-					if event.jhat.value == sdl2.SDL_HAT_UP:
-						logging.debug("player: up")
-						self.__sendKeyEvent(Qt.Key_Up)
-					elif event.jhat.value == sdl2.SDL_HAT_DOWN:
-						logging.debug("player: down")
-						self.__sendKeyEvent(Qt.Key_Down)
-					elif event.jhat.value == sdl2.SDL_HAT_LEFT:
-						logging.debug("player: left")
-						self.__sendKeyEvent(Qt.Key_Left)
-					elif event.jhat.value == sdl2.SDL_HAT_RIGHT:
-						logging.debug("player: right")
-						self.__sendKeyEvent(Qt.Key_Right)
+				#elif event.type == sdl2.SDL_JOYHATMOTION:
+				# NOTE: could be handling an already handled game controller event!
+				#	if event.jhat.value == sdl2.SDL_HAT_UP:
+				#		logging.debug("player (hat): up")
+				#		self.__sendKeyEvent(Qt.Key_Up)
+				#	elif event.jhat.value == sdl2.SDL_HAT_DOWN:
+				#		logging.debug("player (hat): down")
+				#		self.__sendKeyEvent(Qt.Key_Down)
+				#	elif event.jhat.value == sdl2.SDL_HAT_LEFT:
+				#		logging.debug("player (hat): left")
+				#		self.__sendKeyEvent(Qt.Key_Left)
+				#	elif event.jhat.value == sdl2.SDL_HAT_RIGHT:
+				#		logging.debug("player (hat): right")
+				#		self.__sendKeyEvent(Qt.Key_Right)
 
 			if sdl2.timer.SDL_GetTicks() - joystickTick > 1000:
 				tick = sdl2.timer.SDL_GetTicks()
