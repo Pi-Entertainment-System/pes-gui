@@ -93,10 +93,14 @@ function getRecentlyPlayedGames(consoleId, count, useCache) {
 }
 
 function goHome() {
-  mainScreenStackView.pop();
-  mainGameScreen.visible = false;
-  consoleStackView.pop();
-  consoleGameScreen.visible = false;
+  if (mainScreenStackView.depth > 1) {
+    mainScreenStackView.pop();
+    mainGameScreen.visible = false;
+  }
+  else if (consoleStackView.depth > 1) {
+    consoleStackView.pop();
+    consoleGameScreen.visible = false;
+  }
   screenStack.currentIndex = 0;
   mainMenuScrollView.forceActiveFocus();
 }
