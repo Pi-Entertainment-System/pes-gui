@@ -37,6 +37,8 @@ Rectangle {
     property alias navSound: listView.navSound
 
     // custom signals
+    signal addFavourite(int gameId)
+    signal removeFavourite(int gameId)
     signal gameSelected(int gameId)
 
     onFocusChanged: {
@@ -84,8 +86,20 @@ Rectangle {
             height: 225
             width: 220
 
-            Keys.onReturnPressed: {
-                mainRect.gameSelected(id);
+            Keys.onPressed: {
+                if (event.key == Qt.Key_Return) {
+                    mainRect.gameSelected(id);    
+                }
+                else if (event.key == Qt.Key_S) {
+                    if (favourite) {
+                        favourite = false;
+                        mainRect.removeFavourite(id);
+                    }
+                    else {
+                        favourite = true;
+                        mainRect.addFavourite(id);
+                    }
+                }
             }
 
             Image {
@@ -100,7 +114,7 @@ Rectangle {
             Text {
                 x: 10
                 y: img.y + img.height
-                color: Colour.text
+                color: favourite ? Colour.favouriteText : Colour.text
                 elide: Text.ElideRight
                 font.pixelSize: FontStyle.bodySmallSize
                 font.bold: true

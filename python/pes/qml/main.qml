@@ -470,8 +470,16 @@ ApplicationWindow {
                 //navSound: navSound
                 visible: false
 
+                onAddFavourite: function(gameId) {
+                  PES.favouriteGame(gameId, true);
+                }
+
                 onGameSelected: function(gameId) {
                   PES.loadGameScreen(mainScreenStackView, mainGameScreen, gameId);
+                }
+
+                onRemoveFavourite: function(gameId) {
+                  PES.favouriteGame(gameId, false);
                 }
               }
 
@@ -487,8 +495,16 @@ ApplicationWindow {
                 //navSound: navSound
                 visible: false
 
+                onAddFavourite: function(gameId) {
+                  PES.favouriteGame(gameId, true);
+                }
+
                 onGameSelected: function(gameId) {
                   PES.loadGameScreen(mainScreenStackView, mainGameScreen, gameId);
+                }
+
+                onRemoveFavourite: function(gameId) {
+                  PES.favouriteGame(gameId, false);
                 }
               }
 
