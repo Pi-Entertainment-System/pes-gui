@@ -88,7 +88,7 @@ Rectangle {
         var games = null;
         switch (menuModel.get(menuView.currentIndex).name) {
             case "Browse": {
-                games = PES.getGames(consoleObj.id), internal.useGameCache;
+                games = PES.getGames(consoleObj.id, internal.useGameCache);
                 internal.useGameCache = true;
                 break;
             }
