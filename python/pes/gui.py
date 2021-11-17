@@ -117,6 +117,17 @@ class Backend(QObject):
 	def emitControlPadButtonPress(self, button):
 		self.controlPadButtonPress.emit(button)
 
+	@pyqtSlot(int, bool)
+	def favouriteGame(self, gameId, favourite):
+		logging.debug("Backend.favouriteGame: %d -> %s" % (gameId, favourite))
+		game = self.__session.query(pes.sql.Game).get(gameId)
+		if game:
+			game.favourite = favourite
+			self.__session.add(game)
+			self.__session.commit()
+		else:
+			logging.error("Backend.favouriteGame: could not find game with ID: %d" % gameId)
+
 	@pyqtProperty(int)
 	def gamepadTotal(self):
 		return self.__gamepadTotal

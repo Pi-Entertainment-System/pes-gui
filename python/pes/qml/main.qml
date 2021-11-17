@@ -471,10 +471,6 @@ ApplicationWindow {
                 visible: false
 
                 onGameSelected: function(gameId) {
-                  /*var r = backend.playGame(gameId);
-                  if (!r.result) {
-                    // @TODO: implement error message dialog
-                  }*/
                   PES.loadGameScreen(mainScreenStackView, mainGameScreen, gameId);
                 }
               }
@@ -492,10 +488,6 @@ ApplicationWindow {
                 visible: false
 
                 onGameSelected: function(gameId) {
-                  /*var r = backend.playGame(gameId);
-                  if (!r.result) {
-                    // @TODO: implement error message dialog
-                  }*/
                   PES.loadGameScreen(mainScreenStackView, mainGameScreen, gameId);
                 }
               }
@@ -555,6 +547,14 @@ ApplicationWindow {
 
           onGameSelected: function(gameId) {
             PES.loadGameScreen(consoleStackView, consoleGameScreen, gameId);
+          }
+
+          onAddFavourite: function(gameId) {
+            PES.favouriteGame(gameId, true);
+          }
+
+          onRemoveFavourite: function(gameId) {
+            PES.favouriteGame(gameId, false);
           }
         }
 

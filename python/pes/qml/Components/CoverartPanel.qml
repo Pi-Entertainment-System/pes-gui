@@ -108,7 +108,7 @@ Rectangle {
                 maximumLineCount: 1
                 text: name
                 wrapMode: Text.Wrap
-                width: parent.width
+                width: parent.width - (x * 2)
             }
         }
     }
