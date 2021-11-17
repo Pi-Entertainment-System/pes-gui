@@ -548,6 +548,14 @@ ApplicationWindow {
           onGameSelected: function(gameId) {
             PES.loadGameScreen(consoleStackView, consoleGameScreen, gameId);
           }
+
+          onAddFavourite: function(gameId) {
+            PES.favouriteGame(gameId, true);
+          }
+
+          onRemoveFavourite: function(gameId) {
+            PES.favouriteGame(gameId, false);
+          }
         }
 
         GameScreen {

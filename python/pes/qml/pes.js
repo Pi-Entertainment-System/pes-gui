@@ -30,6 +30,10 @@ var favouriteCache = {};
 var currentConsoleId = null;
 var gamesAdded = false;
 
+function favouriteGame(gameId, favourite) {
+  backend.favouriteGame(gameId, favourite);
+}
+
 function getConsoleArt(consoleId) {
   var img = "";
   if (consoleId in consoleArtCache) {

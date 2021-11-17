@@ -37,7 +37,18 @@ Rectangle {
     property var consoleObj: null
 
     // custom signals
+    signal addFavourite(int gameId)
+    signal removeFavourite(int gameId)
     signal gameSelected(int gameId)
+
+    // listeners
+    onAddFavourite: function(gameId) {
+        _processFavouriteEvent();
+    }
+
+    onRemoveFavourite: function(gameId) {
+        _processFavouriteEvent();
+    }
 
     function addGame(game) {
         gameModel.append(game);
@@ -48,14 +59,28 @@ Rectangle {
     }
 
     function gridFocus() {
-        if (internal.gameIndex == -1) {
-            gridView.currentIndex = 0;
-            internal.gameIndex = 0;
+        if (gameModel.count > 0) {
+            if (internal.gameIndex == -1) {
+                gridView.currentIndex = 0;
+                internal.gameIndex = 0;
+            }
+            else {
+                gridView.currentIndex = internal.gameIndex;
+            }
+            gridView.forceActiveFocus();
         }
-        else {
-            gridView.currentIndex = internal.gameIndex;
+    }
+
+    function _processFavouriteEvent() {
+        internal.useFavouriteCache = false;
+        internal.useGameCache = false;
+        internal.useMostPlayedCache = false;
+        internal.useRecentlyAddedCache = false;
+        internal.useRecentlyPlayedCache = false;
+        if (menuModel.get(menuView.currentIndex).name == "Favourites") {
+            refresh();
+            gridFocus();
         }
-        gridView.forceActiveFocus();
     }
 
     function refresh() {
@@ -161,9 +186,21 @@ Rectangle {
                 height: 225
                 width: 220
 
-                Keys.onReturnPressed: {
-                    internal.gameIndex = gridView.currentIndex;
-                    mainRect.gameSelected(id);
+                Keys.onPressed: {
+                    if (event.key == Qt.Key_Return) {
+                        internal.gameIndex = gridView.currentIndex;
+                        mainRect.gameSelected(id);    
+                    }
+                    else if (event.key == Qt.Key_S) {
+                        if (favourite) {
+                            favourite = false;
+                            mainRect.removeFavourite(id);
+                        }
+                        else {
+                            favourite = true;
+                            mainRect.addFavourite(id);
+                        }
+                    }
                 }
 
                 Image {
@@ -178,7 +215,7 @@ Rectangle {
                 Text {
                     x: 10
                     y: img.y + img.height
-                    color: Colour.text
+                    color: favourite ? Colour.favouriteText : Colour.text
                     elide: Text.ElideRight
                     font.pixelSize: FontStyle.bodySmallSize
                     font.bold: true
