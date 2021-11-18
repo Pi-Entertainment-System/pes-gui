@@ -39,7 +39,21 @@ ApplicationWindow {
   //width: 800
   visibility: "FullScreen"
 
+  onActiveFocusItemChanged: {
+    // hacky way to remember which item last had focus before
+    // the screen saver is triggered
+    //if (mainStackLayout.currentIndex == 0 && activeFocusItem != null) {
+      mainWindowInternal.lastFocusItem = activeFocusItem;
+    //}
+  }
+
   onClosing: backend.close()
+
+  QtObject {
+    id: mainWindowInternal
+    property var lastFocusItem: null
+    property var restoreFocusItem: null
+  }
 
 	Connections {
 	    target: backend
@@ -216,375 +230,445 @@ ApplicationWindow {
 		}
 	}
 
-	// layout
-  Rectangle {
-    id: headerRect
-    x: 0
-    y: 0
-    color: Colour.bg
-    height: 40
-    width: mainWindow.width
+  Timer {
+    id: screenSaverTimer
+    interval: 1000 * 120
+    repeat: false
+    running: true
 
-    RowLayout {
-      anchors.fill: parent
-
-      Text {
-        id: titleTxt
-        text: "Pi Entertainment System"
-        font.pixelSize: FontStyle.titleSize
-        font.bold: true
-        font.family: FontStyle.font
-        color: Colour.text
-      }
-
-      // filler to force right alignment
-      Item {
-        Layout.fillWidth: true
-      }
-
-      Image {
-        id: gamepadIcon
-        source: "icons/gamepad.png"
-        visible: false
-        // connecting directly to gamepadTotal propery via visible
-        // property can result in a race conditon where backend
-        // is null, therefore use the following workaround
-        function visibleHandler(total) {
-          visible = total > 0;
-        }
-
-        Component.onCompleted: {
-          visible = backend.gamepadTotal;
-          backend.gamepadTotalSignal.connect(visibleHandler);
-        }
-      }
-
-      Image {
-        id: bluetoothIcon
-        source: "icons/bluetooth.png"
-        visible: false
-
-        Component.onCompleted: {
-          visible = backend.btAvailable();
-        }
-      }
-
-      Image {
-        id: remoteIcon
-        source: "icons/remote.png"
-        visible: false
-
-        Component.onCompleted: {
-          remoteIcon.visible = backend.cecEnabled;
-        }
-      }
-
-      Image {
-        id: networkIcon
-        source: "icons/network.png"
-        visible: false
-
-        Component.onCompleted: {
-          networkIcon.visible = backend.getNetworkAvailable();
-        }
-      }
-
-      Text {
-        id: clockTxt
-        text: "Time"
-        font.pixelSize: FontStyle.titleSize
-        font.bold: true
-        font.family: FontStyle.font
-        color: Colour.text
-        Layout.leftMargin: 10
-        Layout.rightMargin: 5
-      }
+    onTriggered: {
+      mainWindowInternal.restoreFocusItem = mainWindowInternal.lastFocusItem;
+      mainStackView.push(screenSaver);
+      screenSaver.forceActiveFocus();
     }
   }
 
-	Timer {
-		interval: 1000
-		running: true
-		repeat: true
-		onTriggered: {
-      clockTxt.text = backend.getTime();
+  StackView {
+    id: mainStackView
+    anchors.fill: parent
+
+    Keys.onReleased: {
+      screenSaverTimer.restart();
+      event.accepted = false;
     }
-	}
 
-	Rectangle {
-		id: headerLine
-		x: 0
-		y: headerRect.height
-		height: 2
-		width: mainWindow.width
-		color: Colour.line
-	}
+    pushEnter: Transition {
+        PropertyAnimation {
+            property: "opacity"
+            from: 0
+            to:1
+            duration: 200
+        }
+    }
+    pushExit: Transition {
+        PropertyAnimation {
+            property: "opacity"
+            from: 1
+            to:0
+            duration: 200
+        }
+    }
+    popEnter: Transition {
+        PropertyAnimation {
+            property: "opacity"
+            from: 0
+            to:1
+            duration: 200
+        }
+    }
+    popExit: Transition {
+        PropertyAnimation {
+            property: "opacity"
+            from: 1
+            to:0
+            duration: 200
+        }
+    }
+  
+    initialItem: Rectangle {
+      id: mainRect
 
-	Rectangle {
-		id: panelRect
-		color: Colour.menuBg
-		x: 0
-		y: headerLine.y + headerLine.height + 1
-		height: parent.height - this.y
-		width: parent.width
+      // layout
+      Rectangle {
+        id: headerRect
+        x: 0
+        y: 0
+        color: Colour.bg
+        height: 40
+        width: mainWindow.width
 
-		StackLayout {
-      id: screenStack
-			anchors.fill: parent
-      currentIndex: 0
+        RowLayout {
+          anchors.fill: parent
 
-      // main layout
-      StackView {
-        id: mainScreenStackView
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        initialItem: RowLayout {
-          spacing: 0
+          Text {
+            id: titleTxt
+            text: "Pi Entertainment System"
+            font.pixelSize: FontStyle.titleSize
+            font.bold: true
+            font.family: FontStyle.font
+            color: Colour.text
+          }
 
-          Rectangle {
+          // filler to force right alignment
+          Item {
+            Layout.fillWidth: true
+          }
 
-            id: mainMenuRect
-            Layout.preferredWidth: 300
-            Layout.minimumWidth: 300
-            Layout.maximumWidth: 300
-            Layout.topMargin: 30
-            Layout.bottomMargin: 30
-            Layout.fillHeight: true
-            Layout.fillWidth: false
+          Image {
+            id: gamepadIcon
+            source: "icons/gamepad.png"
+            visible: false
+            // connecting directly to gamepadTotal propery via visible
+            // property can result in a race conditon where backend
+            // is null, therefore use the following workaround
+            function visibleHandler(total) {
+              visible = total > 0;
+            }
 
-            color: Colour.menuBg
-
-            ColumnLayout {
-
-              RowLayout {
-                UiIconButton {
-                  id: powerBtn
-                  source: "icons/power-button.png"
-                  KeyNavigation.right: settingsBtn
-                  KeyNavigation.down: mainMenuScrollView
-                  Keys.onReturnPressed: powerDialog.open()
-                }
-
-                UiIconButton {
-                  id: settingsBtn
-                  source: "icons/cog.png"
-                  KeyNavigation.left: powerBtn
-                  KeyNavigation.down: mainMenuScrollView
-                  Keys.onReturnPressed: optionsDialog.open()
-                }
-              }
-
-              ScrollView {
-                id: mainMenuScrollView
-                Layout.topMargin: 10
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                Layout.minimumWidth: mainMenuRect.Layout.minimumWidth
-                clip: true
-                focus: true
-
-                SoundListView {
-                  id: mainMenuView
-                  anchors.fill: parent
-                  focus: false
-                  focusTop: powerBtn
-                  model: mainMenuModel
-                  //navSound: navSound
-                  soundOn: false
-                  delegate: MenuDelegate {
-                    width: mainMenuView.width
-                    Keys.onReturnPressed: PES.mainMenuEvent()
-                    Keys.onRightPressed: PES.setCoverartPanelFocus()
-                  }
-                  onItemHighlighted: {
-                    // console objects in the model will have ID set
-                    if (item.id) {
-                      PES.updateCoverartPanels(item.id);
-                    }
-                    else {
-                      PES.updateCoverartPanels(0);
-                    }
-                  }
-                }
-              }
-
-              Component.onCompleted: PES.updateMainScreen()
+            Component.onCompleted: {
+              visible = backend.gamepadTotal;
+              backend.gamepadTotalSignal.connect(visibleHandler);
             }
           }
 
-          Rectangle {
-            id: mainScreenDisplayRect
-            color: Colour.panelBg
+          Image {
+            id: bluetoothIcon
+            source: "icons/bluetooth.png"
+            visible: false
 
+            Component.onCompleted: {
+              visible = backend.btAvailable();
+            }
+          }
+
+          Image {
+            id: remoteIcon
+            source: "icons/remote.png"
+            visible: false
+
+            Component.onCompleted: {
+              remoteIcon.visible = backend.cecEnabled;
+            }
+          }
+
+          Image {
+            id: networkIcon
+            source: "icons/network.png"
+            visible: false
+
+            Component.onCompleted: {
+              networkIcon.visible = backend.getNetworkAvailable();
+            }
+          }
+
+          Text {
+            id: clockTxt
+            text: "Time"
+            font.pixelSize: FontStyle.titleSize
+            font.bold: true
+            font.family: FontStyle.font
+            color: Colour.text
+            Layout.leftMargin: 10
+            Layout.rightMargin: 5
+          }
+        }
+      }
+
+      Timer {
+        interval: 1000
+        running: true
+        repeat: true
+        onTriggered: {
+          clockTxt.text = backend.getTime();
+        }
+      }
+
+      Rectangle {
+        id: headerLine
+        x: 0
+        y: headerRect.height
+        height: 2
+        width: mainWindow.width
+        color: Colour.line
+      }
+
+      Rectangle {
+        id: panelRect
+        color: Colour.menuBg
+        x: 0
+        y: headerLine.y + headerLine.height
+        height: parent.height - y
+        width: parent.width
+
+        StackLayout {
+          id: screenStack
+          anchors.fill: parent
+          currentIndex: 0
+
+          // main layout
+          StackView {
+            id: mainScreenStackView
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            initialItem: RowLayout {
+              spacing: 0
+
+              Rectangle {
+
+                id: mainMenuRect
+                Layout.preferredWidth: 300
+                Layout.minimumWidth: 300
+                Layout.maximumWidth: 300
+                Layout.topMargin: 30
+                Layout.bottomMargin: 30
+                Layout.fillHeight: true
+                Layout.fillWidth: false
+
+                color: Colour.menuBg
+
+                ColumnLayout {
+
+                  RowLayout {
+                    UiIconButton {
+                      id: powerBtn
+                      source: "icons/power-button.png"
+                      KeyNavigation.right: settingsBtn
+                      KeyNavigation.down: mainMenuScrollView
+                      Keys.onReturnPressed: powerDialog.open()
+                    }
+
+                    UiIconButton {
+                      id: settingsBtn
+                      source: "icons/cog.png"
+                      KeyNavigation.left: powerBtn
+                      KeyNavigation.down: mainMenuScrollView
+                      Keys.onReturnPressed: optionsDialog.open()
+                    }
+                  }
+
+                  ScrollView {
+                    id: mainMenuScrollView
+                    Layout.topMargin: 10
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.minimumWidth: mainMenuRect.Layout.minimumWidth
+                    clip: true
+                    focus: true
+
+                    SoundListView {
+                      id: mainMenuView
+                      anchors.fill: parent
+                      focus: false
+                      focusTop: powerBtn
+                      model: mainMenuModel
+                      //navSound: navSound
+                      soundOn: false
+                      delegate: MenuDelegate {
+                        width: mainMenuView.width
+                        Keys.onReturnPressed: PES.mainMenuEvent()
+                        Keys.onRightPressed: PES.setCoverartPanelFocus()
+                      }
+                      onItemHighlighted: {
+                        // console objects in the model will have ID set
+                        if (item.id) {
+                          PES.updateCoverartPanels(item.id);
+                        }
+                        else {
+                          PES.updateCoverartPanels(0);
+                        }
+                      }
+                    }
+                  }
+
+                  Component.onCompleted: PES.updateMainScreen()
+                }
+              }
+
+              Rectangle {
+                id: mainScreenDisplayRect
+                color: Colour.panelBg
+
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+
+                Image {
+                  id: mainBackgroundImg
+                  x: 0
+                  y: 0
+                  anchors.fill: parent
+                  opacity: 0.2
+                  source: ""
+                  visible: source != ""
+                }
+
+                ColumnLayout {
+                  anchors.left: parent.left
+                  anchors.right: parent.right
+                  anchors.leftMargin: 10
+                  anchors.rightMargin: 10
+                  spacing: 10
+
+                  Keys.onPressed: {
+                    if (event.key == Qt.Key_Backspace) {
+                      event.accepted = true;
+                      recentlyAddedMainPanel.loseFocus();
+                      recentlyPlayedMainPanel.loseFocus();
+                      mainMenuView.forceActiveFocus();
+                    }
+                  }
+
+                  HeaderText {
+                    id: welcomeText
+                    text: "Welcome to PES!"
+
+                    Layout.fillWidth: true
+                  }
+
+                  BodyText {
+                    id: mainText
+                    visible: false
+                    text: ""
+                    Layout.fillWidth: true
+                  }
+
+                  CoverartPanel {
+                    id: recentlyPlayedMainPanel
+                    color: "transparent"
+                    headerText: "Recently Played Games"
+                    height: 300
+                    keyLeft: mainMenuScrollView
+                    keyDown: recentlyAddedMainPanel
+                    Layout.fillWidth: true
+                    //navSound: navSound
+                    visible: false
+
+                    onAddFavourite: function(gameId) {
+                      PES.favouriteGame(gameId, true);
+                    }
+
+                    onGameSelected: function(gameId) {
+                      PES.loadGameScreen(mainScreenStackView, mainGameScreen, gameId);
+                    }
+
+                    onRemoveFavourite: function(gameId) {
+                      PES.favouriteGame(gameId, false);
+                    }
+                  }
+
+                  CoverartPanel {
+                    id: recentlyAddedMainPanel
+                    color: "transparent"
+                    headerText: "Recently Added Games"
+                    height: 300
+                    keyLeft: mainMenuScrollView
+                    keyUp: recentlyPlayedMainPanel
+                    keyDown: exploreBtn
+                    Layout.fillWidth: true
+                    //navSound: navSound
+                    visible: false
+
+                    onAddFavourite: function(gameId) {
+                      PES.favouriteGame(gameId, true);
+                    }
+
+                    onGameSelected: function(gameId) {
+                      PES.loadGameScreen(mainScreenStackView, mainGameScreen, gameId);
+                    }
+
+                    onRemoveFavourite: function(gameId) {
+                      PES.favouriteGame(gameId, false);
+                    }
+                  }
+
+                  UiButton {
+                    id: exploreBtn
+                    btnText: "Explore"
+                    height: 50
+                    width: 200
+                    visible: false
+                    KeyNavigation.left: mainMenuScrollView
+                    KeyNavigation.up: recentlyAddedMainPanel.visible ? recentlyAddedMainPanel : recentlyPlayedMainPanel
+
+                    Keys.onReturnPressed: {
+                      PES.loadConsoleScreen(PES.getCurrentConsole());
+                    }
+                  }
+                }
+              }
+            }
+
+            GameScreen {
+              id: mainGameScreen
+              visible: false
+
+              onBackPressed: {
+                mainScreenStackView.pop();
+                mainGameScreen.visible = false;
+                if (recentlyPlayedMainPanel.visible && recentlyPlayedMainPanel.isGameSelected()) {
+                  recentlyPlayedMainPanel.gainFocus();
+                }
+                else if (recentlyAddedMainPanel.visible && recentlyAddedMainPanel.isGameSelected()) {
+                  recentlyAddedMainPanel.gainFocus();
+                }
+              }
+            }
+          }
+
+          // Update games screen
+          UpdateGamesScreen {
+            id: updateGamesScreen
             Layout.fillWidth: true
             Layout.fillHeight: true
 
-            Image {
-              id: mainBackgroundImg
-              x: 0
-              y: 0
-              anchors.fill: parent
-              opacity: 0.2
-              source: ""
-              visible: source != ""
-            }
-
-            ColumnLayout {
-              anchors.left: parent.left
-              anchors.right: parent.right
-              anchors.leftMargin: 10
-              anchors.rightMargin: 10
-              spacing: 10
-
-              Keys.onPressed: {
-                if (event.key == Qt.Key_Backspace) {
-                  event.accepted = true;
-                  recentlyAddedMainPanel.loseFocus();
-                  recentlyPlayedMainPanel.loseFocus();
-                  mainMenuView.forceActiveFocus();
-                }
-              }
-
-              HeaderText {
-                id: welcomeText
-                text: "Welcome to PES!"
-
-                Layout.fillWidth: true
-              }
-
-              BodyText {
-                id: mainText
-                visible: false
-                text: ""
-                Layout.fillWidth: true
-              }
-
-              CoverartPanel {
-                id: recentlyPlayedMainPanel
-                color: "transparent"
-                headerText: "Recently Played Games"
-                height: 300
-                keyLeft: mainMenuScrollView
-                keyDown: recentlyAddedMainPanel
-                Layout.fillWidth: true
-                //navSound: navSound
-                visible: false
-
-                onAddFavourite: function(gameId) {
-                  PES.favouriteGame(gameId, true);
-                }
-
-                onGameSelected: function(gameId) {
-                  PES.loadGameScreen(mainScreenStackView, mainGameScreen, gameId);
-                }
-
-                onRemoveFavourite: function(gameId) {
-                  PES.favouriteGame(gameId, false);
-                }
-              }
-
-              CoverartPanel {
-                id: recentlyAddedMainPanel
-                color: "transparent"
-                headerText: "Recently Added Games"
-                height: 300
-                keyLeft: mainMenuScrollView
-                keyUp: recentlyPlayedMainPanel
-                keyDown: exploreBtn
-                Layout.fillWidth: true
-                //navSound: navSound
-                visible: false
-
-                onAddFavourite: function(gameId) {
-                  PES.favouriteGame(gameId, true);
-                }
-
-                onGameSelected: function(gameId) {
-                  PES.loadGameScreen(mainScreenStackView, mainGameScreen, gameId);
-                }
-
-                onRemoveFavourite: function(gameId) {
-                  PES.favouriteGame(gameId, false);
-                }
-              }
-
-              UiButton {
-                id: exploreBtn
-                btnText: "Explore"
-                height: 50
-                width: 200
-                visible: false
-                KeyNavigation.left: mainMenuScrollView
-                KeyNavigation.up: recentlyAddedMainPanel.visible ? recentlyAddedMainPanel : recentlyPlayedMainPanel
-
-                Keys.onReturnPressed: {
-                  PES.loadConsoleScreen(PES.getCurrentConsole());
-                }
-              }
+            Component.onCompleted: {
+              scanCompleted.connect(PES.updateMainScreen);
             }
           }
-        }
 
-        GameScreen {
-          id: mainGameScreen
-          visible: false
+          StackView {
+            id: consoleStackView
+            // Console screen
+            initialItem: ConsoleScreen {
+              id: consoleScreen
+              Layout.fillWidth: true
+              Layout.fillHeight: true
 
-          onBackPressed: {
-            mainScreenStackView.pop();
-            mainGameScreen.visible = false;
-            if (recentlyPlayedMainPanel.visible && recentlyPlayedMainPanel.isGameSelected()) {
-              recentlyPlayedMainPanel.gainFocus();
+              onGameSelected: function(gameId) {
+                PES.loadGameScreen(consoleStackView, consoleGameScreen, gameId);
+              }
+
+              onAddFavourite: function(gameId) {
+                PES.favouriteGame(gameId, true);
+              }
+
+              onRemoveFavourite: function(gameId) {
+                PES.favouriteGame(gameId, false);
+              }
             }
-            else if (recentlyAddedMainPanel.visible && recentlyAddedMainPanel.isGameSelected()) {
-              recentlyAddedMainPanel.gainFocus();
+
+            GameScreen {
+              id: consoleGameScreen
+              visible: false
+
+              onBackPressed: {
+                consoleStackView.pop();
+                consoleGameScreen.visible = false;
+                consoleScreen.gridFocus();
+              }
             }
           }
         }
       }
+    }
 
-      // Update games screen
-      UpdateGamesScreen {
-        id: updateGamesScreen
-        Layout.fillWidth: true
-        Layout.fillHeight: true
+    ScreenSaver {
+      id: screenSaver
 
-        Component.onCompleted: {
-          scanCompleted.connect(PES.updateMainScreen);
-        }
+      onClose: {
+        screenSaverTimer.restart();
+        mainStackView.pop();
+        mainWindowInternal.restoreFocusItem.forceActiveFocus();
       }
-
-      StackView {
-        id: consoleStackView
-        // Console screen
-        initialItem: ConsoleScreen {
-          id: consoleScreen
-          Layout.fillWidth: true
-          Layout.fillHeight: true
-
-          onGameSelected: function(gameId) {
-            PES.loadGameScreen(consoleStackView, consoleGameScreen, gameId);
-          }
-
-          onAddFavourite: function(gameId) {
-            PES.favouriteGame(gameId, true);
-          }
-
-          onRemoveFavourite: function(gameId) {
-            PES.favouriteGame(gameId, false);
-          }
-        }
-
-        GameScreen {
-          id: consoleGameScreen
-          visible: false
-
-          onBackPressed: {
-            consoleStackView.pop();
-            consoleGameScreen.visible = false;
-            consoleScreen.gridFocus();
-          }
-        }
-      }
-		}
-	}
+    }
+  }
 }

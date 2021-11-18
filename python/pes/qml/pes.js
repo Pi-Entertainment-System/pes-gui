@@ -22,6 +22,7 @@
 
 var allConsoles = null;
 var consoleArtCache = {};
+var consolesWithGamesCache = null;
 var recentlyAddedCache = {};
 var recentlyPlayedCache = {};
 var mostPlayedCache = {};
@@ -49,8 +50,11 @@ function getConsoleArt(consoleId) {
   return img;
 }
 
-function getConsolesWithGames() {
-  return backend.getConsoles(true);
+function getConsolesWithGames(useCache) {
+  if (!useCache || !consolesWithGamesCache) {
+    consolesWithGamesCache = backend.getConsoles(true);
+  }
+  return consolesWithGamesCache;
 }
 
 function getCurrentConsole() {
@@ -268,7 +272,7 @@ function updateMainScreen(){
       mainMenuModel.remove(i);
     }
   }
-  var consoles = getConsolesWithGames();
+  var consoles = getConsolesWithGames(false);
   for (var i = 0; i < consoles.length; i++) {
     mainMenuModel.append(consoles[i]);
   }
