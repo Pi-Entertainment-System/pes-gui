@@ -38,6 +38,10 @@ Rectangle {
     // custom signals
     signal close()
 
+    function refresh() {
+        SCREENSAVER.refresh();
+    }
+
     Keys.onReleased: {
         close();
         event.accepted = true;
@@ -106,6 +110,7 @@ Rectangle {
             source: ""
 
             Component.onCompleted: {
+                SCREENSAVER.init();
                 imageTimer.start();
             }
         }

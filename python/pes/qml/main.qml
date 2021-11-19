@@ -42,9 +42,7 @@ ApplicationWindow {
   onActiveFocusItemChanged: {
     // hacky way to remember which item last had focus before
     // the screen saver is triggered
-    //if (mainStackLayout.currentIndex == 0 && activeFocusItem != null) {
-      mainWindowInternal.lastFocusItem = activeFocusItem;
-    //}
+    mainWindowInternal.lastFocusItem = activeFocusItem;
   }
 
   onClosing: backend.close()
@@ -622,6 +620,7 @@ ApplicationWindow {
 
             Component.onCompleted: {
               scanCompleted.connect(PES.updateMainScreen);
+              scanCompleted.connect(screenSaver.refresh);
             }
           }
 

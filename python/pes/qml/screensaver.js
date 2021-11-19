@@ -20,15 +20,28 @@
     along with PES.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-var consoles = null;
+var games = [];
 
-function change() {
-    // pick random consoleId
-    if (!consoles) {
-        consoles = PES.getConsolesWithGames(true);
+/**
+ * Create a cache of games.
+ */
+function init() {
+    if (games.length == 0) {
+        const consoles = PES.getConsolesWithGames(true);
+        for (var i = 0; i < consoles.length; i++) {
+            games.push.apply(games, PES.getGames(consoles[i].id, true));
+        }
     }
-    const consoleId = getRandomElement(consoles).id;
-    const games = PES.getGames(consoleId, true);
+}
+
+/**
+ * Called by timer in ScreenSaver component.
+ * 
+ */
+function change() {
+    if (games.length == 0) {
+        return;
+    }
     const game = getRandomElement(games);
     var images = [game.coverartFront];
     if (game.coverartBack && game.coverartBack != "") {
@@ -48,6 +61,19 @@ function change() {
     }
 }
 
+/**
+ * Get a random elment from the given array.
+ * 
+ * @returns a random element from the given array
+ */
 function getRandomElement(x) {
     return x[Math.floor(Math.random() * x.length)];
+}
+
+/**
+ * Refresh the game cache, e.g. after a ROM scan.
+ */
+function refresh() {
+    games = [];
+    init();    
 }
