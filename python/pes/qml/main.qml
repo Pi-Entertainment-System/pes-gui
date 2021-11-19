@@ -39,17 +39,10 @@ ApplicationWindow {
   //width: 800
   visibility: "FullScreen"
 
-  onActiveFocusItemChanged: {
-    // hacky way to remember which item last had focus before
-    // the screen saver is triggered
-    mainWindowInternal.lastFocusItem = activeFocusItem;
-  }
-
   onClosing: backend.close()
 
   QtObject {
     id: mainWindowInternal
-    property var lastFocusItem: null
     property var restoreFocusItem: null
   }
 
@@ -228,6 +221,7 @@ ApplicationWindow {
 		}
 	}
 
+  // screen saver timer
   Timer {
     id: screenSaverTimer
     interval: 1000 * 120
@@ -235,7 +229,7 @@ ApplicationWindow {
     running: true
 
     onTriggered: {
-      mainWindowInternal.restoreFocusItem = mainWindowInternal.lastFocusItem;
+      mainWindowInternal.restoreFocusItem = mainWindow.activeFocusItem;
       mainStackView.push(screenSaver);
       screenSaver.forceActiveFocus();
     }

@@ -42,6 +42,10 @@ Rectangle {
         SCREENSAVER.refresh();
     }
 
+    Component.onCompleted: {
+        SCREENSAVER.init();
+    }
+
     Keys.onReleased: {
         close();
         event.accepted = true;
@@ -110,7 +114,6 @@ Rectangle {
             source: ""
 
             Component.onCompleted: {
-                SCREENSAVER.init();
                 imageTimer.start();
             }
         }
