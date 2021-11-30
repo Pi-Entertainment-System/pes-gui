@@ -80,6 +80,7 @@ class Backend(QObject):
 	def __init__(self, parent=None):
 		super(Backend, self).__init__(parent)
 		self.__userSettings = pes.common.UserSettings(pes.userPesConfigFile)
+		self.__consoleSettings = pes.common.ConsoleSettings(pes.userConsolesConfigFile)
 		self.__dbusBroker = pes.system.DbusBroker()
 		if self.__dbusBroker.btAvailable():
 			self.__btAgent = pes.system.BluetoothAgent()
@@ -264,6 +265,15 @@ class Backend(QObject):
 		game = self.__session.query(pes.sql.Game).get(id)
 		if game:
 			logging.debug("Backend.playGame: found game ID %d" % id)
+
+			requireFiles = self.__consoleSettings.get(game.console.name, "require")
+			if requireFiles:
+				for f in requireFiles:
+					logging.debug("Backend.playGame: checking for: %s" % f)
+					if not os.path.exists(f) or os.path.isfile(f):
+						logging.error("Backend.playGame: could not find required file: %s" % f)
+						return { "result": False, "msg": "Could not find required file: %s" % f}
+
 			game.playCount += 1
 			game.lastPlayed = datetime.datetime.now()
 			self.__session.add(game)

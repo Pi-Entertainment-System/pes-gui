@@ -167,6 +167,14 @@ function mainMenuEvent() {
   }
 }
 
+function play(gameId) {
+  var rtn = backend.playGame(gameId);
+  if (!rtn.result) {
+    msgBox.text = rtn.msg;
+    msgBox.open();
+  }
+}
+
 function optionsDialogEvent(text) {
 	switch(text) {
 		case "Update Games": {

@@ -36,6 +36,7 @@ Rectangle {
     property var game: null
 
     signal backPressed()
+    signal play(int gameId)
 
     function forceActiveFocus() {
         menuView.forceActiveFocus();
@@ -174,7 +175,11 @@ Rectangle {
                     //navSound: navSound
                     soundOn: false
                     delegate: MenuDelegate {
-                        
+                        Keys.onReturnPressed: {
+                            if (name == "Play") {
+                                play(game.id);
+                            }
+                        }
                     }
                 }
             }

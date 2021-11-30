@@ -188,17 +188,14 @@ class ConsoleSettings(Settings):
 		logging.debug("ConsoleSettings.__init__: created using %s" % f)
 		super(ConsoleSettings, self).__init__(f)
 		self.__props = {
-			"thegamesdb_id": "int",
-			"achievement_id": "int",
 			"emulator": "str",
 			"ignore_roms": "list",
-			"image": "path",
 			"extensions": "list",
 			"command": "path",
-			"nocoverart": "path"
+			"require": "list"
 		}
 
-		self.__optionalProps = ["achievement_id", "ignore_roms"]
+		self.__optionalProps = ["ignore_roms", "require"]
 		self.__cache = {}
 
 	def get(self, c, prop):
@@ -216,7 +213,10 @@ class ConsoleSettings(Settings):
 			elif self.__props[prop] == "path":
 				self.__cache[c][prop] = self._configparser.get(c, prop).replace("%%USERDIR%%", userDir).replace("%%BASE%%", baseDir)
 			elif self.__props[prop] == "list":
-				self.__cache[c][prop] = self._configparser.get(c, prop).split(",")
+				l = []
+				for i in self._configparser.get(c, prop).split(","):
+					l.append(i.replace("%%USERDIR%%", userDir).replace("%%BASE%%", baseDir).replace("%%USERBIOSDIR%%", userBiosDir))
+				self.__cache[c][prop] = l
 			else:
 				self.__cache[c][prop] = self._configparser.get(c, prop)
 		return self.__cache[c][prop]

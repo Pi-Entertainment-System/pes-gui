@@ -74,7 +74,7 @@ ApplicationWindow {
     onYesButtonPressed: mainWindow.close()
   }
 
-  // reboot dialog
+  // poweroff dialog
   YesNoDialog {
     id: poweroffDialog
     //navSound: navSound
@@ -96,6 +96,13 @@ ApplicationWindow {
       mainWindow.close();
       backend.reboot();
     }
+  }
+
+  // message box
+  MessageBox {
+    id: msgBox
+    text: ""
+    width: mainWindow.width - (mainWindow.width * 0.25)
   }
 
 	// options dialog
@@ -603,6 +610,10 @@ ApplicationWindow {
                   recentlyAddedMainPanel.gainFocus();
                 }
               }
+
+              onPlay: function(gameId) {
+                PES.play(gameId);
+              }
             }
           }
 
@@ -647,6 +658,10 @@ ApplicationWindow {
                 consoleStackView.pop();
                 consoleGameScreen.visible = false;
                 consoleScreen.gridFocus();
+              }
+
+              onPlay: function(gameId) {
+                PES.play(gameId);
               }
             }
           }
