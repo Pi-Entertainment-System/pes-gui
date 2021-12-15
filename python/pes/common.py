@@ -145,14 +145,48 @@ def scaleImage(ix, iy, bx, by):
 
 class Settings(object):
 
-	def __init__(self, f):
+	STR_PROP = 1
+	BOOL_PROP = 2
+	INT_PROP = 3
+
+	def __init__(self, f, props=None):
 		# open user's settings
 		self._configparser = configparser.RawConfigParser()
 		self._configparser.read(f)
 		self._path = f
+		self._props = None
+		if props:
+			self._props = props
+
+	def get(self, section, prop):
+		logging.debug("Settings.get: section = %s, prop = %s" % (section, prop))
+		if not self._configparser.has_section(section):
+			logging.warning("No section \"%s\" in \"%s\"" % (section, self._path))
+			return None
+		if not self._configparser.has_option(section, prop):
+			logging.warning("No property \"[%s]:%s\" in \"%s\"" % (section, prop, self._path))
+			return None
+		if section in self._props and self._props[section][prop]:
+			if self._props[section][prop] == Settings.BOOL_PROP:
+				logging.debug("Settings.get: returning boolean for [%s]:%s" % (section, prop))
+				return self._configparser.getboolean(section, prop)
+			if self._props[section][prop] == Settings.INT_PROP:
+				logging.debug("Settings.get: returning int for [%s]:%s" % (section, prop))
+				return self._configparser.getint(section, prop)
+		# assume string
+		logging.debug("Settings.get: returning string for [%s]:%s" % (section, prop))
+		rslt = self._configparser.get(section, prop)
+		if rslt == None or len(rslt) == 0:
+			return None
+		return rslt
 
 	def getSections(self):
 		return self._configparser.sections()
+
+	def getType(self, section, prop):
+		if section in self._props and self._props[section][prop]:
+			return self._props[section][prop]
+		return None
 
 	def save(self, path):
 		logging.debug("Settings.save: saving to %s" % path)
@@ -166,21 +200,31 @@ class Settings(object):
 class UserSettings(Settings):
 
 	def __init__(self, f):
-		super(UserSettings, self).__init__(f)
+		props = {
+			"RetroAchievements": {
+				"username": Settings.STR_PROP,
+				"password": Settings.STR_PROP,
+				"apiKey": Settings.STR_PROP
+			},
+			"Settings": {
+				"hdmi-cec": Settings.BOOL_PROP,
+				"romScraper": Settings.STR_PROP,
+				"screenSaverTimeout": Settings.INT_PROP
+			},
+			"webServer": {
+				"enabled": Settings.BOOL_PROP,
+				"port": Settings.INT_PROP
+			}
+		}
+		super(UserSettings, self).__init__(f, props)
 
-	def get(self, section, prop, propType="string"):
-		if not self._configparser.has_section(section):
-			logging.warning("No section \"%s\" in \"%s\"" % (section, userPesConfigFile))
-			return None
-		if not self._configparser.has_option(section, prop):
-			logging.warning("No property \"[%s]:%s\" in \"%s\"" % (section, prop, userPesConfigFile))
-			return None
-		if propType == "string":
-			value = self._configparser.get(section, prop)
-			if value == None or len(value) == 0:
+	def get(self, section, prop):
+		rslt = super(UserSettings, self).get(section, prop)
+		if self.getType(section, prop) == Settings.STR_PROP:
+			if rslt == None or len(rslt) == 0:
 				return None
-			return value.replace("%%USERDIR%%", userDir)
-		logging.error("Settings.getValue: unsupported type \"%s\"" % propType)
+			return rslt.replace("%%USERDIR%%", userDir)
+		return rslt
 
 class ConsoleSettings(Settings):
 
