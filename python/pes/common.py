@@ -166,7 +166,7 @@ class Settings(object):
 		if not self._configparser.has_option(section, prop):
 			logging.warning("No property \"[%s]:%s\" in \"%s\"" % (section, prop, self._path))
 			return None
-		if section in self._props and self._props[section][prop]:
+		if section in self._props and prop in self._props[section]:
 			if self._props[section][prop] == Settings.BOOL_PROP:
 				logging.debug("Settings.get: returning boolean for [%s]:%s" % (section, prop))
 				return self._configparser.getboolean(section, prop)
@@ -184,7 +184,7 @@ class Settings(object):
 		return self._configparser.sections()
 
 	def getType(self, section, prop):
-		if section in self._props and self._props[section][prop]:
+		if section in self._props and prop in self._props[section]:
 			return self._props[section][prop]
 		return None
 
