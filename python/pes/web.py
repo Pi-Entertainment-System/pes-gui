@@ -53,7 +53,7 @@ class WebThread(QThread):
         gameId = self._getGameId()
         game = self._backend.getGame(gameId)
         if game:
-            return send_file(game["coverart"])
+            return send_file(game["coverartFront"])
         abort(404)
 
     def game(self):
