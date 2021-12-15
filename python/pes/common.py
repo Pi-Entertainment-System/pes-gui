@@ -202,9 +202,10 @@ class UserSettings(Settings):
 	def __init__(self, f):
 		props = {
 			"RetroAchievements": {
+				"apiKey": Settings.STR_PROP,
+				"hardcore": Settings.BOOL_PROP,
 				"username": Settings.STR_PROP,
-				"password": Settings.STR_PROP,
-				"apiKey": Settings.STR_PROP
+				"password": Settings.STR_PROP
 			},
 			"Settings": {
 				"hdmi-cec": Settings.BOOL_PROP,
