@@ -239,6 +239,10 @@ ApplicationWindow {
     repeat: false
     running: true
 
+    Component.onCompleted: {
+      interval = backend.getScreenSaverTimeout() * 1000 * 60
+    }
+
     onTriggered: {
       mainWindowInternal.restoreFocusItem = mainWindow.activeFocusItem;
       mainStackView.push(screenSaver);

@@ -114,6 +114,7 @@ class Backend(QObject):
 			self.__dbusBroker.btStartDiscovery()
 		else:
 			self.__btAgent = None
+		self.__screenSaverTimeout = self.__userSettings.get("settings", "screenSaverTimeout")
 		self.__gamepadTotal = 0
 		logging.debug("Backend.__init__: connecting to database: %s" % pes.userDb)
 		#self.__romscanThread = None
@@ -277,6 +278,10 @@ class Backend(QObject):
 		for g in result:
 			games.append(g.getDict())
 		return games
+
+	@pyqtSlot(result=int)
+	def getScreenSaverTimeout(self):
+		return self.__screenSaverTimeout
 
 	@pyqtSlot(result=str)
 	def getTime(self):
