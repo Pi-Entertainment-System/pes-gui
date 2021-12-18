@@ -150,7 +150,7 @@ class Settings(object):
 	INT_PROP = 3
 
 	def __init__(self, f, props=None):
-		# open user's settings
+		logging.debug("Settings.__init__: created using %s" % f)
 		self._configparser = configparser.RawConfigParser()
 		self._configparser.read(f)
 		self._path = f
@@ -199,7 +199,7 @@ class Settings(object):
 
 class UserSettings(Settings):
 
-	def __init__(self, f):
+	def __init__(self):
 		props = {
 			"RetroAchievements": {
 				"apiKey": Settings.STR_PROP,
@@ -217,7 +217,7 @@ class UserSettings(Settings):
 				"port": Settings.INT_PROP
 			}
 		}
-		super(UserSettings, self).__init__(f, props)
+		super(UserSettings, self).__init__(userPesConfigFile, props)
 
 	def get(self, section, prop):
 		rslt = super(UserSettings, self).get(section, prop)
@@ -229,9 +229,8 @@ class UserSettings(Settings):
 
 class ConsoleSettings(Settings):
 
-	def __init__(self, f):
-		logging.debug("ConsoleSettings.__init__: created using %s" % f)
-		super(ConsoleSettings, self).__init__(f)
+	def __init__(self):
+		super(ConsoleSettings, self).__init__(userConsolesConfigFile)
 		self.__props = {
 			"emulator": "str",
 			"ignore_roms": "list",

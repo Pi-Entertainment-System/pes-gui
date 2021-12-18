@@ -20,18 +20,13 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import datetime
 import logging
-import json
-import multiprocessing
 import pes
 import pes.common
 import os
 import requests
-import time
 
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject, QThread
-from PyQt5.QtSql import QSqlDatabase, QSqlQuery
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, pyqtProperty, QObject
 
 URL_TIMEOUT = 30
 RETRO_URL = "https://www.retroachievements.org/dorequest.php"
@@ -123,8 +118,9 @@ class RetroAchievementUser(QObject):
 		self.__token = None
 		self.__score = 0
 		self.__retroAchievementUserRecord = None
-		self.__userId = -1
-		self.__db = None
+		self.__rank = 0 
+		self.__totalPoints = 0
+		self.__totalTruePoints = 0
 
 	def __doRequest(self, apiUrl, parameters=None):
 		params = {'z' : self.__username, 'y': self.__apikey }
@@ -144,23 +140,12 @@ class RetroAchievementUser(QObject):
 			return response.json()
 		raise RetroAchievementException("Failed to load URL %s with %s" % (url, params))
 
-	def getCredentials(self):
-		return (self.__username, self.__password)
-
 	def getGameInfoAndProgress(self, gameId):
 		return self.getGameInfoAndUserProgress(self.__username, gameId)
 
 	def getGameInfoAndUserProgress(self, user, gameId):
 		logging.debug("RetroAchievementUser.getGameInfoAndUserProgress: user = %s, gameId = %d" % (user, gameId))
 		return self.__doRequest('API_GetGameInfoAndUserProgress.php', {'u': user, 'g': gameId})
-
-	def enableDbSync(self, db):
-		self.__db = db
-
-	def getId(self):
-		if self.__userId == -1:
-			self.login()
-		return self.__userId
 
 	def getUserSummary(self, user=None, recentGames=0):
 		if user == None:
@@ -170,17 +155,16 @@ class RetroAchievementUser(QObject):
 
 	def hasEarnedBadge(self, badgeId):
 		# has the user earned this badge?
-		if self.__db == None:
-			self.login()
+		self.login()
 		return self.__retroAchievementUserRecord.hasEarnedBadge(badgeId)
 
 	def hasEarnedHardcoreBadge(self, badgeId):
 		# has the user earned this hardcore badge?
-		if self.__db == None:
-			self.login()
+		self.login()
 		return self.__retroAchievementUserRecord.hasEarnedHardcoreBadge(badgeId)
 
-	def isLoggedIn(self):
+	@pyqtProperty(bool)
+	def loggedIn(self):
 		return self.__token != None
 
 	def login(self):
@@ -196,17 +180,8 @@ class RetroAchievementUser(QObject):
 							self.__score = int(data["Score"])
 							logging.info("RetroAchievementUser.login: %s (%d)" % (self.__username, self.__score))
 							logging.debug("RetroAchievementUser.login: token: %s" % self.__token)
-
-							if self.__db:
-								data = self.getUserSummary()
-								self.__userId = int(data["ID"])
-								#self.__retroAchievementUserRecord = pes.data.RetroAchievementUserRecord(self.__db, self.__userId)
-								#self.__retroAchievementUserRecord.setName(self.__username)
-								#self.__retroAchievementUserRecord.setRank(int(data["Rank"]))
-								#self.__retroAchievementUserRecord.setTotalPoints(int(data["TotalPoints"]))
-								#self.__retroAchievementUserRecord.setTotalTruePoints(int(data["TotalTruePoints"]))
-								#self.__retroAchievementUserRecord.save()
-
+							self.__totalPoints = int(data["TotalPoints"])
+							self.__totalTruePoints = int(data["TotalTruePoints"])
 							self.loggedInSignal.emit()
 							return True
 						else:
@@ -221,3 +196,27 @@ class RetroAchievementUser(QObject):
 			logging.error("RetroAchievementUser.login: could not log in")
 			logging.error(e)
 		return False
+
+	@pyqtProperty(str)
+	def password(self):
+		return self.__password
+
+	@pyqtProperty(int)
+	def rank(self):
+		return self.__rank
+
+	@pyqtProperty(int)
+	def score(self):
+		return self.__score
+
+	@pyqtProperty(int)
+	def totalPoints(self):
+		return self.__totalPoints
+
+	@pyqtProperty(int)
+	def totalTruePoints(self):
+		return self.__totalTruePoints
+
+	@pyqtProperty(str)
+	def username(self):
+		return self.__username

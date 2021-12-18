@@ -341,6 +341,16 @@ ApplicationWindow {
           }
 
           Image {
+            id: trophyIcon
+            source: "icons/trophy.png"
+            visible: false
+
+            Component.onCompleted: {
+              visible = backend.isRetroAchievementLoggedIn();
+            }
+          }
+
+          Image {
             id: remoteIcon
             source: "icons/remote.png"
             visible: false

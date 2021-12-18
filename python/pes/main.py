@@ -27,6 +27,7 @@ import logging
 import pes
 from pes.common import *
 from pes.gui import Backend, PESGuiApplication
+import pes.retroachievement
 import pes.sql
 import pes.web
 import sdl2
@@ -99,7 +100,7 @@ if __name__ == "__main__":
 
 	logging.info("loading settings...")
 	checkFile(pes.userPesConfigFile)
-	userSettings = UserSettings(pes.userPesConfigFile)
+	userSettings = UserSettings()
 
 	# make directory for each support console
 	logging.debug("connecting to database: %s" % userDb)
@@ -124,7 +125,7 @@ if __name__ == "__main__":
 	backend = Backend()
 
 	# enable web server?
-	if userSettings.get("settings", "webServer"):
+	if userSettings.get("webServer", "enabled"):
 		try:
 			webPort = int(userSettings.get("webServer", "port"))
 		except Exception as e:
