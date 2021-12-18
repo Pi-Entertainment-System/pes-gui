@@ -34,6 +34,7 @@ romScrapers = ['theGamesDb.net'] # list of ROM scrapers, default scraper is assu
 
 moduleDir = os.path.dirname(os.path.realpath(__file__))
 baseDir = os.path.abspath('%s%s../../' % (moduleDir, os.sep))
+binDir = os.path.join(baseDir, 'bin')
 confDir = os.path.join(baseDir, 'conf.d')
 themeDir = os.path.join(baseDir, 'themes')
 qmlDir = os.path.join(moduleDir, 'qml')
@@ -65,6 +66,6 @@ userPesConfDir = os.path.join(userConfDir, 'pes')
 userPesConfigFile = os.path.join(userPesConfDir, 'pes.ini')
 userConsolesConfigFile = os.path.join(userPesConfDir, 'consoles.ini')
 userGameControllerFile = os.path.join(userPesConfDir, 'gamecontrollerdb.txt')
-scriptFile = os.path.join(userDir, 'commands.sh')
+userScriptFile = os.path.join(userDir, 'commands.sh')
 cecEnabled = False
 screenSaverTimeout = 0

@@ -27,6 +27,7 @@ ulimit -c 0
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 BASEDIR=`realpath $DIR/..`
+COMMANDS_FILE=~/pes/commands.sh
 
 # are we on a Raspberry Pi?
 if [ -e /sys/firmware/devicetree/base/model ] && grep -q 'Raspberry Pi' /sys/firmware/devicetree/base/model; then
@@ -47,4 +48,14 @@ fi
 
 export PATH=$BASEDIR/bin:$PATH
 
+if [ -f $COMMANDS_FILE ]; then
+    echo "removing old $COMMANDS_FILE"
+    rm -f $COMMANDS_FILE
+fi
+
 $BASEDIR/python/pes/main.py $*
+
+if [ -x $COMMANDS_FILE ]; then
+    $COMMANDS_FILE
+    rm -f $COMMANDS_FILE
+fi
