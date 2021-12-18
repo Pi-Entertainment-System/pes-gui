@@ -71,6 +71,20 @@ def getJoystickDeviceInfoFromGUID(guid):
 	productId = getLitteEndianFromHex(productId)
 	return (vendorId, productId)
 
+def getRetroArchConfigAxisValue(param, controller, axis, both=False):
+	bind = sdl2.SDL_GameControllerGetBindForAxis(controller, axis)
+	if bind:
+		if bind.bindType == sdl2.SDL_CONTROLLER_BINDTYPE_AXIS:
+			if both:
+					return "%s_plus_axis = \"+%d\"\n%s_minus_axis = \"-%d\"\n" % (param, bind.value.axis, param, bind.value.axis)
+			return "%s_axis = \"+%d\"\n" % (param, bind.value.axis)
+		if bind.bindType == sdl2.SDL_CONTROLLER_BINDTYPE_BUTTON:
+			return "%s_btn = \"%d\"\n" % (param, bind.value.button)
+
+	if both:
+		return "%s_plus_axis = \"nul\"\n%s_minus_axis = \"nul\"\n" % (param, param)
+	return "%s = \"nul\"\n" % param
+
 def getRetroArchConfigButtonValue(param, controller, button):
 	bind = sdl2.SDL_GameControllerGetBindForButton(controller, button)
 	if bind:
@@ -325,39 +339,39 @@ class Backend(QObject):
 									f.write("input_product_id = \"%s\"\n" % productId)
 									#f.write("input_driver = \"udev\"\n")
 									# buttons
-									f.write(self.getRetroArchConfigButtonValue("input_a", c, sdl2.SDL_CONTROLLER_BUTTON_B))
-									f.write(self.getRetroArchConfigButtonValue("input_b", c, sdl2.SDL_CONTROLLER_BUTTON_A))
-									f.write(self.getRetroArchConfigButtonValue("input_x", c, sdl2.SDL_CONTROLLER_BUTTON_Y))
-									f.write(self.getRetroArchConfigButtonValue("input_y", c, sdl2.SDL_CONTROLLER_BUTTON_X))
-									f.write(self.getRetroArchConfigButtonValue("input_start", c, sdl2.SDL_CONTROLLER_BUTTON_START))
-									f.write(self.getRetroArchConfigButtonValue("input_select", c, sdl2.SDL_CONTROLLER_BUTTON_BACK))
+									f.write(getRetroArchConfigButtonValue("input_a", c, sdl2.SDL_CONTROLLER_BUTTON_B))
+									f.write(getRetroArchConfigButtonValue("input_b", c, sdl2.SDL_CONTROLLER_BUTTON_A))
+									f.write(getRetroArchConfigButtonValue("input_x", c, sdl2.SDL_CONTROLLER_BUTTON_Y))
+									f.write(getRetroArchConfigButtonValue("input_y", c, sdl2.SDL_CONTROLLER_BUTTON_X))
+									f.write(getRetroArchConfigButtonValue("input_start", c, sdl2.SDL_CONTROLLER_BUTTON_START))
+									f.write(getRetroArchConfigButtonValue("input_select", c, sdl2.SDL_CONTROLLER_BUTTON_BACK))
 									# shoulder buttons
-									f.write(self.getRetroArchConfigButtonValue("input_l", c, sdl2.SDL_CONTROLLER_BUTTON_LEFTSHOULDER))
-									f.write(self.getRetroArchConfigButtonValue("input_r", c, sdl2.SDL_CONTROLLER_BUTTON_RIGHTSHOULDER))
-									f.write(self.getRetroArchConfigAxisValue("input_l2", c, sdl2.SDL_CONTROLLER_AXIS_TRIGGERLEFT))
-									f.write(self.getRetroArchConfigAxisValue("input_r2", c, sdl2.SDL_CONTROLLER_AXIS_TRIGGERRIGHT))
+									f.write(getRetroArchConfigButtonValue("input_l", c, sdl2.SDL_CONTROLLER_BUTTON_LEFTSHOULDER))
+									f.write(getRetroArchConfigButtonValue("input_r", c, sdl2.SDL_CONTROLLER_BUTTON_RIGHTSHOULDER))
+									f.write(getRetroArchConfigAxisValue("input_l2", c, sdl2.SDL_CONTROLLER_AXIS_TRIGGERLEFT))
+									f.write(getRetroArchConfigAxisValue("input_r2", c, sdl2.SDL_CONTROLLER_AXIS_TRIGGERRIGHT))
 									# L3/R3 buttons
-									f.write(self.getRetroArchConfigButtonValue("input_l3", c, sdl2.SDL_CONTROLLER_BUTTON_LEFTSTICK))
-									f.write(self.getRetroArchConfigButtonValue("input_r3", c, sdl2.SDL_CONTROLLER_BUTTON_RIGHTSTICK))
+									f.write(getRetroArchConfigButtonValue("input_l3", c, sdl2.SDL_CONTROLLER_BUTTON_LEFTSTICK))
+									f.write(getRetroArchConfigButtonValue("input_r3", c, sdl2.SDL_CONTROLLER_BUTTON_RIGHTSTICK))
 									# d-pad buttons
-									f.write(self.getRetroArchConfigButtonValue("input_up", c, sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP))
-									f.write(self.getRetroArchConfigButtonValue("input_down", c, sdl2.SDL_CONTROLLER_BUTTON_DPAD_DOWN))
-									f.write(self.getRetroArchConfigButtonValue("input_left", c, sdl2.SDL_CONTROLLER_BUTTON_DPAD_LEFT))
-									f.write(self.getRetroArchConfigButtonValue("input_right", c, sdl2.SDL_CONTROLLER_BUTTON_DPAD_RIGHT))
+									f.write(getRetroArchConfigButtonValue("input_up", c, sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP))
+									f.write(getRetroArchConfigButtonValue("input_down", c, sdl2.SDL_CONTROLLER_BUTTON_DPAD_DOWN))
+									f.write(getRetroArchConfigButtonValue("input_left", c, sdl2.SDL_CONTROLLER_BUTTON_DPAD_LEFT))
+									f.write(getRetroArchConfigButtonValue("input_right", c, sdl2.SDL_CONTROLLER_BUTTON_DPAD_RIGHT))
 									# axis
-									f.write(self.getRetroArchConfigAxisValue("input_l_x", c, sdl2.SDL_CONTROLLER_AXIS_LEFTX, True))
-									f.write(self.getRetroArchConfigAxisValue("input_l_y", c, sdl2.SDL_CONTROLLER_AXIS_LEFTY, True))
-									f.write(self.getRetroArchConfigAxisValue("input_r_x", c, sdl2.SDL_CONTROLLER_AXIS_RIGHTX, True))
-									f.write(self.getRetroArchConfigAxisValue("input_r_y", c, sdl2.SDL_CONTROLLER_AXIS_RIGHTY, True))
+									f.write(getRetroArchConfigAxisValue("input_l_x", c, sdl2.SDL_CONTROLLER_AXIS_LEFTX, True))
+									f.write(getRetroArchConfigAxisValue("input_l_y", c, sdl2.SDL_CONTROLLER_AXIS_LEFTY, True))
+									f.write(getRetroArchConfigAxisValue("input_r_x", c, sdl2.SDL_CONTROLLER_AXIS_RIGHTX, True))
+									f.write(getRetroArchConfigAxisValue("input_r_y", c, sdl2.SDL_CONTROLLER_AXIS_RIGHTY, True))
 									# hot key buttons
 									bind = sdl2.SDL_GameControllerGetBindForButton(c, sdl2.SDL_CONTROLLER_BUTTON_GUIDE)
 									if bind:
-										f.write(self.getRetroArchConfigButtonValue("input_enable_hotkey", c, sdl2.SDL_CONTROLLER_BUTTON_GUIDE))
+										f.write(getRetroArchConfigButtonValue("input_enable_hotkey", c, sdl2.SDL_CONTROLLER_BUTTON_GUIDE))
 									else:
-										f.write(self.getRetroArchConfigButtonValue("input_enable_hotkey", c, sdl2.SDL_CONTROLLER_BUTTON_BACK))
-									f.write(self.getRetroArchConfigButtonValue("input_exit_emulator", c, sdl2.SDL_CONTROLLER_BUTTON_START))
-									f.write(self.getRetroArchConfigButtonValue("input_save_state", c, sdl2.SDL_CONTROLLER_BUTTON_A))
-									f.write(self.getRetroArchConfigButtonValue("input_load_state", c, sdl2.SDL_CONTROLLER_BUTTON_B))
+										f.write(getRetroArchConfigButtonValue("input_enable_hotkey", c, sdl2.SDL_CONTROLLER_BUTTON_BACK))
+									f.write(getRetroArchConfigButtonValue("input_exit_emulator", c, sdl2.SDL_CONTROLLER_BUTTON_START))
+									f.write(getRetroArchConfigButtonValue("input_save_state", c, sdl2.SDL_CONTROLLER_BUTTON_A))
+									f.write(getRetroArchConfigButtonValue("input_load_state", c, sdl2.SDL_CONTROLLER_BUTTON_B))
 									f.write("input_pause_toggle = \"nul\"\n")
 							sdl2.SDL_GameControllerClose(c)
 							sdl2.SDL_GameControllerClose(c)
