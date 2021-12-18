@@ -148,6 +148,8 @@ class Settings(object):
 	STR_PROP = 1
 	BOOL_PROP = 2
 	INT_PROP = 3
+	LIST_PROP = 4
+	PATH_PROP = 5
 
 	def __init__(self, f, props=None):
 		logging.debug("Settings.__init__: created using %s" % f)
@@ -232,11 +234,11 @@ class ConsoleSettings(Settings):
 	def __init__(self):
 		super(ConsoleSettings, self).__init__(userConsolesConfigFile)
 		self.__props = {
-			"emulator": "str",
-			"ignore_roms": "list",
-			"extensions": "list",
-			"command": "path",
-			"require": "list"
+			"emulator": Settings.STR_PROP,
+			"ignore_roms": Settings.LIST_PROP,
+			"extensions": Settings.LIST_PROP,
+			"command": Settings.PATH_PROP,
+			"require": Settings.LIST_PROP
 		}
 
 		self.__optionalProps = ["ignore_roms", "require"]
@@ -252,32 +254,19 @@ class ConsoleSettings(Settings):
 		if c not in self.__cache:
 			self.__cache[c] = {}
 		if not prop in self.__cache[c]:
-			if self.__props[prop] == "int":
+			if self.__props[prop] == Settings.INT_PROP:
 				self.__cache[c][prop] = self._configparser.getint(c, prop)
-			elif self.__props[prop] == "path":
-				self.__cache[c][prop] = self._configparser.get(c, prop).replace("%%USERDIR%%", userDir).replace("%%BASE%%", baseDir)
-			elif self.__props[prop] == "list":
+			elif self.__props[prop] == Settings.PATH_PROP:
+				self.__cache[c][prop] = self.__parseStr(self._configparser.get(c, prop))
+			elif self.__props[prop] == Settings.LIST_PROP:
 				l = []
 				for i in self._configparser.get(c, prop).split(","):
-					l.append(i.replace("%%USERDIR%%", userDir).replace("%%BASE%%", baseDir).replace("%%USERBIOSDIR%%", userBiosDir))
+					l.append(self.__parseStr(i))
 				self.__cache[c][prop] = l
 			else:
 				self.__cache[c][prop] = self._configparser.get(c, prop)
 		return self.__cache[c][prop]
 
-	def getOptions(self, c):
-		o = {}
-		# check each property exists
-		for prop, t in self.__props.items():
-			if not self._configparser.has_option(c, prop):
-				if prop in self.__optionalProps:
-					continue
-				raise Exception("%s has no option \"%s\" in %s" % (c, prop, self._path))
-			if t == "int":
-				o[prop] = self._configparser.getint(c, prop)
-			elif t == "path":
-				o[prop] = self._configparser.get(c, prop).replace("%%USERDIR%%", userDir).replace("%%BASE%%", baseDir)
-			else:
-				o[prop] = self._configparser.get(c, prop)
-		return o
-		
+	@staticmethod
+	def __parseStr(s):
+		return s.replace("%%USERDIR%%", userDir).replace("%%BASE%%", baseDir).replace("%%USERBIOSDIR%%", userBiosDir).replace("%%USERCONFDIR%%", userConfDir)
