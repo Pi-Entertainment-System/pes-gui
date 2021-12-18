@@ -42,6 +42,7 @@ except ImportError as e:
 
 import pes
 import pes.common
+import pes.retroachievement
 import pes.romscan
 import pes.sql
 import pes.system
@@ -119,14 +120,6 @@ class Backend(QObject):
 		engine = pes.sql.connect()
 		self.__session = sqlalchemy.orm.sessionmaker(bind=engine)()
 		pes.sql.createAll(engine)
-		# log into RetroAchievements
-		retroUser = self.__userSettings.get("RetroAchievements", "username")
-		retroPass = self.__userSettings.get("RetroAchievements", "password")
-		retroApiKey = self.__userSettings.get("RetroAchievements", "apiKey")
-		self.__retroUser = None
-		if retroUser and retroPass:
-			self.__retroUser = pes.retroachievement.RetroAchievementUser(retroUser, retroPass, retroApiKey)
-			self.__retroUser.login()
 
 	@pyqtSlot(result=bool)
 	def btAvailable(self):
@@ -289,12 +282,6 @@ class Backend(QObject):
 	def getTime(self):
 		return datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
-	@pyqtSlot(result=bool)
-	def isRetroAchievementLoggedIn(self):
-		if self.__retroUser == None:
-			return False
-		return self.__retroUser.loggedIn
-
 	@pyqtSlot(int, result=QVariant)
 	def playGame(self, id):
 		game = self.__session.query(pes.sql.Game).get(id)
@@ -417,6 +404,7 @@ class PESGuiApplication(QGuiApplication):
 		self.__backend = backend
 		self.__backend.closeSignal.connect(self.close)
 		qmlRegisterType(pes.romscan.RomScanMonitorThread, 'RomScanMonitorThread', 1, 0, 'RomScanMonitorThread')
+		qmlRegisterType(pes.retroachievement.RetroAchievementUser, 'RetroAchievementUser', 1, 0, 'RetroAchievementUser')
 		self.__engine = QQmlApplicationEngine()
 		self.__engine.rootContext().setContextProperty("backend", self.__backend)
 		logging.debug("loading QML from: %s" % pes.qmlMain)

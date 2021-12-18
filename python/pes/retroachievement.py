@@ -107,10 +107,18 @@ class RetroAchievementUser(QObject):
 
 	__URL = 'http://retroachievements.org/API/'
 
-	loggedInSignal = pyqtSignal()
+	loginSignal = pyqtSignal()
+	scoreChanged = pyqtSignal()
 
 	def __init__(self, username=None, password=None, apikey=None):
 		super(RetroAchievementUser, self).__init__()
+		if username == None:
+			# load from user settings file
+			userSettings = pes.common.UserSettings()
+			username = userSettings.get("RetroAchievements", "username")
+			password = userSettings.get("RetroAchievements", "password")
+			if username and password:
+				logging.debug("RetroAchievementUser.__init__: using username and password from %s" % pes.userPesConfigFile)
 		logging.debug("RetroAchievementUser.__init__: %s" % username)
 		self.__username = username
 		self.__password = password
@@ -163,10 +171,11 @@ class RetroAchievementUser(QObject):
 		self.login()
 		return self.__retroAchievementUserRecord.hasEarnedHardcoreBadge(badgeId)
 
-	@pyqtProperty(bool)
+	@pyqtProperty(bool, notify=loginSignal)
 	def loggedIn(self):
 		return self.__token != None
 
+	@pyqtSlot()
 	def login(self):
 		try:
 			response = requests.get(RETRO_URL, params={ "r": "login", "u": self.__username, "p": self.__password }, timeout=URL_TIMEOUT)
@@ -174,15 +183,18 @@ class RetroAchievementUser(QObject):
 				data = response.json()
 				if "Success" in data:
 					if data["Success"]:
+						logging.debug("RetroAchievementUser.login: data dump: %s" % data)
 						if "Token" in data:
 							self.__token = data["Token"]
 							# score == total_points
 							self.__score = int(data["Score"])
 							logging.info("RetroAchievementUser.login: %s (%d)" % (self.__username, self.__score))
 							logging.debug("RetroAchievementUser.login: token: %s" % self.__token)
-							self.__totalPoints = int(data["TotalPoints"])
-							self.__totalTruePoints = int(data["TotalTruePoints"])
-							self.loggedInSignal.emit()
+							# next two items do not appear to be in the returned JSON since 18/12/2021 :-S
+							#self.__totalPoints = int(data["TotalPoints"])
+							#self.__totalTruePoints = int(data["TotalTruePoints"])
+							self.loginSignal.emit()
+							self.scoreChanged.emit()
 							return True
 						else:
 							logging.error("RetroAchievementUser.login: could not log in - token not in response")
@@ -205,7 +217,7 @@ class RetroAchievementUser(QObject):
 	def rank(self):
 		return self.__rank
 
-	@pyqtProperty(int)
+	@pyqtProperty(int, notify=scoreChanged)
 	def score(self):
 		return self.__score
 
@@ -217,6 +229,6 @@ class RetroAchievementUser(QObject):
 	def totalTruePoints(self):
 		return self.__totalTruePoints
 
-	@pyqtProperty(str)
+	@pyqtProperty(str, constant=True)
 	def username(self):
 		return self.__username

@@ -25,7 +25,7 @@ import QtQuick.Layouts 1.12
 import QtQuick.Window 2.2
 import QtQuick.Controls 2.5
 import QtMultimedia 5.12
-//import QtGamepad 1.12
+import RetroAchievementUser 1.0
 import "Components"
 import "./Style/" 1.0
 import "pes.js" as PES
@@ -44,6 +44,10 @@ ApplicationWindow {
   QtObject {
     id: mainWindowInternal
     property var restoreFocusItem: null
+  }
+
+  RetroAchievementUser {
+    id: retroUser
   }
 
 	Connections {
@@ -299,13 +303,15 @@ ApplicationWindow {
         RowLayout {
           anchors.fill: parent
 
-          Text {
+          TitleText {
             id: titleTxt
             text: "Pi Entertainment System"
-            font.pixelSize: FontStyle.titleSize
-            font.bold: true
-            font.family: FontStyle.font
-            color: Colour.text
+          }
+
+          TitleText {
+            id: retroHeaderTxt
+            text: " | " + retroUser.username + " (" + retroUser.score + ")"
+            visible: retroUser.loggedIn
           }
 
           // filler to force right alignment
@@ -343,10 +349,10 @@ ApplicationWindow {
           Image {
             id: trophyIcon
             source: "icons/trophy.png"
-            visible: false
+            visible: retroUser.loggedIn
 
             Component.onCompleted: {
-              visible = backend.isRetroAchievementLoggedIn();
+              retroUser.login();
             }
           }
 
@@ -370,13 +376,9 @@ ApplicationWindow {
             }
           }
 
-          Text {
+          TitleText {
             id: clockTxt
             text: "Time"
-            font.pixelSize: FontStyle.titleSize
-            font.bold: true
-            font.family: FontStyle.font
-            color: Colour.text
             Layout.leftMargin: 10
             Layout.rightMargin: 5
           }
