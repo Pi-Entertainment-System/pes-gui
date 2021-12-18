@@ -126,7 +126,7 @@ class RetroAchievementUser(QObject):
 		self.__token = None
 		self.__score = 0
 		self.__retroAchievementUserRecord = None
-		self.__rank = 0 
+		self.__rank = 0
 		self.__totalPoints = 0
 		self.__totalTruePoints = 0
 
@@ -177,6 +177,9 @@ class RetroAchievementUser(QObject):
 
 	@pyqtSlot()
 	def login(self):
+		if self.__username == None or self.__password == None:
+			logging.warning("RetroAchievementUser.login: no username or password, not logging in")
+			return
 		try:
 			response = requests.get(RETRO_URL, params={ "r": "login", "u": self.__username, "p": self.__password }, timeout=URL_TIMEOUT)
 			if response.status_code == requests.codes.ok:
