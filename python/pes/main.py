@@ -149,7 +149,8 @@ if __name__ == "__main__":
 
 	app = PESGuiApplication(sys.argv, backend)
 
-	if cecImported:
+	userCecEnabled = userSettings.get("pes", "hdmi-cec")
+	if cecImported and (userCecEnabled or userCecEnabled == None):
 		logging.debug("creating CEC config...")
 		cecconfig = cec.libcec_configuration()
 		cecconfig.strDeviceName   = "PES"
