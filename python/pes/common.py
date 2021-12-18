@@ -209,7 +209,7 @@ class UserSettings(Settings):
 				"username": Settings.STR_PROP,
 				"password": Settings.STR_PROP
 			},
-			"Settings": {
+			"settings": {
 				"hdmi-cec": Settings.BOOL_PROP,
 				"romScraper": Settings.STR_PROP,
 				"screenSaverTimeout": Settings.INT_PROP
