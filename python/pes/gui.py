@@ -314,6 +314,8 @@ class Backend(QObject):
 					if not os.path.exists(f) or os.path.isfile(f):
 						logging.error("Backend.playGame: could not find required file: %s" % f)
 						return { "result": False, "msg": "Could not find required file: %s" % f}
+			else:
+				logging.debug("Backend.playGame: no required files for console %s" % game.console.name)
 
 			# generate emulator config
 			emulator = self.__consoleSettings.get(game.console.name, "emulator")
