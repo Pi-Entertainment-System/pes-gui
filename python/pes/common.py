@@ -190,6 +190,9 @@ class Settings(object):
 			return self._props[section][prop]
 		return None
 
+	def hasSection(self, s):
+		return self._configparser.has_section(s)
+
 	def save(self, path):
 		logging.debug("Settings.save: saving to %s" % path)
 		with open(path, "w") as f:
