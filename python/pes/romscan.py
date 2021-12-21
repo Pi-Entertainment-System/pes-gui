@@ -561,8 +561,8 @@ class RomScanThread(QThread):
 		self.__skipped = 0
 		self.__updated = 0
 		self.__deleted = 0
-		self.__consoleSettings = pes.common.ConsoleSettings(pes.userConsolesConfigFile)
-		self.__userSettings = pes.common.UserSettings(pes.userPesConfigFile)
+		self.__consoleSettings = pes.common.ConsoleSettings()
+		self.__userSettings = pes.common.UserSettings()
 		self.__romScraper = self.__userSettings.get("settings", "romScraper")
 		self.__romsDir = pes.userRomDir
 		self.__tasks = None
@@ -672,25 +672,26 @@ class RomScanThread(QThread):
 		# loop over all consoles
 		consoles = session.query(pes.sql.Console).all()
 		for console in consoles:
-			logging.debug("RomScanThread.run: processing console %s" % console.name)
-			extensions = self.__consoleSettings.get(console.name, "extensions")
-			ignoreRoms = self.__consoleSettings.get(console.name, "ignore_roms")
-			logging.debug("RomScanThread.run: extensions for %s are: %s" % (console.name, ','.join(extensions)))
-			romFiles = []
-			for f in glob.glob(os.path.join(self.__romsDir, console.name, "*")):
-				if os.path.isfile(f):
-					if (ignoreRoms == None or f not in ignoreRoms) and self.__extensionOk(extensions, f):
-						romFiles.append(f)
-						if self.__romScraper == "theGamesDb.net":
-							platform = console.platform
-							if platform == None:
-								pes.common.pesExit("RomScanThread.run: no platform relationship with console ID: %d" % console.id)
-							self.__tasks.put(GamesDbRomTask(console, f, self.__fullscan))
+			if self.__consoleSettings.hasSection(console.name):
+				logging.debug("RomScanThread.run: processing console %s" % console.name)
+				extensions = self.__consoleSettings.get(console.name, "extensions")
+				ignoreRoms = self.__consoleSettings.get(console.name, "ignore_roms")
+				logging.debug("RomScanThread.run: extensions for %s are: %s" % (console.name, ','.join(extensions)))
+				romFiles = []
+				for f in glob.glob(os.path.join(self.__romsDir, console.name, "*")):
+					if os.path.isfile(f):
+						if (ignoreRoms == None or f not in ignoreRoms) and self.__extensionOk(extensions, f):
+							romFiles.append(f)
+							if self.__romScraper == "theGamesDb.net":
+								platform = console.platform
+								if platform == None:
+									pes.common.pesExit("RomScanThread.run: no platform relationship with console ID: %d" % console.id)
+								self.__tasks.put(GamesDbRomTask(console, f, self.__fullscan))
 
-			consoleRomTotal = len(romFiles)
-			self.__romTotal += consoleRomTotal
-			logging.debug("RomScanThread.run: found %d ROMs for %s" % (consoleRomTotal, console.name))
-			self.progressMessageSignal.emit("Processing %s: %d ROMs found" % (console.name, consoleRomTotal))
+				consoleRomTotal = len(romFiles)
+				self.__romTotal += consoleRomTotal
+				logging.debug("RomScanThread.run: found %d ROMs for %s" % (consoleRomTotal, console.name))
+				self.progressMessageSignal.emit("Processing %s: %d ROMs found" % (console.name, consoleRomTotal))
 
 		# our session must be closed before starting the sub processes
 		session.close()
