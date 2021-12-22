@@ -136,7 +136,7 @@ Rectangle {
             id: beginScanTxt
             Layout.fillWidth: true
             Layout.preferredWidth: updateGamesRect.width
-            text: "Select the type of scan that you would like to perfrom using the buttons below. A working Inernet connection is required to download game cover art and badges for achievements."
+            text: "Select the type of scan that you would like to perfrom using the buttons below. A working Inernet connection is required to download images."
         }
 
         RowLayout {
@@ -155,7 +155,7 @@ Rectangle {
             }
 
             BodyText {
-                text: "Add new ROMs and remove any deleted ROMs from the database as well as downloading cover art and badges"
+                text: "Add new ROMs and remove any deleted ROMs from the database as well as downloading images"
                 Layout.fillWidth: true
                 // horrible hack to fix text wrapping/width
                 Layout.preferredWidth: updateGamesRect.width - beginScanBtn.Layout.preferredWidth - beginScanBtn.Layout.leftMargin
@@ -178,7 +178,7 @@ Rectangle {
             }
 
             BodyText {
-                text: "Same as a normal scan but also refresh covert art and badges from the Internet"
+                text: "Same as a normal scan but also refresh images from the Internet"
                 Layout.fillWidth: true
                 // horrible hack to fix text wrapping/width
                 Layout.preferredWidth: updateGamesRect.width - beginScanBtn.Layout.preferredWidth - beginScanBtn.Layout.leftMargin
