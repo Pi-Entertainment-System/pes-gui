@@ -25,6 +25,8 @@ import QtQuick.Layouts 1.12
 import QtQuick.Window 2.2
 import QtQuick.Controls 2.5
 import QtMultimedia 5.12
+import RetroAchievementUser 1.0
+import RetroAchievementThread 1.0
 import "../Style/" 1.0
 import "../pes.js" as PES
 
@@ -34,6 +36,7 @@ Rectangle {
     color: "transparent"
 
     property var game: null
+    property var retroUser: null
 
     signal backPressed()
     signal play(int gameId)
@@ -45,7 +48,8 @@ Rectangle {
     onGameChanged: function() {
         if (game) {
             backgroundImg.source = PES.getConsoleArt(game.consoleId);
-            headerText.text = game.name;
+            infoHeaderText.text = game.name;
+            achievementHeaderText.text = game.name;
             coverartFrontImg.source = "file://" + game.coverartFront;
             if (game.coverartBack && game.coverartBack != "") {
                 coverartBackImg.source = "file://" + game.coverartBack;
@@ -74,10 +78,27 @@ Rectangle {
             releasedText.text = "Released: " + game.releaseDate
             overviewText.text = game.overview;
             reset();
+
+            if (game.retroId > 0 && retroUser && retroUser.hasApiKey()) {
+                achievementBodyText.text = "Loading achievements...";
+                retroThread.gameId = game.id;
+                retroThread.retroGameId = game.retroId;
+                retroThread.start();
+            }
+            else {
+                __noAchievements();
+            }
         }
     }
 
+    function __noAchievements() {
+        achievementBodyText.text = "There are no achievements associated with this game.";
+    }
+
     function reset() {
+        screenStack.currentIndex = 0
+        menuView.currentIndex = 0;
+        badgeModel.clear();
         scrollUpTimer.running = false;
         overviewScroll.scrollToTop();
         if (overviewText.height > overviewScroll.height) {
@@ -85,6 +106,31 @@ Rectangle {
         }
         else {
             scrollDownTimer.running = false;
+        }
+    }
+
+    RetroAchievementThread {
+        id: retroThread
+        user: retroUser
+
+        onFinished: {
+            var badges = retroThread.getBadges();
+            if (badges && badges.length > 0) {
+                var retroGame = retroThread.getRetroGame();
+                var earned = 0;
+                for (var i = 0; i < badges.length; i++) {
+                    if (badges[i].earned || badges[i].earnedHardcore) {
+                        earned++;
+                    }
+                    badges[i]["playersEarnedPercent"] = Math.round((badges[i].totalAwarded / retroGame.totalPlayers) * 100);
+                    badgeModel.append(badges[i]);
+                }
+                var percent = Math.round((earned / badges.length) * 100);
+                achievementBodyText.text = "Score: " + retroGame.score + ", " + percent + "% complete\n" + badges.length + " badges found.";
+            }
+            else {
+                __noAchievements();
+            }
         }
     }
 
@@ -124,12 +170,119 @@ Rectangle {
         }
     }
 
-    RowLayout {
+    Component {
+        id: badgeDelegate
 
+        Rectangle {
+            height: badgeDelegateLayout.height
+            width: badgesListView.width
+            border.color: Colour.line
+            border.width: focus ? 2: 0
+            color: focus ? Colour.badgeFocusBg : Colour.badgeBg
+
+            ColumnLayout {
+                id: badgeDelegateLayout
+                spacing: 3
+                width: parent.width
+
+                BodyText {
+                    text: title
+                }
+                
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.leftMargin: 20
+                    Layout.bottomMargin: 5
+
+                    ColumnLayout {
+                        Layout.rightMargin: 20
+                        spacing: 0
+                        Image {
+                            id: badgeImg
+                            source: earned || earnedHardcore ? "file://" + unlockedPath : "file://" + lockedPath
+                        }
+                        SmallText {
+                            text: points + "pts"
+                            padding: 0
+                        }
+                    }
+
+                    ColumnLayout {
+                        spacing: 1
+                        BodyText {
+                            text: description
+                            font.bold: false
+                            padding: 0
+                            Layout.maximumWidth: badgesListView.width - 380 - badgeImg.width
+                        }
+
+                        SmallText {
+                            text: earned ? "Earned: " + earnedStr : ""
+                            padding: 0
+                        }
+
+                        SmallText {
+                            text: earnedHardcore ? "Hardcore Earned: " + earnedHardcoreStr : ""
+                            padding: 0
+                        }
+                    }
+                    // spacer
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                    }
+
+                    ColumnLayout {
+                        Layout.maximumWidth: 380
+                        Layout.rightMargin: 10
+                        
+                        RowLayout {
+
+                            SmallText {
+                                text: "Casual: "
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                            }
+
+                            ProgressBarRect {
+                                width: 200
+                                height: 20
+                                progress: playersEarnedPercent / 100
+                            }
+                        }
+
+                        RowLayout {
+
+                            SmallText {
+                                text: "Hardcore: "
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                            }
+
+                            ProgressBarRect {
+                                width: 200
+                                height: 20
+                                progress: playersEarnedPercent / 100
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    RowLayout {
         anchors.fill: parent
 
         ListModel {
-            id: gameModel
+            id: badgeModel
         }
 
         ListModel {
@@ -137,10 +290,12 @@ Rectangle {
 
             ListElement {
                 name: "Play"
+                stackId: 0
             }
 
             ListElement {
                 name: "Achievements"
+                stackId: 1
             }
         }
 
@@ -162,7 +317,7 @@ Rectangle {
                 clip: true
 
                 Keys.onPressed: {
-                if (event.key == Qt.Key_Backspace) {
+                   if (event.key == Qt.Key_Backspace) {
                         mainRect.backPressed();
                     }
                 }
@@ -175,11 +330,20 @@ Rectangle {
                     //navSound: navSound
                     soundOn: false
                     delegate: MenuDelegate {
-                        Keys.onReturnPressed: {
-                            if (name == "Play") {
+                        Keys.onPressed: {
+                            if (event.key == Qt.Key_Return && name == "Play") {
                                 play(game.id);
                             }
+                            else if ((event.key == Qt.Key_Return || event.key == Qt.Key_Right) && name == "Achievements") {
+                                if (badgesListView.currentIndex == -1) {
+                                    badgesListView.currentIndex = 0;
+                                }
+                                badgesListView.forceActiveFocus();
+                            }
                         }
+                    }
+                    onItemHighlighted: {
+                        screenStack.currentIndex = item.stackId;
                     }
                 }
             }
@@ -200,106 +364,171 @@ Rectangle {
                 visible: source != ""
             }
 
-            ColumnLayout {
-                spacing: 10
+            StackLayout {
+                id: screenStack
                 anchors.fill: parent
 
-                HeaderText {
-                    id: headerText
-                    Layout.fillWidth: true
-                }
-
-                RowLayout {
-                    spacing: 10
-
-                    Item {
-                        Layout.fillWidth: true
-                    }
-
-                    Image {
-                        id: coverartFrontImg
-                        Layout.margins: 10
-                        Layout.maximumHeight: 300
-                    }
-
-                    Image {
-                        id: coverartBackImg
-                        Layout.margins: 10
-                        Layout.maximumHeight: 300
-                        visible: source || (source == "")
-                    }
-
-                    Image {
-                        id: screenshotImg
-                        Layout.margins: 10
-                        Layout.maximumHeight: 300
-                        visible: source || (source == "")
-                    }
-
-                    Item {
-                        Layout.fillWidth: true
-                    }
-                }
-
-                /*BodyText {
-                    id: historyText
-                }*/
-
-                BodyText {
-                    id: filenameText
-                    Layout.fillWidth: true
-                }
-
-                BodyText {
-                    id: releasedText
-                    Layout.fillWidth: true
-                }
-
-                BodyText {
-                    id: overviewLabel
-                    text: "Overview:"
-                    visible: overviewText.text != ""
-                    Layout.fillWidth: true
-                }
-
-                ScrollView {
-                    id: overviewScroll
-                    clip: true
-                    ScrollBar.vertical.policy: ScrollBar.AlwaysOff
+                // put screens inside a rectangle to prevent polish loop
+                Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    Layout.margins: 10
-                    // hack for text wrapping
-                    Layout.preferredWidth: mainRect.width - menuRect.width - 20
-                    
-                    BodyText {
-                        id: overviewText
-                        width: overviewScroll.width
+                    color: "transparent"
 
-                        /*onTextChanged: function(){
-                            if (overviewText.height > overviewScroll.height) {
-                                overviewScroll.ScrollBar.vertical.policy = ScrollBar.AlwaysOn;
+                    ColumnLayout {
+                        anchors.fill: parent
+                        spacing: 10
+
+                        HeaderText {
+                            id: infoHeaderText
+                            Layout.fillWidth: true
+                        }
+
+                        RowLayout {
+                            spacing: 10
+
+                            Item {
+                                Layout.fillWidth: true
                             }
-                            else {
-                                overviewScroll.ScrollBar.vertical.policy = ScrollBar.AlwaysOff;
+
+                            Image {
+                                id: coverartFrontImg
+                                Layout.margins: 10
+                                Layout.maximumHeight: 300
                             }
+
+                            Image {
+                                id: coverartBackImg
+                                Layout.margins: 10
+                                Layout.maximumHeight: 300
+                                visible: source || (source == "")
+                            }
+
+                            Image {
+                                id: screenshotImg
+                                Layout.margins: 10
+                                Layout.maximumHeight: 300
+                                visible: source || (source == "")
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                            }
+                        }
+
+                        /*BodyText {
+                            id: historyText
                         }*/
-                    }
 
-                    function getContentHeight() {
-                        return contentItem.height;
-                    }
+                        BodyText {
+                            id: filenameText
+                            Layout.fillWidth: true
+                        }
 
-                    function getContentItemY() {
-                        return contentItem.contentY;
-                    }
+                        BodyText {
+                            id: releasedText
+                            Layout.fillWidth: true
+                        }
 
-                    function scrollToTop() {
-                        setContentItemY(0);
-                    }
+                        BodyText {
+                            id: overviewLabel
+                            text: "Overview:"
+                            visible: overviewText.text != ""
+                            Layout.fillWidth: true
+                        }
 
-                    function setContentItemY(x) {
-                        contentItem.contentY = x;
+                        ScrollView {
+                            id: overviewScroll
+                            clip: true
+                            ScrollBar.vertical.policy: ScrollBar.AlwaysOff
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            Layout.margins: 10
+                            // hack for text wrapping
+                            Layout.preferredWidth: mainRect.width - menuRect.width - 20
+                            
+                            BodyText {
+                                id: overviewText
+                                width: overviewScroll.width
+
+                                /*onTextChanged: function(){
+                                    if (overviewText.height > overviewScroll.height) {
+                                        overviewScroll.ScrollBar.vertical.policy = ScrollBar.AlwaysOn;
+                                    }
+                                    else {
+                                        overviewScroll.ScrollBar.vertical.policy = ScrollBar.AlwaysOff;
+                                    }
+                                }*/
+                            }
+
+                            function getContentHeight() {
+                                return contentItem.height;
+                            }
+
+                            function getContentItemY() {
+                                return contentItem.contentY;
+                            }
+
+                            function scrollToTop() {
+                                setContentItemY(0);
+                            }
+
+                            function setContentItemY(x) {
+                                contentItem.contentY = x;
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    color: "transparent"
+
+                    ColumnLayout {
+                        spacing: 10
+                        anchors.fill: parent
+
+                        HeaderText {
+                            id: achievementHeaderText
+                            Layout.fillWidth: true
+                        }
+
+                        BodyText {
+                            id: achievementBodyText
+                            text: ""
+                            Layout.fillWidth: true
+                        }
+
+                        ScrollView {
+                            id: badgesScrollView
+                            clip: true
+                            Layout.fillHeight: true
+                            Layout.fillWidth: true
+                            Layout.leftMargin: 20
+                            Layout.rightMargin: 20
+
+                            ListView {
+                                id: badgesListView
+                                Layout.fillHeight: true
+                                Layout.fillWidth: true
+                                currentIndex: -1
+                                delegate: badgeDelegate
+                                focus: true
+                                keyNavigationEnabled: true
+                                keyNavigationWraps: false
+                                model: badgeModel
+                                orientation: Qt.Vertical
+                                spacing: 20
+
+                                Keys.onPressed: {
+                                    if (event.key == Qt.Key_Backspace || event.key == Qt.Key_Left) {
+                                        menuView.forceActiveFocus();
+                                        currentItem.focus = false;
+                                        currentIndex = -1;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

@@ -25,12 +25,16 @@ import pes
 import pes.common
 import os
 import requests
+import sqlalchemy
+import sqlalchemy.orm
 
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, pyqtProperty, QObject
+from datetime import datetime
+from PyQt5.QtCore import QThread, QVariant, pyqtSignal, pyqtSlot, pyqtProperty, QObject
 
 URL_TIMEOUT = 30
 RETRO_URL = "https://www.retroachievements.org/dorequest.php"
 RETRO_BADGE_URL = "http://i.retroachievements.org/Badge"
+HEADERS = { "accept": "application/json", 'User-Agent': 'PES Scraper'}
 
 logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
@@ -117,9 +121,13 @@ class RetroAchievementUser(QObject):
 			userSettings = pes.common.UserSettings()
 			username = userSettings.get("RetroAchievements", "username")
 			password = userSettings.get("RetroAchievements", "password")
+			apikey = userSettings.get("RetroAchievements", "apiKey")
 			if username and password:
 				logging.debug("RetroAchievementUser.__init__: using username and password from %s" % pes.userPesConfigFile)
-		logging.debug("RetroAchievementUser.__init__: %s" % username)
+			if apikey:
+				logging.debug("RetroAchievementUser.__init__: api key: %s" % apikey)
+				self.__apikey = apikey
+		logging.debug("RetroAchievementUser.__init__: user = %s" % username)
 		self.__username = username
 		self.__password = password
 		self.__apikey = apikey
@@ -136,7 +144,7 @@ class RetroAchievementUser(QObject):
 			for k, v in parameters.items():
 				params[k] = v
 		url = "%s/%s" % (RetroAchievementUser.__URL, apiUrl)
-		logging.debug('RetroachievementUser.__doRequest: loading URL %s with %s' % (url, params))
+		logging.debug("RetroachievementUser.__doRequest: loading URL %s with %s" % (url, params))
 		response = requests.get(
 			url,
 			params=params,
@@ -145,6 +153,7 @@ class RetroAchievementUser(QObject):
 		if response.status_code == requests.codes.ok:
 			if response.text == 'Invalid API Key':
 				raise RetroAchievementException("Invalid RetroAchievement API key")
+			logging.debug("RetroAchievementUser.__doRequest: loaded ok")
 			return response.json()
 		raise RetroAchievementException("Failed to load URL %s with %s" % (url, params))
 
@@ -160,6 +169,10 @@ class RetroAchievementUser(QObject):
 			user = self.__username
 		logging.debug("RetroAchievementUser.getUserSummary: getting user %s and games %s" % (user, recentGames))
 		return self.__doRequest('API_GetUserSummary.php', {'u': user, 'g': recentGames, 'a': 5})
+
+	@pyqtSlot(result=bool)
+	def hasApiKey(self):
+		return self.__apikey != None
 
 	def hasEarnedBadge(self, badgeId):
 		# has the user earned this badge?
@@ -235,3 +248,134 @@ class RetroAchievementUser(QObject):
 	@pyqtProperty(str, constant=True)
 	def username(self):
 		return self.__username
+
+class RetroAchievementThread(QThread):
+
+	# cache of game IDs we have already looked up
+	__gameIdCache = []
+
+	def __init__(self, parent=None):
+		super(RetroAchievementThread, self).__init__(parent)
+		logging.debug("RetroAchievementThred.__init__: created")
+		self.__gameId = None
+		self.__retroGameId = None
+		self.__retroGame = None
+		self.__badges = []
+		self.__retroUser = None
+
+	@pyqtProperty(int)
+	def gameId(self):
+		return self.__gameId
+
+	@gameId.setter
+	def gameId(self, id):
+		self.__gameId = id
+
+	@pyqtSlot(result=list)
+	def getBadges(self):
+		return self.__badges
+
+	@pyqtSlot(result=QVariant)
+	def getRetroGame(self):
+		return self.__retroGame.getDict()
+
+	@pyqtProperty(int)
+	def retroGameId(self):
+		return self.__retroGameId
+
+	@retroGameId.setter
+	def retroGameId(self, id):
+		self.__retroGameId = id
+
+	def run(self):
+		# note: QThread will emit finished signal for us
+		self.__badges = []
+		logging.debug("RetroAchievementThread.run: started for RetroAchievement game: %d" % self.__gameId)
+		engine = pes.sql.connect()
+		session = sqlalchemy.orm.sessionmaker(bind=engine)()
+		self.__retroGame = session.query(pes.sql.RetroAchievementGame).get(self.__retroGameId)
+		if not self.__retroGame:
+			logging.error("RetroAchievementThread.run: could not find RetroAchievementGame with id: %d" % self.__retroGameId)
+			return
+		game = session.query(pes.sql.Game).get(self.__gameId)
+		if not game:
+			logging.error("RetroAchievementThread.run: could not find Game with id: %d" % game.id)
+			return
+		# create badge dir (if needed)
+		badgeDir = os.path.join(pes.userBadgeDir, str(self.__retroGameId))
+		pes.common.mkdir(badgeDir)
+		if self.__retroGameId in RetroAchievementThread.__gameIdCache:
+			logging.debug("RetroAchievementThread.run: game ID cached")
+		elif len(self.__retroGame.badges) == 0 or (game.lastPlayed and self.__retroGame.syncDate < game.lastPlayed) or not game.lastPlayed:
+			logging.debug("RetroAchievementThread.run: loading live data from the Internet")
+			score = 0
+			maxScore = 0
+			rslt = self.__retroUser.getGameInfoAndProgress(self.__retroGameId)
+			if 'Achievements' in rslt:
+				for id, data in rslt['Achievements'].items():
+					id = int(id)
+					badge = session.query(pes.sql.RetroAchievementBadge).get(id)
+					if badge:
+						badge.title = data["Title"]
+						badge.description = data["Description"]
+						badge.points = int(data["Points"])
+					else:
+						badge = pes.sql.RetroAchievementBadge(
+							id=id,
+							name=data["BadgeName"],
+							retroGameId=self.__retroGameId,
+							title=data["Title"],
+							description=data["Description"],
+							points=int(data["Points"]),
+							lockedPath=os.path.join(badgeDir, "%s_lock.png" % data["BadgeName"]),
+							unlockedPath=os.path.join(badgeDir, "%s.png" % data["BadgeName"]),
+							displayOrder=int(data["DisplayOrder"]),
+							totalAwarded=int(data["NumAwarded"]),
+							totalAwardedHardcore=int(data["NumAwardedHardcore"])
+						)
+					maxScore += badge.points
+					if "DateEarned" in data:
+						badge.earned = datetime.strptime(data["DateEarned"], "%Y-%m-%d %H:%M:%S")
+					if "DateEarnedHardcore" in data:
+						badge.earned = datetime.strptime(data["DateEarnedHardcore"], "%Y-%m-%d %H:%M:%S")
+					if "DateEarned" in data or "DateEarnedHardcore" in data:
+						score += badge.points
+					self.__saveBadge(badge)
+					session.add(badge)
+				self.__retroGame.score = score
+				self.__retroGame.maxScore = maxScore
+				self.__retroGame.totalPlayers = int(rslt["NumDistinctPlayersCasual"])
+				self.__retroGame.totalPlayersHardcore = int(rslt["NumDistinctPlayersHardcore"])
+				self.__retroGame.syncDate = datetime.now()
+				session.add(self.__retroGame)
+				session.commit()
+			badges = session.query(pes.sql.RetroAchievementBadge).filter(pes.sql.RetroAchievementBadge.retroGameId == self.__retroGameId).order_by(pes.sql.RetroAchievementBadge.displayOrder)
+			if badges:
+				for badge in badges:
+					self.__saveBadge(badge)
+					self.__badges.append(badge.getDict())
+			RetroAchievementThread.__gameIdCache.append(self.__retroGameId)
+
+	@staticmethod
+	def __saveBadge(badge):
+		tasks = [
+			{"url": "%s/%s_lock.png" % (RETRO_BADGE_URL, badge.name), "path": badge.lockedPath},
+			{"url": "%s/%s.png" % (RETRO_BADGE_URL, badge.name), "path": badge.unlockedPath}
+		]
+		for t in tasks:
+			if not os.path.exists(t["path"]):
+				logging.debug("RetroAchievementThread.__saveBadge: saving %s to %s" % (t["url"], t["path"]))
+				response = requests.get(t["url"], headers=HEADERS, timeout=URL_TIMEOUT)
+				if response.status_code == requests.codes.ok:
+					with open(t["path"], "wb") as f:
+						f.write(response.content)
+				else:
+					logging.warning("RetroAchievementThread.__saveBadge: unable to download %s" % t["url"])
+
+	@pyqtProperty(RetroAchievementUser)
+	def user(self):
+		return self.__retroUser
+
+	@user.setter
+	def user(self, user):
+		self.__retroUser = user

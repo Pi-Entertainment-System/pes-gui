@@ -446,6 +446,7 @@ class PESGuiApplication(QGuiApplication):
 		self.__backend.closeSignal.connect(self.close)
 		qmlRegisterType(pes.romscan.RomScanMonitorThread, 'RomScanMonitorThread', 1, 0, 'RomScanMonitorThread')
 		qmlRegisterType(pes.retroachievement.RetroAchievementUser, 'RetroAchievementUser', 1, 0, 'RetroAchievementUser')
+		qmlRegisterType(pes.retroachievement.RetroAchievementThread, 'RetroAchievementThread', 1, 0, 'RetroAchievementThread')
 		self.__engine = QQmlApplicationEngine()
 		self.__engine.rootContext().setContextProperty("backend", self.__backend)
 		logging.debug("loading QML from: %s" % pes.qmlMain)

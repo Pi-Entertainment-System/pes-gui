@@ -41,6 +41,11 @@ def createAll(engine):
 	Base.metadata.create_all(engine)
 
 class CustomBase(object):
+
+	@staticmethod
+	def getDateStr(column):
+		return column.strftime("%d/%m/%Y %H:%M")
+
 	def getDict(self):
 		j = {}
 		for c in self.__table__.columns:
@@ -110,11 +115,11 @@ class Game(Base, CustomBase):
 			j["overview"] = ""
 			j["releaseDate"] = "N/A"
 		if j["added"] > 0:
-			j["addedStr"] = self.added.strftime("%H:%M %d/%m/%Y")
+			j["addedStr"] = self.getDateStr(self.added)
 		else:
 			j["addedStr"] = "Unknown"
 		if j["lastPlayed"] > 0:
-			j["lastPlayedStr"] = self.lastPlayed.strftime("%H:%M %d/%m/%Y")
+			j["lastPlayedStr"] = self.getDateStr(self.lastPlayed)
 		elif self.playCount == 0:
 			j["lastPlayedStr"] = "Not played"
 		else:
@@ -189,6 +194,36 @@ class MameGame(Base, CustomBase):
 	shortName = Column(String, primary_key=True)
 	name = Column(String)
 
+class RetroAchievementBadge(Base, CustomBase):
+	__tablename__ = "retroachievement_badge"
+	id = Column(Integer, primary_key=True)
+	retroGameId = Column(Integer, ForeignKey("retroachievement_game.id"))
+	name = Column(Text)
+	title = Column(Text)
+	description = Column(Text)
+	points = Column(Integer)
+	lockedPath = Column(Text, default="")
+	unlockedPath = Column(Text, default="")
+	earned = Column(DateTime)
+	earnedHardcore = Column(DateTime)
+	displayOrder = Column(Integer)
+	totalAwarded = Column(Integer, default=0)
+	totalAwardedHardcore = Column(Integer, default=0)
+
+	game = relationship("RetroAchievementGame", back_populates="badges")
+
+	def getDict(self):
+		j = super().getDict()
+		if j["earned"] > 0:
+			j["earnedStr"] = self.getDateStr(self.earned)
+		else:
+			j["earnedStr"] = ""
+		if j["earnedHardcore"]:
+			j["earnedHardcoreStr"] = self.getDateStr(self.earnedHardcore)
+		else:
+			j["earnedHardcoreStr"] = ""
+		return j
+
 class RetroAchievementConsole(Base, CustomBase):
 	__tablename__ = "retroachievement_console"
 	id = Column(Integer, primary_key=True)
@@ -200,11 +235,16 @@ class RetroAchievementGame(Base, CustomBase):
 	id = Column(Integer, primary_key=True)
 	name = Column(Text)
 	retroConsoleId = Column(Integer, ForeignKey('retroachievement_console.id'))
+	score = Column(Integer, default=0)
+	maxScore = Column(Integer, default=0)
+	totalPlayers = Column(Integer, default=0)
+	totalPlayersHardcore = Column(Integer, default=0)
+	syncDate = Column(DateTime)
 
 	console = relationship("RetroAchievementConsole", back_populates="games")
 
 	def __repr__(self):
-		return "<RetroAchievementGame id=%d rasum=%s name=%s retroConsoleId=%d>" % (self.id, self.rasum, self.name, self.retroConsoleId)
+		return "<RetroAchievementGame id=%d name=%s retroConsoleId=%d>" % (self.id, self.name, self.retroConsoleId)
 
 class RetroAchievementGameHash(Base, CustomBase):
 	__tablename__ = "retroachievement_game_hash"
@@ -225,6 +265,7 @@ GamesDbPlatform.consoles = relationship("Console", order_by=Console.id, back_pop
 GamesDbPlatform.games = relationship("GamesDbGame", order_by=GamesDbGame.id, back_populates="platform")
 #RetroAchievementConsole.consoles = relationship("Console", order_by=Console.id, back_populates="retroAchievementConsole")
 RetroAchievementConsole.games = relationship("RetroAchievementGame", order_by=RetroAchievementGame.id, back_populates="console")
+RetroAchievementGame.badges = relationship("RetroAchievementBadge", order_by=RetroAchievementBadge.id, back_populates="game")
 RetroAchievementGame.games = relationship("Game", order_by=Game.id, back_populates="retroAchievementGame")
 RetroAchievementGame.gamesDbGame = relationship("GamesDbGame", order_by=GamesDbGame.id, back_populates="retroAchievementGame")
 RetroAchievementGame.hashes = relationship("RetroAchievementGameHash", order_by=RetroAchievementGameHash.rasum, back_populates="game")

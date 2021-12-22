@@ -20,22 +20,15 @@
     along with PES.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-pragma Singleton
 import QtQuick 2.7
+import "../Style/" 1.0
 
-QtObject {
-  readonly property color panelBg: "#4b5656"
-  readonly property color bg: "#1f2326"
-  readonly property color menuBg: "#1f2326"
-  readonly property color text: "#f0f0f0"
-  readonly property color line: "#f08819"
-  readonly property color progressBar: "#f08819"
-  readonly property color progressBarBg: "#1f2326"
-  readonly property color menuFocus: "#2e3235"
-  readonly property color badgeBg: "#332e3235"
-  readonly property color badgeFocusBg: "#882e3235"
-  readonly property color buttonFocus: "#f08819"
-  readonly property color favouriteText: "#f08819"
-  readonly property color menuText: "#999999"
-  readonly property color dialogBg: "#323232"
+Text {
+	text: "null"
+	padding: 10
+	font.pixelSize: FontStyle.bodySmallSize
+	font.bold: false
+	font.family: FontStyle.font
+	color: Colour.text
+	wrapMode: Text.Wrap
 }

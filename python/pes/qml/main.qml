@@ -614,6 +614,7 @@ ApplicationWindow {
 
             GameScreen {
               id: mainGameScreen
+              retroUser: retroUser
               visible: false
 
               onBackPressed: {
@@ -668,6 +669,7 @@ ApplicationWindow {
 
             GameScreen {
               id: consoleGameScreen
+              retroUser: retroUser
               visible: false
 
               onBackPressed: {
