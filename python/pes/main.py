@@ -33,6 +33,13 @@ import pes.web
 import sdl2
 import shutil
 
+coloredlogsImported = False
+try:
+	import coloredlogs
+	coloredlogsImported = True
+except ImportError as e:
+	pass
+
 cecImported = False
 try:
 	import cec
@@ -59,13 +66,19 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 
 	logLevel = logging.INFO
+	logFormat = "%(asctime)s:%(levelname)s: %(message)s"
+	logDateFormat = "%Y/%m/%d %H:%M:%S"
 	if args.verbose:
 		logLevel = logging.DEBUG
 
 	if args.logfile:
-		logging.basicConfig(format='%(asctime)s:%(levelname)s: %(message)s', datefmt='%Y/%m/%d %H:%M:%S', level=logLevel, filename=args.logfile)
+		logging.basicConfig(format=logFormat, datefmt=logDateFormat, level=logLevel, filename=args.logfile)
 	else:
-		logging.basicConfig(format='%(asctime)s:%(levelname)s: %(message)s', datefmt='%Y/%m/%d %H:%M:%S', level=logLevel)
+		logging.basicConfig(format=logFormat, datefmt=logDateFormat, level=logLevel)
+
+	if coloredlogsImported:
+		logger = logging.getLogger(__name__)
+		coloredlogs.install(fmt=logFormat, datefmt=logDateFormat, level=logLevel, logger=logger)
 
 	logging.debug("PES %s, date: %s, author: %s" % (pes.VERSION_NUMBER, pes.VERSION_DATE, pes.VERSION_AUTHOR))
 	logging.debug("base dir: %s" % pes.baseDir)
