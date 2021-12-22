@@ -351,37 +351,46 @@ class GamesDbRomTask(RomTask):
 
 				if len(urls) > 0:
 					i = 0
+					imgSaved = False
 					for url in urls:
 						logging.debug("%s URL attempt %d for %s (front) is %s" % (logPrefix, (i + 1), self._rom, url))
-						response = requests.get(
-							url,
-							headers=self.HEADERS,
-							timeout=self.URL_TIMEOUT
-						)
-						if response.status_code == requests.codes.ok:
-							extension = url[url.rfind('.'):]
-							path = os.path.join(pes.userCoverartDir, self._console.name, "%s-front%s" % (romName, extension))
-							logging.debug("%s saving to %s" % (logPrefix, path))
-							with open(path, "wb") as f:
-								f.write(response.content)
-							self._scaleImage(path)
-							if not newGame:
-								romTaskResult.state = RomTaskResult.STATE_UPDATED
-							if newGame:
-								game.coverartFront = path
-								romTaskResult.coverart = game.coverartFront
-								with self._lock:
-									session.add(game)
-									session.commit()
-							break
+						extension = url[url.rfind('.'):]
+						path = os.path.join(pes.userCoverartDir, self._console.name, "%s-front%s" % (romName, extension))
+						if self._fullscan or not os.path.exists(path):
+							try:
+								response = requests.get(
+									url,
+									headers=self.HEADERS,
+									timeout=self.URL_TIMEOUT
+								)
+								if response.status_code == requests.codes.ok:	
+									logging.debug("%s saving to %s" % (logPrefix, path))
+									with open(path, "wb") as f:
+										f.write(response.content)
+									self._scaleImage(path)
+									imgSaved = True
+									if not newGame:
+										romTaskResult.state = RomTaskResult.STATE_UPDATED
+									break
+								else:
+									if newGame:
+										logging.warning("%s unable to download %s" % (logPrefix, url))
+							except Exception as e:
+								logging.error("%s failed to download %s due to %s" % (logPrefix, url, e))
 						else:
-							if newGame:
-								logging.warning("%s unable to download %s" % (logPrefix, url))
-								game.coverartFront = self._getNocoverart()
-								with self._lock:
-									session.add(game)
-									session.commit()
+							logging.debug("%s using existing front cover art: %s" % (logPrefix, path))
+							imgSaved = True
+							break
 						i += 1
+					if newGame:
+						if imgSaved:
+							game.coverartFront = path
+							romTaskResult.coverart = game.coverartFront
+						else:
+							game.coverartFront = self._getNocoverart()
+						with self._lock:
+							session.add(game)
+							session.commit()
 					# get rear cover art
 					urls = []
 					if game.gamesDbGame.boxArtBackLarge:
@@ -391,25 +400,34 @@ class GamesDbRomTask(RomTask):
 					if game.gamesDbGame.boxArtBackOriginal:
 						urls.append(game.gamesDbGame.boxArtBackOriginal)
 					i = 0
+					imgSaved = False
 					for url in urls:
-						logging.debug("%s URL attempt %d for %s (back) is %s" % (logPrefix, (i + 1), self._rom, url))
-						response = requests.get(
-							url,
-							headers=self.HEADERS,
-							timeout=self.URL_TIMEOUT
-						)
-						if response.status_code == requests.codes.ok:
-							extension = url[url.rfind('.'):]
-							path = os.path.join(pes.userCoverartDir, self._console.name, "%s-back%s" % (romName, extension))
-							logging.debug("%s saving to %s" % (logPrefix, path))
-							with open(path, "wb") as f:
-								f.write(response.content)
-							self._scaleImage(path)
-							if newGame:
-								game.coverartBack = path
-								with self._lock:
-									session.add(game)
-									session.commit()
+						extension = url[url.rfind('.'):]
+						path = os.path.join(pes.userCoverartDir, self._console.name, "%s-back%s" % (romName, extension))
+						if self._fullscan or not os.path.exists(path):
+							logging.debug("%s URL attempt %d for %s (back) is %s" % (logPrefix, (i + 1), self._rom, url))
+							try:
+								response = requests.get(
+									url,
+									headers=self.HEADERS,
+									timeout=self.URL_TIMEOUT
+								)
+								if response.status_code == requests.codes.ok:
+									logging.debug("%s saving to %s" % (logPrefix, path))
+									with open(path, "wb") as f:
+										f.write(response.content)
+									self._scaleImage(path)
+									imgSaved = True
+							except Exception as e:
+								logging.error("%s failed to download %s due to %s" % (logPrefix, url, e))
+						else:
+							logging.debug("%s using existing rear cover art: %s" % (logPrefix, path))
+							imgSaved = True
+						if imgSaved and newGame:
+							game.coverartBack = path
+							with self._lock:
+								session.add(game)
+								session.commit()
 							break
 						i += 1
 					# get screen shots
@@ -426,27 +444,43 @@ class GamesDbRomTask(RomTask):
 
 						i = 0
 						for url in urls:
-							logging.debug("%s URL attempt %d for %s (screenshot) is %s" % (logPrefix, (i + 1), self._rom, url))
-							response = requests.get(
-								url,
-								headers=self.HEADERS,
-								timeout=self.URL_TIMEOUT
-							)
-							if response.status_code == requests.codes.ok:
-								extension = url[url.rfind('.'):]
-								path = os.path.join(pes.userScreenshotDir, self._console.name, "%s-%d%s" % (romName, (count + 1), extension))
-								logging.debug("%s saving to %s" % (logPrefix, path))
-								with open(path, "wb") as f:
-									f.write(response.content)
-								self._scaleImage(path)
+							logging.debug("%s screen shot url: %s" % (logPrefix, url))
+							extension = url[url.rfind('.'):]
+							path = os.path.join(pes.userScreenshotDir, self._console.name, "%s-%d%s" % (romName, (count + 1), extension))
+							if self._fullscan or not os.path.exists(path):
+								logging.debug("%s URL attempt %d for %s (screenshot) is %s" % (logPrefix, (i + 1), self._rom, url))
+								try:
+									response = requests.get(
+										url,
+										headers=self.HEADERS,
+										timeout=self.URL_TIMEOUT
+									)
+									if response.status_code == requests.codes.ok:	
+										logging.debug("%s saving to %s" % (logPrefix, path))
+										with open(path, "wb") as f:
+											f.write(response.content)
+										self._scaleImage(path)
+										mustSave = True
+										if not newGame:
+											# does the DB entry already exist?
+											if session.query(pes.sql.GameScreenshot).filter(pes.sql.GameScreenshot.path == path):
+												mustSave = False
+										if mustSave:
+											screenshots.append(pes.sql.GameScreenshot(path=path))
+										count += 1
+										break
+								except Exception as e:
+									logging.error("%s failed to download %s due to %s" % (logPrefix, url, e))
+							else:
+								count += 1
+								logging.debug("%s already dowloaded %s" % (logPrefix, path))
 								mustSave = True
 								if not newGame:
 									# does the DB entry already exist?
 									if session.query(pes.sql.GameScreenshot).filter(pes.sql.GameScreenshot.path == path):
 										mustSave = False
 								if mustSave:
-									screenshots.append(pes.sql.GameScreenshot(path=path))									
-								count += 1
+									screenshots.append(pes.sql.GameScreenshot(path=path))
 								break
 							i += 1
 						# only save a max of three screen shots per game
