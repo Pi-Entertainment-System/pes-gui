@@ -310,8 +310,9 @@ class Backend(QObject):
 			requireFiles = self.__consoleSettings.get(game.console.name, "require")
 			if requireFiles:
 				for f in requireFiles:
+					f = f.strip()
 					logging.debug("Backend.playGame: checking for: %s" % f)
-					if not os.path.exists(f) or os.path.isfile(f):
+					if not os.path.exists(f) or not os.path.isfile(f):
 						logging.error("Backend.playGame: could not find required file: %s" % f)
 						return { "result": False, "msg": "Could not find required file: %s" % f}
 			else:
