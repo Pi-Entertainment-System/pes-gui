@@ -363,7 +363,7 @@ class GamesDbRomTask(RomTask):
 									headers=self.HEADERS,
 									timeout=self.URL_TIMEOUT
 								)
-								if response.status_code == requests.codes.ok:	
+								if response.status_code == requests.codes.ok:
 									logging.debug("%s saving to %s" % (logPrefix, path))
 									with open(path, "wb") as f:
 										f.write(response.content)
@@ -455,7 +455,7 @@ class GamesDbRomTask(RomTask):
 										headers=self.HEADERS,
 										timeout=self.URL_TIMEOUT
 									)
-									if response.status_code == requests.codes.ok:	
+									if response.status_code == requests.codes.ok:
 										logging.debug("%s saving to %s" % (logPrefix, path))
 										with open(path, "wb") as f:
 											f.write(response.content)
@@ -492,7 +492,7 @@ class GamesDbRomTask(RomTask):
 							session.add(game)
 							session.commit()
 				else:
-					logging.warning("%s no cover art URL for %s (%d)" % (logPrefix, self._rom, game.gamesDbId))				
+					logging.warning("%s no cover art URL for %s (%d)" % (logPrefix, self._rom, game.gamesDbId))
 
 		return romTaskResult
 
@@ -611,6 +611,7 @@ class RomScanThread(QThread):
 	@staticmethod
 	def __extensionOk(extensions: list, filename: str) -> bool:
 		for e in extensions:
+			e = e.strip()
 			if filename.endswith(e) or filename.endswith(e.upper()):
 				name = os.path.split(filename)[1]
 				return True
