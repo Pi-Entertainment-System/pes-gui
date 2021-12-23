@@ -311,7 +311,7 @@ class RetroAchievementThread(QThread):
 			score = 0
 			maxScore = 0
 			rslt = self.__retroUser.getGameInfoAndProgress(self.__retroGameId)
-			if 'Achievements' in rslt:
+			if 'Achievements' in rslt and len(rslt['Achievements']) > 0:
 				for id, data in rslt['Achievements'].items():
 					id = int(id)
 					badge = session.query(pes.sql.RetroAchievementBadge).get(id)
