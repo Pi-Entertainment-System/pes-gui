@@ -43,10 +43,10 @@ Rectangle {
     }
 
     Component.onCompleted: {
-        SCREENSAVER.init();
+        SCREENSAVER.init(false);
     }
 
-    Keys.onReleased: {
+    Keys.onPressed: {
         close();
         event.accepted = true;
     }

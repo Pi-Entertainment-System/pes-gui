@@ -25,9 +25,12 @@ var games = [];
 /**
  * Create a cache of games.
  */
-function init() {
+function init(useCache) {
+    if (!useCache) {
+      games = [];
+    }
     if (games.length == 0) {
-        const consoles = PES.getConsolesWithGames(true);
+        const consoles = PES.getConsolesWithGames(useCache);
         for (var i = 0; i < consoles.length; i++) {
             games.push.apply(games, PES.getGames(consoles[i].id, true));
         }
@@ -36,7 +39,7 @@ function init() {
 
 /**
  * Called by timer in ScreenSaver component.
- * 
+ *
  */
 function change() {
     if (games.length == 0) {
@@ -63,7 +66,7 @@ function change() {
 
 /**
  * Get a random elment from the given array.
- * 
+ *
  * @returns a random element from the given array
  */
 function getRandomElement(x) {
@@ -75,5 +78,5 @@ function getRandomElement(x) {
  */
 function refresh() {
     games = [];
-    init();    
+    init(false);
 }
