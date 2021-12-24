@@ -18,7 +18,7 @@
 	{"id": 17, "name": "Neo Geo", "gamesDbId": 24, "nocoverart": "unknown.png", "art": "Neo Geo.png"},
 	{"id": 18, "name": "NES", "retroId": 7, "gamesDbId": 7, "nocoverart": "NES - nocoverart.jpg", "art": "NES.png"},
 	{"id": 19, "name": "PC Engine", "gamesDbId": 34, "nocoverart": "PC Engine - nocoverart.jpg", "art": "PC Engine.png"},
-	{"id": 20, "name": "PlayStation", "gamesDbId": 10, "nocoverart": "PSX - nocoverart.jpg", "art": "PlayStation.png"},
+	{"id": 20, "name": "PlayStation", "gamesDbId": 10, "nocoverart": "PSX - nocoverart.jpg", "art": "PSX.png"},
 	{"id": 21, "name": "PSP", "gamesDbId": 13, "nocoverart": "PSP - nocoverart.jpg", "art": "PSP.png"},
 	{"id": 22, "name": "SNES", "retroId": 3, "gamesDbId": 6, "nocoverart": "SNES - nocoverart.jpg", "art": "SNES.png"},
 	{"id": 23, "name": "TurboGrafx-16", "gamesDbId": 34, "nocoverart": "TurboGrafx-16 - nocoverart.jpg", "art": "TurboGrafx-16.png"},
