@@ -331,7 +331,7 @@ class Backend(QObject):
 							if sdl2.SDL_GameControllerGetAttached(c):
 								# get joystick name
 								j = sdl2.SDL_GameControllerGetJoystick(c)
-								jsName = sdl2.SDL_JoystickName(j)
+								jsName = sdl2.SDL_JoystickName(j).decode()
 								jsConfig = os.path.join(pes.userRetroArchJoysticksConfDir, "%s.cfg" % jsName)
 								logging.debug("Backend.playGame: creating configuration file %s for %s" % (jsConfig, jsName))
 								vendorId, productId = getJoystickDeviceInfoFromGUID(getJoystickGUIDString(sdl2.SDL_JoystickGetDeviceGUID(i)))
