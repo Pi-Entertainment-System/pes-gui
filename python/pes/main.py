@@ -98,6 +98,7 @@ if __name__ == "__main__":
 	mkdir(pes.userScreenshotDir)
 	mkdir(pes.userRetroArchConfDir)
 	mkdir(pes.userRetroArchJoysticksConfDir)
+	mkdir(pes.userRetroArchRguiConfDir)
 	mkdir(pes.userRomDir)
 	mkdir(pes.userViceConfDir)
 	initConfig()
@@ -188,7 +189,7 @@ if __name__ == "__main__":
 		logging.warning("CEC module disabled")
 
 	app.run()
-	
+
 	if cecImported:
 		# remove CEC callbacks to prevent segmentation fault issue #6
 		logging.debug("removing CEC callbacks...")
