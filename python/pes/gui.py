@@ -372,6 +372,7 @@ class Backend(QObject):
 										f.write(getRetroArchConfigButtonValue("input_enable_hotkey", c, sdl2.SDL_CONTROLLER_BUTTON_GUIDE))
 									else:
 										f.write(getRetroArchConfigButtonValue("input_enable_hotkey", c, sdl2.SDL_CONTROLLER_BUTTON_BACK))
+									f.write(getRetroArchConfigButtonValue("input_menu_toggle", c, sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP))
 									f.write(getRetroArchConfigButtonValue("input_exit_emulator", c, sdl2.SDL_CONTROLLER_BUTTON_START))
 									f.write(getRetroArchConfigButtonValue("input_save_state", c, sdl2.SDL_CONTROLLER_BUTTON_A))
 									f.write(getRetroArchConfigButtonValue("input_load_state", c, sdl2.SDL_CONTROLLER_BUTTON_B))
