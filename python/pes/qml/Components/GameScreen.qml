@@ -83,6 +83,7 @@ Rectangle {
                 achievementBodyText.text = "Loading achievements...";
                 retroThread.gameId = game.id;
                 retroThread.retroGameId = game.retroId;
+                achievementProgressBar.visible = true
                 retroThread.start();
             }
             else {
@@ -131,6 +132,7 @@ Rectangle {
             else {
                 __noAchievements();
             }
+            achievementProgressBar.visible = false;
         }
 
         onProgressSignal: {
@@ -506,6 +508,7 @@ Rectangle {
                         ProgressBarRect {
                             id: achievementProgressBar
                             progress: 0
+                            visible: false
                             Layout.leftMargin: 30
                             Layout.rightMargin: 30
                             Layout.preferredHeight: 50
