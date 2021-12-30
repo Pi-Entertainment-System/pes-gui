@@ -362,13 +362,17 @@ class RetroAchievementThread(QThread):
 				self.__retroGame.syncDate = datetime.now()
 				session.add(self.__retroGame)
 				session.commit()
-			badges = session.query(pes.sql.RetroAchievementBadge).filter(pes.sql.RetroAchievementBadge.retroGameId == self.__retroGameId).order_by(pes.sql.RetroAchievementBadge.displayOrder)
-			if badges:
-				for badge in badges:
-					self.__saveBadge(badge)
-					self.__badges.append(badge.getDict())
-			RetroAchievementThread.__gameIdCache.append(self.__retroGameId)
-			self.__progress = 100
+			else:
+				logging.deug("RetroAchievementThread.run: no achievements found for %d" % self.__retroGameId)
+				self.__progress = 100
+				return
+		badges = session.query(pes.sql.RetroAchievementBadge).filter(pes.sql.RetroAchievementBadge.retroGameId == self.__retroGameId).order_by(pes.sql.RetroAchievementBadge.displayOrder)
+		if badges:
+			for badge in badges:
+				self.__saveBadge(badge)
+				self.__badges.append(badge.getDict())
+		RetroAchievementThread.__gameIdCache.append(self.__retroGameId)
+		self.__progress = 100
 
 	@staticmethod
 	def __saveBadge(badge):
