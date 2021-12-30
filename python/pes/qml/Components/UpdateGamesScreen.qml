@@ -197,7 +197,7 @@ Rectangle {
             progress: 0
             Layout.leftMargin: 30
             Layout.rightMargin: 30
-            Layout.preferredWidth: updateGamesRect.width - 60
+            Layout.fillWidth: true
             Layout.preferredHeight: 50
         }
 
