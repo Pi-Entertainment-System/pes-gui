@@ -253,6 +253,8 @@ class RetroAchievementThread(QThread):
 
 	# cache of game IDs we have already looked up
 	__gameIdCache = []
+	# signals
+	progressSignal = pyqtSignal(float, arguments=["progress"])
 
 	def __init__(self, parent=None):
 		super(RetroAchievementThread, self).__init__(parent)
@@ -262,6 +264,7 @@ class RetroAchievementThread(QThread):
 		self.__retroGame = None
 		self.__badges = []
 		self.__retroUser = None
+		self.__progress = 0.0
 
 	@pyqtProperty(int)
 	def gameId(self):
@@ -280,6 +283,10 @@ class RetroAchievementThread(QThread):
 		return self.__retroGame.getDict()
 
 	@pyqtProperty(int)
+	def progress(self):
+		return self.__progress
+
+	@pyqtProperty(int)
 	def retroGameId(self):
 		return self.__retroGameId
 
@@ -290,6 +297,7 @@ class RetroAchievementThread(QThread):
 	def run(self):
 		# note: QThread will emit finished signal for us
 		self.__badges = []
+		self.__progress = 0.0
 		logging.debug("RetroAchievementThread.run: started for RetroAchievement game: %d" % self.__gameId)
 		engine = pes.sql.connect()
 		session = sqlalchemy.orm.sessionmaker(bind=engine)()
@@ -312,6 +320,8 @@ class RetroAchievementThread(QThread):
 			maxScore = 0
 			rslt = self.__retroUser.getGameInfoAndProgress(self.__retroGameId)
 			if 'Achievements' in rslt and len(rslt['Achievements']) > 0:
+				count = 0
+				total = len(rslt['Achievements'])
 				for id, data in rslt['Achievements'].items():
 					id = int(id)
 					badge = session.query(pes.sql.RetroAchievementBadge).get(id)
@@ -342,6 +352,9 @@ class RetroAchievementThread(QThread):
 						score += badge.points
 					self.__saveBadge(badge)
 					session.add(badge)
+					count += 1
+					self.__progress = float(count) /float(total)
+					self.progressSignal.emit(self.__progress)
 				self.__retroGame.score = score
 				self.__retroGame.maxScore = maxScore
 				self.__retroGame.totalPlayers = int(rslt["NumDistinctPlayersCasual"])
@@ -355,6 +368,7 @@ class RetroAchievementThread(QThread):
 					self.__saveBadge(badge)
 					self.__badges.append(badge.getDict())
 			RetroAchievementThread.__gameIdCache.append(self.__retroGameId)
+			self.__progress = 100
 
 	@staticmethod
 	def __saveBadge(badge):
