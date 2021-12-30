@@ -132,6 +132,10 @@ Rectangle {
                 __noAchievements();
             }
         }
+
+        onProgressSignal: {
+            achievementProgressBar.progress = progress;
+        }
     }
 
     Timer {
@@ -478,7 +482,7 @@ Rectangle {
                         }
                     }
                 }
-
+                // achievement screen
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -496,6 +500,15 @@ Rectangle {
                         BodyText {
                             id: achievementBodyText
                             text: ""
+                            Layout.fillWidth: true
+                        }
+
+                        ProgressBarRect {
+                            id: achievementProgressBar
+                            progress: 0
+                            Layout.leftMargin: 30
+                            Layout.rightMargin: 30
+                            Layout.preferredHeight: 50
                             Layout.fillWidth: true
                         }
 
