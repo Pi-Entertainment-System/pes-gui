@@ -38,8 +38,10 @@ fi
 
 export PYTHONPATH=${BASEDIR}/python
 
-if [ -d /opt/pes/lib/python3.9/site-packages ]; then
-    export PYTHONPATH=/opt/pes/lib/python3.9/site-packages:$PYTHONPATH
+pythonVer=`python -c 'import sys; print(str(sys.version_info[0])+"."+str(sys.version_info[1]))'`
+
+if [ -d /opt/pes/lib/python${pythonVer}/site-packages ]; then
+    export PYTHONPATH=/opt/pes/lib/${pythonVer}/site-packages:$PYTHONPATH
 fi
 
 if [ -d /opt/pes/bin ]; then
