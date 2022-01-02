@@ -27,7 +27,7 @@ import sys
 import logging
 
 VERSION_NUMBER = '3.0 (ALPHA)'
-VERSION_DATE = '2021-06-20'
+VERSION_DATE = '2022-01-01'
 VERSION_AUTHOR = 'Neil Munday'
 
 romScrapers = ['theGamesDb.net'] # list of ROM scrapers, default scraper is assumed to be at index 0
