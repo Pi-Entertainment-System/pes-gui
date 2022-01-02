@@ -41,7 +41,11 @@ export PYTHONPATH=${BASEDIR}/python
 pythonVer=`python -c 'import sys; print(str(sys.version_info[0])+"."+str(sys.version_info[1]))'`
 
 if [ -d /opt/pes/lib/python${pythonVer}/site-packages ]; then
-    export PYTHONPATH=/opt/pes/lib/${pythonVer}/site-packages:$PYTHONPATH
+    if [ -z $PYTHONPATH ]; then
+        export PYTHONPATH=/opt/pes/lib/python${pythonVer}/site-packages
+    else
+        export PYTHONPATH=/opt/pes/lib/python${pythonVer}/site-packages:$PYTHONPATH
+    fi
 fi
 
 if [ -d /opt/pes/bin ]; then
