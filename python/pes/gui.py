@@ -149,6 +149,19 @@ class Backend(QObject):
 		logging.debug("Backend.close: closing...")
 		self.closeSignal.emit()
 
+	@staticmethod
+	def __createCommandFile(command):
+		logging.debug("Backend.__createCommandFile: creating %s" % pes.userScriptFile)
+		with open(pes.userScriptFile, "w") as f:
+			f.write("#!/bin/bash\n")
+			f.write("# THIS FILE WAS AUTOMATICALLY CREATED BY PES\n")
+			f.write("%s\n" % command)
+			if logging.getLogger().isEnabledFor(logging.DEBUG):
+				f.write("exec %s/pes -v\n" % pes.binDir)
+			else:
+				f.write("exec %s/pes\n" % pes.binDir)
+		os.chmod(pes.userScriptFile, 0o700)
+
 	def emitHomeButtonPress(self):
 		self.homeButtonPress.emit()
 
@@ -301,6 +314,11 @@ class Backend(QObject):
 	def getTime(self):
 		return datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
+	@pyqtSlot()
+	def loadKodi(self):
+		self.__createCommandFile("kodi")
+		self.close()
+
 	@pyqtSlot(int, result=QVariant)
 	def playGame(self, id):
 		game = self.__session.query(pes.sql.Game).get(id)
@@ -403,18 +421,7 @@ class Backend(QObject):
 				logging.error("Backend.playGame: could not determine launch command for the %s console" % game.console.name)
 				return { "result": False, "msg": "Could not determine launch command for the %s console" % game.console.name }
 			logging.debug("Backend.playGame: launch string: %s" % command)
-
-			logging.debug("Backend.playGame: creating %s" % pes.userScriptFile)
-			with open(pes.userScriptFile, "w") as f:
-				f.write("#!/bin/bash\n")
-				f.write("# THIS FILE WAS AUTOMATICALLY CREATED BY PES\n")
-				f.write("%s\n" % command)
-				if logging.getLogger().isEnabledFor(logging.DEBUG):
-					f.write("exec %s/pes -v\n" % pes.binDir)
-				else:
-					f.write("exec %s/pes\n" % pes.binDir)
-			os.chmod(pes.userScriptFile, 0o700)
-
+			self.__createCommandFile(command)
 			game.playCount += 1
 			game.lastPlayed = datetime.datetime.now()
 			self.__session.add(game)

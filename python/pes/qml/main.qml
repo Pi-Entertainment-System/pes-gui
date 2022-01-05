@@ -291,7 +291,7 @@ ApplicationWindow {
             duration: 200
         }
     }
-  
+
     initialItem: Rectangle {
       id: mainRect
 
@@ -447,15 +447,24 @@ ApplicationWindow {
                     UiIconButton {
                       id: powerBtn
                       source: "icons/power-button.png"
-                      KeyNavigation.right: settingsBtn
+                      KeyNavigation.right: kodiBtn
                       KeyNavigation.down: mainMenuScrollView
                       Keys.onReturnPressed: powerDialog.open()
                     }
 
                     UiIconButton {
+                      id: kodiBtn
+                      source: "icons/film-strip.png"
+                      KeyNavigation.right: settingsBtn
+                      KeyNavigation.left: powerBtn
+                      KeyNavigation.down: mainMenuScrollView
+                      Keys.onReturnPressed: backend.loadKodi()
+                    }
+
+                    UiIconButton {
                       id: settingsBtn
                       source: "icons/cog.png"
-                      KeyNavigation.left: powerBtn
+                      KeyNavigation.left: kodiBtn
                       KeyNavigation.down: mainMenuScrollView
                       Keys.onReturnPressed: optionsDialog.open()
                     }
