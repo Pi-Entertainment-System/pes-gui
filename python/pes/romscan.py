@@ -544,7 +544,7 @@ class RomScanMonitorThread(QThread):
 
 	@pyqtProperty(int)
 	def timeTaken(self) -> int:
-		return self.__scanThread.getTimeTaken()
+		return int(self.__scanThread.getTimeTaken())
 
 	@pyqtProperty(int)
 	def updated(self) -> int:
