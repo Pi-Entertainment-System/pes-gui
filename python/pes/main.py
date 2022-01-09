@@ -100,7 +100,6 @@ if __name__ == "__main__":
 	mkdir(pes.userRetroArchJoysticksConfDir)
 	mkdir(pes.userRetroArchRguiConfDir)
 	mkdir(pes.userRomDir)
-	mkdir(pes.userViceConfDir)
 	initConfig()
 	initDb()
 
