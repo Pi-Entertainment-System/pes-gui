@@ -31,6 +31,10 @@ BT_ADAPTER_INTERFACE = BT_SERVICE  + ".Adapter1"
 BT_AGENT_INTERFACE = BT_SERVICE + ".Agent1"
 BT_DEVICE_INTERFACE = BT_SERVICE + ".Device1"
 
+TIMEDATE_SERVICE = "org.freedesktop.timedate1"
+TIMEDATE_PATH = "/org/freedesktop/timedate1"
+TIMEDATE_INTERFACE = "org.freedesktop.timedate1"
+
 DBUS_PROPERTIES_INTERFACE = "org.freedesktop.DBus.Properties"
 
 PS3_CONTROLLER = "Sony PLAYSTATION(R)3 Controller"
@@ -119,13 +123,14 @@ class BluetoothAgent(QObject):
 
 class DbusBroker(QObject):
     """
-    A helper class to manage a host's Bluetooth devices.
+    A helper class to manage system devices and properties
     """
 
     def __init__(self, parent=None):
         super(DbusBroker, self).__init__(parent)
         self._bus = QDBusConnection.systemBus()
         self._adapterPath = None
+        self.__timezones = None
         # look for Bluez service
         bluezFound = False
         for service in self._bus.interface().registeredServiceNames().value():
@@ -179,6 +184,12 @@ class DbusBroker(QObject):
                 raise Exception("DbusBroker._setBtAdapterProperty: %s" % rslt[0])
             return
         raise Exception("DbusBroker._setBtAdapterProperty: Bluetooth adapter not found when seting '%s'" % property)
+
+    def _getTimedateConnection(self, interface=TIMEDATE_INTERFACE):
+        return QDBusInterface(TIMEDATE_SERVICE, TIMEDATE_PATH, interface, self._bus)
+
+    def _getTimedateProperty(self, property):
+        return self._getTimedateConnection(DBUS_PROPERTIES_INTERFACE).call("Get", TIMEDATE_INTERFACE, property).arguments()[0]
 
     @pyqtSlot(result=bool)
     def btAvailable(self):
@@ -260,7 +271,7 @@ class DbusBroker(QObject):
     @pyqtSlot()
     def btStartDiscovery(self):
         logging.debug("DbusBroker.btStartDiscovery: starting")
-        connection = QDBusInterface(BT_SERVICE, self._adapterPath, "org.bluez.Adapter1", self._bus, self)
+        connection = QDBusInterface(BT_SERVICE, self._adapterPath, BT_ADAPTER_INTERFACE, self._bus, self)
         connection.call("StartDiscovery").arguments()[0]
 
     @pyqtSlot(result=QVariant)
@@ -272,3 +283,35 @@ class DbusBroker(QObject):
                 if value[BT_DEVICE_INTERFACE]["Alias"] in CONTROLLERS:
                     devices[value[BT_DEVICE_INTERFACE]["Address"]] = value[BT_DEVICE_INTERFACE]["Alias"]
         return devices
+
+    @pyqtSlot(result=QVariant)
+    def getTimezones(self):
+        """
+        Get all available timezones as a list.
+        """
+        logging.debug("DbusBroker.getTimezones: getting timezones")
+        if self.__timezones == None:
+            self.__timezones = self._getTimedateConnection().call("ListTimezones").arguments()[0]
+        return self.__timezones
+
+    @pyqtProperty(str)
+    def timezone(self) -> str:
+        """
+        Get the current timezone.
+        """
+        logging.debug("DbusBroker.timezone: getting current time zone")
+        return self._getTimedateProperty("Timezone")
+
+    @timezone.setter
+    def timezone(self, tz: str):
+        """
+        Sets the current timezone.
+        Note: requires root privileges!
+        """
+        logging.debug("DbusBroker.timezone: setting to %s" % tz)
+        if tz not in self.getTimezones():
+            raise ValueError("%s is not a valid timezone" % tz)
+        rslt = self._getTimedateConnection().call("SetTimezone", tz, False).arguments()
+        if rslt[0] != None:
+            raise Exception("DbusBroker._setBtAdapterProperty: %s" % rslt[0])            
+        

@@ -56,6 +56,11 @@ if __name__ == "__main__":
     timer.start()
     timer.timeout.connect(lambda: None)
 
+    logging.info("Timezone: %s" % broker.timezone)
+    logging.info("Available timezones:")
+    for t in broker.getTimezones():
+        logging.info("TZ = %s" % t)
+
     if broker.btAvailable():
         agent = pes.system.BluetoothAgent()
         #logging.info("Adapter: %s" % broker.btAdapter)
