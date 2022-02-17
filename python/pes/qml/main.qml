@@ -692,6 +692,13 @@ ApplicationWindow {
               }
             }
           }
+
+          // Settings screen
+          SettingsScreen {
+            id: settingsScreen
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+          }
         }
       }
     }

@@ -177,6 +177,11 @@ function play(gameId) {
 
 function optionsDialogEvent(text) {
 	switch(text) {
+    case "Settings":
+      optionsDialog.close();
+      screenStack.currentIndex = 3;
+      settingsScreen.forceActiveFocus();
+      break;
 		case "Update Games": {
       optionsDialog.close();
       screenStack.currentIndex = 1;
