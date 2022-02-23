@@ -33,6 +33,13 @@ Rectangle {
     id: mainRect
     color: "transparent"
 
+    // private properties
+    QtObject {
+        id: internal
+        property int labelWidth: 400
+        property var systemFocusItem: hardcoreModeToggle
+    }
+
     function forceActiveFocus() {
         menuView.forceActiveFocus();
     }
@@ -77,7 +84,7 @@ Rectangle {
                     clip: true
 
                     Keys.onPressed: {
-                    if (event.key == Qt.Key_Backspace) {
+                        if (event.key == Qt.Key_Backspace) {
                             PES.goHome();
                         }
                     }
@@ -90,7 +97,13 @@ Rectangle {
                         //navSound: navSound
                         soundOn: false
                         delegate: MenuDelegate {
-                            
+                            Keys.onPressed: {
+                                if (event.key == Qt.Key_Right || event.key == Qt.Key_Return) {
+                                    if (name == "System") {
+                                        internal.systemFocusItem.forceActiveFocus();
+                                    }
+                                }
+                            }
                         }
                         onItemHighlighted: {
                             screenStack.currentIndex = menuView.currentIndex;
@@ -124,24 +137,40 @@ Rectangle {
                         RowLayout {
                             BodyText {
                                 text: "Hardcore mode:"
+                                Layout.preferredWidth: internal.labelWidth
+                            }
+
+                            YesNoToggle {
+                                id: hardcoreModeToggle
+                                KeyNavigation.down: bluetoothToggle
+                                KeyNavigation.left: menuScrollView
                             }
                         }
 
                         RowLayout {
                             BodyText {
                                 text: "Bluetooth:"
+                                Layout.preferredWidth: internal.labelWidth
+                            }
+
+                            YesNoToggle {
+                                id: bluetoothToggle
+                                KeyNavigation.up: hardcoreModeToggle
+                                KeyNavigation.left: menuScrollView
                             }
                         }
 
                         RowLayout {
                             BodyText {
                                 text: "Timezone:"
+                                Layout.preferredWidth: internal.labelWidth
                             }
                         }
 
                         RowLayout {
                             BodyText {
                                 text: "Date/Time format:"
+                                Layout.preferredWidth: internal.labelWidth
                             }
                         }
                     }
