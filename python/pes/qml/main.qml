@@ -698,6 +698,11 @@ ApplicationWindow {
             id: settingsScreen
             Layout.fillWidth: true
             Layout.fillHeight: true
+
+            Component.onCompleted: {
+             settingsScreen.setAvailableTimezones(backend.getAvailableTimezones()); 
+             settingsScreen.setTimezone(backend.getTimezone());
+            }
           }
         }
       }

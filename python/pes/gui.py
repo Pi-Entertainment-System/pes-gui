@@ -188,6 +188,11 @@ class Backend(QObject):
 		self.__gamepadTotal = total
 		self.gamepadTotalSignal.emit(total)
 
+	@pyqtSlot(result=list)
+	def getAvailableTimezones(self):
+		logging.debug("Backend.getAvailableTimeZones: getting time zones")
+		return self.__dbusBroker.getTimezones()
+
 	@pyqtSlot(int, result=str)
 	def getConsoleArt(self, consoleId):
 		logging.debug("Backend.getConsoleArt: getting console art URL for %d" % consoleId)
@@ -313,6 +318,10 @@ class Backend(QObject):
 	@pyqtSlot(result=str)
 	def getTime(self):
 		return datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+	@pyqtSlot(result=str)
+	def getTimezone(self):
+		return self.__dbusBroker.timezone
 
 	@pyqtSlot()
 	def loadKodi(self):

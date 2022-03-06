@@ -44,6 +44,14 @@ Rectangle {
         menuView.forceActiveFocus();
     }
 
+    function setAvailableTimezones(zones) {
+        timezoneCombo.setValues(zones);
+    }
+
+    function setTimezone(zone) {
+        timezoneCombo.setValue(zone);
+    }
+
     RowLayout {
 
         anchors.fill: parent
@@ -106,7 +114,7 @@ Rectangle {
                             }
                         }
                         onItemHighlighted: {
-                            screenStack.currentIndex = menuView.currentIndex;
+                            settingsScreenStack.currentIndex = menuView.currentIndex;
                         }
                     }
                 }
@@ -121,7 +129,7 @@ Rectangle {
             Layout.fillHeight: true
 
             StackLayout {
-                id: screenStack
+                id: settingsScreenStack
                 anchors.fill: parent
                 currentIndex: 0
 
@@ -155,6 +163,7 @@ Rectangle {
 
                             YesNoToggle {
                                 id: bluetoothToggle
+                                KeyNavigation.down: timezoneCombo
                                 KeyNavigation.up: hardcoreModeToggle
                                 KeyNavigation.left: menuScrollView
                             }
@@ -165,12 +174,27 @@ Rectangle {
                                 text: "Timezone:"
                                 Layout.preferredWidth: internal.labelWidth
                             }
+
+                            ComboScroll {
+                                id: timezoneCombo
+                                values: []
+                                KeyNavigation.down: dateFmtCombo
+                                KeyNavigation.up: bluetoothToggle
+                                KeyNavigation.left: menuScrollView
+                            }
                         }
 
                         RowLayout {
                             BodyText {
                                 text: "Date/Time format:"
                                 Layout.preferredWidth: internal.labelWidth
+                            }
+
+                            ComboScroll {
+                                id: dateFmtCombo
+                                values: ["dd/mm/yyyy", "mm/dd/yyyy"]
+                                KeyNavigation.up: timezoneCombo
+                                KeyNavigation.left: menuScrollView
                             }
                         }
                     }
