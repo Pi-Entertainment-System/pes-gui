@@ -41,6 +41,7 @@ Rectangle {
         id: internal
         property int index: 0
         property int prevIndex: 0
+        property int resetIndex: 0
     }
 
     function getIndex() {
@@ -51,9 +52,19 @@ Rectangle {
         return values[internal.index];
     }
 
+    function reset() {
+        setIndex(internal.resetIndex);
+    }
+
+    function save() {
+        internal.resetIndex = internal.index;
+    }
+
     function setIndex(i) {
-        if (i > 0 && i < values.length) {
+        if (i >= 0 && i < values.length) {
             internal.index = i;
+            internal.prevIndex = i;
+            internal.resetIndex = i;
         }
         else {
             console.error("ComboScroll: invalid index: " + i);
@@ -65,6 +76,7 @@ Rectangle {
             if (values[i] == v) {
                 internal.index = i;
                 internal.prevIndex = i;
+                internal.resetIndex = i;
                 return;
             }
         }

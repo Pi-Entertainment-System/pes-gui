@@ -30,16 +30,33 @@ Rectangle {
     width: 100
     height: 50
 
-    // additional properties
-    property bool toggled: true
+    // private properties
+    QtObject {
+        id: internal
+        property bool toggled: true
+        property bool resetValue: true
+    }
+
+    function reset() {
+        internal.toggled =  internal.resetValue;
+    }
+
+    function save() {
+        internal.resetValue = internal.toggled;
+    }
+
+    function setValue(toggled) {
+        internal.toggled = toggled;
+        internal.resetValue = toggled;
+    }
 
     Keys.onReturnPressed: {
-        toggled = !toggled;
+        internal.toggled = !internal.toggled;
     }
 
     Text {
         anchors.centerIn: parent
-        text: toggled ? "Yes" : "No"
+        text: internal.toggled ? "Yes" : "No"
         color: Colour.text
         font.pixelSize: FontStyle.menuSize
         font.family: FontStyle.font

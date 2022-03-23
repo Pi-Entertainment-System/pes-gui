@@ -36,6 +36,8 @@ Rectangle {
     // private properties
     QtObject {
         id: internal
+        property int btnWidth: 250
+        property int btnHeight: 50
         property int labelWidth: 400
         property var systemFocusItem: hardcoreModeToggle
     }
@@ -46,6 +48,18 @@ Rectangle {
 
     function setAvailableTimezones(zones) {
         timezoneCombo.setValues(zones);
+    }
+
+    function setBluetoothEnabled(enabled) {
+        bluetoothToggle.setValue(enabled);
+    }
+
+    function setDatetimeFormat(fmt) {
+        dateFmtCombo.setValue(fmt);
+    }
+
+    function setHardcoreMode(mode) {
+        hardcoreModeToggle.setValue(mode);
     }
 
     function setTimezone(zone) {
@@ -138,6 +152,8 @@ Rectangle {
                     color: Colour.panelBg
 
                     ColumnLayout {
+                        width: parent.width
+
                         HeaderText {
                             text: "System Settings"
                         }
@@ -193,8 +209,57 @@ Rectangle {
                             ComboScroll {
                                 id: dateFmtCombo
                                 values: ["dd/mm/yyyy", "mm/dd/yyyy"]
+                                KeyNavigation.down: applyBtn
                                 KeyNavigation.up: timezoneCombo
                                 KeyNavigation.left: menuScrollView
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.topMargin: 100
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                            }
+
+                            UiButton {
+                                id: applyBtn
+                                btnText: "Apply"
+                                Layout.rightMargin: 50
+                                Layout.preferredWidth: internal.btnWidth
+                                Layout.preferredHeight: internal.btnHeight
+                                KeyNavigation.up: dateFmtCombo
+                                KeyNavigation.right: resetBtn
+                                KeyNavigation.left: menuScrollView
+
+                                Keys.onReturnPressed: {
+                                    bluetoothToggle.save();
+                                    dateFmtCombo.save();
+                                    hardcoreModeToggle.save();
+                                    timezoneCombo.save();
+                                }
+                            }
+
+                            UiButton {
+                                id: resetBtn
+                                btnText: "Reset"
+                                Layout.preferredWidth: internal.btnWidth
+                                Layout.preferredHeight: internal.btnHeight
+                                KeyNavigation.up: dateFmtCombo
+                                KeyNavigation.left: applyBtn
+
+                                Keys.onReturnPressed: {
+                                    bluetoothToggle.reset();
+                                    dateFmtCombo.reset();
+                                    hardcoreModeToggle.reset();
+                                    timezoneCombo.reset();
+                                }
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
                             }
                         }
                     }
