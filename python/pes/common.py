@@ -202,36 +202,6 @@ class Settings(object):
 		logging.debug("Settings.set: setting %s.%s = %s" % (section, prop, value))
 		self._configparser.set(section, prop, str(value))
 
-class UserSettings(Settings):
-
-	def __init__(self):
-		props = {
-			"RetroAchievements": {
-				"apiKey": Settings.STR_PROP,
-				"hardcore": Settings.BOOL_PROP,
-				"username": Settings.STR_PROP,
-				"password": Settings.STR_PROP
-			},
-			"settings": {
-				"hdmi-cec": Settings.BOOL_PROP,
-				"romScraper": Settings.STR_PROP,
-				"screenSaverTimeout": Settings.INT_PROP
-			},
-			"webServer": {
-				"enabled": Settings.BOOL_PROP,
-				"port": Settings.INT_PROP
-			}
-		}
-		super(UserSettings, self).__init__(userPesConfigFile, props)
-
-	def get(self, section, prop):
-		rslt = super(UserSettings, self).get(section, prop)
-		if self.getType(section, prop) == Settings.STR_PROP:
-			if rslt == None or len(rslt) == 0:
-				return None
-			return rslt.replace("%%USERDIR%%", userDir)
-		return rslt
-
 class ConsoleSettings(Settings):
 
 	def __init__(self):
@@ -273,3 +243,33 @@ class ConsoleSettings(Settings):
 	@staticmethod
 	def __parseStr(s):
 		return s.replace("%%USERDIR%%", userDir).replace("%%BASE%%", baseDir).replace("%%USERBIOSDIR%%", userBiosDir).replace("%%USERCONFDIR%%", userConfDir)
+
+class UserSettings(Settings):
+
+	def __init__(self):
+		props = {
+			"RetroAchievements": {
+				"apiKey": Settings.STR_PROP,
+				"hardcore": Settings.BOOL_PROP,
+				"username": Settings.STR_PROP,
+				"password": Settings.STR_PROP
+			},
+			"settings": {
+				"hdmi-cec": Settings.BOOL_PROP,
+				"romScraper": Settings.STR_PROP,
+				"screenSaverTimeout": Settings.INT_PROP
+			},
+			"webServer": {
+				"enabled": Settings.BOOL_PROP,
+				"port": Settings.INT_PROP
+			}
+		}
+		super(UserSettings, self).__init__(userPesConfigFile, props)
+
+	def get(self, section, prop):
+		rslt = super(UserSettings, self).get(section, prop)
+		if self.getType(section, prop) == Settings.STR_PROP:
+			if rslt == None or len(rslt) == 0:
+				return None
+			return rslt.replace("%%USERDIR%%", userDir)
+		return rslt
