@@ -313,5 +313,5 @@ class DbusBroker(QObject):
             raise ValueError("%s is not a valid timezone" % tz)
         rslt = self._getTimedateConnection().call("SetTimezone", tz, False).arguments()
         if rslt[0] != None:
-            raise Exception("DbusBroker._setBtAdapterProperty: %s" % rslt[0])            
+            raise Exception("DbusBroker.timezone: %s" % rslt[0])            
         
