@@ -699,9 +699,24 @@ ApplicationWindow {
             Layout.fillWidth: true
             Layout.fillHeight: true
 
+            onSettingsApplied: {
+              backend.saveSettings({
+                  bluetoothEnabled: settingsScreen.getBluetoothEnabled(),
+                  dateFormat: settingsScreen.getDateFormat(),
+                  hardcoreEnabled: settingsScreen.getHardcoreMode(),
+                  hdmiCecEnabled: settingsScreen.getHdmiCecEnabled(),
+                  timezone: settingsScreen.getTimezone()
+              });
+            }
+
             Component.onCompleted: {
-             settingsScreen.setAvailableTimezones(backend.getAvailableTimezones()); 
-             settingsScreen.setTimezone(backend.getTimezone());
+              settingsScreen.setAvailableTimezones(backend.getAvailableTimezones());
+              settingsScreen.setBluetoothEnabled(backend.getBluetoothEnabled());
+              settingsScreen.setDateFormats(backend.getDateFormats());
+              settingsScreen.setDateFormat(backend.getDateFormat());
+              settingsScreen.setHardcoreMode(backend.getHardcoreMode());
+              settingsScreen.setHdmiCecEnabled(backend.getHdmiCecEnabled());
+              settingsScreen.setTimezone(backend.getTimezone());
             }
           }
         }

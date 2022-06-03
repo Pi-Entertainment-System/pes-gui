@@ -193,9 +193,9 @@ class Settings(object):
 	def hasSection(self, s):
 		return self._configparser.has_section(s)
 
-	def save(self, path):
-		logging.debug("Settings.save: saving to %s" % path)
-		with open(path, "w") as f:
+	def save(self):
+		logging.debug("Settings.save: saving to %s" % self._path)
+		with open(self._path, "w") as f:
 			self._configparser.write(f)
 
 	def set(self, section, prop, value):
@@ -246,6 +246,13 @@ class ConsoleSettings(Settings):
 
 class UserSettings(Settings):
 
+	DATE_FORMATS = {
+		"dd/mm/yyyy": "%d/%m/%Y",
+		"dd/mm/yy": "%d/%m/%y",
+		"mm/dd/yyyy": "%m/%d/%Y",
+		"mm/dd/yy": "%m/%d/%y"
+	}
+
 	def __init__(self):
 		props = {
 			"RetroAchievements": {
@@ -255,6 +262,8 @@ class UserSettings(Settings):
 				"password": Settings.STR_PROP
 			},
 			"settings": {
+				"bluetooth": Settings.BOOL_PROP,
+				"dateFormat": Settings.STR_PROP,
 				"hdmi-cec": Settings.BOOL_PROP,
 				"romScraper": Settings.STR_PROP,
 				"screenSaverTimeout": Settings.INT_PROP
@@ -273,3 +282,68 @@ class UserSettings(Settings):
 				return None
 			return rslt.replace("%%USERDIR%%", userDir)
 		return rslt
+
+	@property
+	def bluetooth(self):
+		value = self.get("settings", "bluetooth")
+		if value == None:
+			logging.warning("UserSettings.bluetooth: Bluetooth setting is not defined, defaulting to true")
+			value = True
+		return value
+
+	@bluetooth.setter
+	def bluetooth(self, value):
+		self.set("settings", "bluetooth", value)
+
+	@property
+	def dateFormat(self):
+		value = self.get("settings", "dateFormat")
+		if value == None:
+			value = next(iter(UserSettings.DATE_FORMATS[0]))
+			logging.warning("UserSettings.bluetooth: dateTimeFormat is not defined, defaulting to \"%s\"", value)
+		elif value not in UserSettings.DATE_FORMATS:
+			logging.error("UserSettings.dateFormat: invalid value: \"%s\", resetting to default", value)
+			value = next(iter(UserSettings.DATE_FORMATS[0]))
+		return value
+
+	@dateFormat.setter
+	def dateFormat(self, value):
+		if value not in UserSettings.DATE_FORMATS:
+			raise ValueError("Invalid value for UserSettings.dateFormat: \"%s\"" % value)
+		self.set("settings", "dateFormat", value)
+
+	@property
+	def hdmiCec(self):
+		return self.get("settings", "hdmi-cec")
+
+	@hdmiCec.setter
+	def hdmiCec(self, value):
+		self.set("settings", "hdmi-cec", value)
+
+	@property
+	def kodiCommand(self):
+		return self.get("commands", "kodi")
+
+	@property
+	def hardcore(self):
+		value = self.get("RetroAchievements", "hardcore")
+		if value == None:
+			logging.warning("UserSettings.hardcore: RetroAchievements hardcore setting is not defined, defaulting to false")
+			value = False
+		return value
+
+	@hardcore.setter
+	def hardcore(self, value):
+		self.set("RetroAchievements", "hardcore", value)
+
+	@property
+	def rebootCommand(self):
+		return self.get("commands", "reboot")
+
+	@property
+	def setTimezoneCommand(self):
+		return self.get("commands", "setTimezone")
+
+	@property
+	def shutdownCommand(self):
+		return self.get("commands", "shutdown")

@@ -37,6 +37,14 @@ Rectangle {
         property bool resetValue: true
     }
 
+    function getValue() {
+        return internal.toggled;
+    }
+
+    function isDirty() {
+        return (internal.toggled != internal.resetValue);
+    }
+
     function reset() {
         internal.toggled =  internal.resetValue;
     }

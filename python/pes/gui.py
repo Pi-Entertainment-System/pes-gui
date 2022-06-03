@@ -28,7 +28,7 @@ import sdl2.ext
 import sdl2.joystick
 
 from PyQt5.QtGui import QGuiApplication, QKeyEvent
-from PyQt5.QtQml import QQmlApplicationEngine, qmlRegisterType
+from PyQt5.QtQml import QQmlApplicationEngine, QJSValue, qmlRegisterType
 from PyQt5.QtCore import Qt, pyqtProperty, pyqtSignal, pyqtSlot, QObject, QEvent, QVariant
 
 import sqlalchemy.orm
@@ -117,6 +117,7 @@ class Backend(QObject):
 		super(Backend, self).__init__(parent)
 		self.__userSettings = pes.common.UserSettings()
 		self.__consoleSettings = pes.common.ConsoleSettings()
+		self.__updateDateTimeFormat()
 		self.__dbusBroker = pes.system.DbusBroker()
 		if self.__dbusBroker.btAvailable():
 			self.__btAgent = pes.system.BluetoothAgent()
@@ -193,6 +194,11 @@ class Backend(QObject):
 		logging.debug("Backend.getAvailableTimeZones: getting time zones")
 		return self.__dbusBroker.getTimezones()
 
+	@pyqtSlot(result=bool)
+	def getBluetoothEnabled(self):
+		logging.debug("Backend.getBluetoothEnabled: called")
+		return self.__userSettings.bluetooth
+
 	@pyqtSlot(int, result=str)
 	def getConsoleArt(self, consoleId):
 		logging.debug("Backend.getConsoleArt: getting console art URL for %d" % consoleId)
@@ -225,6 +231,16 @@ class Backend(QObject):
 			consoleList.append(c.getDict())
 		return consoleList
 
+	@pyqtSlot(result=str)
+	def getDateFormat(self):
+		logging.debug("Backed.getDateFormat: called")
+		return self.__userSettings.dateFormat
+
+	@pyqtSlot(result=list)
+	def getDateFormats(self):
+		logging.debug("Backend.getDateFormats: called")
+		return list(self.__userSettings.DATE_FORMATS.keys())
+
 	@pyqtSlot(int, result=QVariant)
 	def getGame(self, gameId):
 		logging.debug("Backend.getGame: getting game: %d" % gameId)
@@ -255,6 +271,16 @@ class Backend(QObject):
 		for g in result:
 			games.append(g.getDict())
 		return games
+
+	@pyqtSlot(result=bool)
+	def getHardcoreMode(self):
+		logging.debug("Backend.getHardcoreMode: called")
+		return self.__userSettings.hardcore
+
+	@pyqtSlot(result=bool)
+	def getHdmiCecEnabled(self):
+		logging.debug("Backend.getHdmiCecEnabled: called")
+		return self.__userSettings.hdmiCec
 
 	@pyqtSlot(int, int, result=list)
 	def getMostPlayedGames(self, consoleId=None, limit=10):
@@ -317,7 +343,7 @@ class Backend(QObject):
 
 	@pyqtSlot(result=str)
 	def getTime(self):
-		return datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+		return datetime.datetime.now().strftime(self.__dateTimeFormat)
 
 	@pyqtSlot(result=str)
 	def getTimezone(self):
@@ -325,7 +351,7 @@ class Backend(QObject):
 
 	@pyqtSlot()
 	def loadKodi(self):
-		self.__createCommandFile("kodi")
+		self.__createCommandFile(self.__userSettings.kodiCommand)
 		self.close()
 
 	@pyqtSlot(int, result=QVariant)
@@ -443,12 +469,32 @@ class Backend(QObject):
 	@pyqtSlot()
 	def reboot(self):
 		logging.info("Rebooting")
-		pes.common.runCommand(self.__userSettings.get("commands", "reboot"))
+		pes.common.runCommand(self.__userSettings.rebootCommand)
+
+	@pyqtSlot(QJSValue)
+	def saveSettings(self, settings):
+		logging.info("Saving settings")
+		settings = settings.toVariant()
+		logging.debug("Backend.saveSettings: %s" % settings)
+		self.__userSettings.bluetooth = settings["bluetoothEnabled"]
+		self.__userSettings.dateFormat = settings["dateFormat"]
+		self.__userSettings.hardcore = settings["hardcoreEnabled"]
+		self.__userSettings.hdmiCec = settings["hdmiCecEnabled"]
+		self.__updateDateTimeFormat()
+		self.__userSettings.save()
+		if self.__btAgent:
+			self.__dbusBroker.btPowered = self.__userSettings.bluetooth
+		if self.getTimezone() != settings["timezone"]:
+			logging.debug("Backend.saveSettings: changing timezone")
+			pes.common.runCommand("%s %s" % (self.__userSettings.setTimezoneCommand, settings["timezone"]))
 
 	@pyqtSlot()
 	def shutdown(self):
 		logging.info("Shutting down...")
-		pes.common.runCommand(self.__userSettings.get("commands", "shutdown"))
+		pes.common.runCommand(self.__userSettings.shutdownCommand)
+
+	def __updateDateTimeFormat(self):
+		self.__dateTimeFormat = self.__userSettings.DATE_FORMATS[self.__userSettings.dateFormat] + " %H:%M:%S"
 
 class PESGuiApplication(QGuiApplication):
 

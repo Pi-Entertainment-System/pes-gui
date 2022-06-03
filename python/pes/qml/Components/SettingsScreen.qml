@@ -42,8 +42,49 @@ Rectangle {
         property var systemFocusItem: hardcoreModeToggle
     }
 
+    // signals
+    signal settingsApplied()
+
+    // functions
+
     function forceActiveFocus() {
         menuView.forceActiveFocus();
+    }
+
+    function getBluetoothEnabled() {
+        return bluetoothToggle.getValue();
+    }
+
+    function getDateFormat() {
+        return dateFmtCombo.getValue();
+    }
+
+    function getHardcoreMode() {
+        return hardcoreModeToggle.getValue();
+    }
+
+    function getHdmiCecEnabled() {
+        return hdmiCecToggle.getValue();
+    }
+
+    function getTimezone() {
+        return timezoneCombo.getValue();
+    }
+
+    function saveSettings() {
+        var restartRequired = hdmiCecToggle.isDirty();
+        bluetoothToggle.save();
+        dateFmtCombo.save();
+        hardcoreModeToggle.save();
+        hdmiCecToggle.save();
+        timezoneCombo.save();
+        if (restartRequired) {
+            restartMsgBox.open();
+        }
+        else {
+            savedMsgBox.open();
+        }
+        settingsApplied();
     }
 
     function setAvailableTimezones(zones) {
@@ -54,16 +95,53 @@ Rectangle {
         bluetoothToggle.setValue(enabled);
     }
 
-    function setDatetimeFormat(fmt) {
+    function setDateFormat(fmt) {
         dateFmtCombo.setValue(fmt);
+    }
+
+    function setDateFormats(fmts) {
+        dateFmtCombo.setValues(fmts);
     }
 
     function setHardcoreMode(mode) {
         hardcoreModeToggle.setValue(mode);
     }
 
+    function setHdmiCecEnabled(mode) {
+        hdmiCecToggle.setValue(mode);
+    }
+
     function setTimezone(zone) {
         timezoneCombo.setValue(zone);
+    }
+
+    // bluetooth disable confirm
+    YesNoDialog {
+        id: bluetoothDialog
+        //navSound: navSound
+        text: "Are you sure you want to disable Bluetooth? This could cause your controller to disconnect!"
+        width: 650
+        height: 200
+        onYesButtonPressed: {
+            saveSettings();
+            bluetoothDialog.close();
+        }
+        onNoButtonPressed: {
+            // re-enable Bluetooth
+            setBluetoothEnabled(true);
+        }
+    }
+
+    MessageBox {
+        id: restartMsgBox
+        text: "Settings saved OK.\nThe PES GUI will need to be restarted for the changes to be applied."
+        width: 650
+    }
+
+    MessageBox {
+        id: savedMsgBox
+        text: "Settings saved OK"
+        width: 650
     }
 
     RowLayout {
@@ -166,21 +244,35 @@ Rectangle {
 
                             YesNoToggle {
                                 id: hardcoreModeToggle
-                                KeyNavigation.down: bluetoothToggle
+                                KeyNavigation.down: hdmiCecToggle
                                 KeyNavigation.left: menuScrollView
                             }
                         }
 
                         RowLayout {
                             BodyText {
-                                text: "Bluetooth:"
+                                text: "HDMI-CEC on:"
+                                Layout.preferredWidth: internal.labelWidth
+                            }
+
+                            YesNoToggle {
+                                id: hdmiCecToggle
+                                KeyNavigation.down: bluetoothToggle
+                                KeyNavigation.up: hardcoreModeToggle
+                                KeyNavigation.left: menuScrollView
+                            }
+                        }
+
+                        RowLayout {
+                            BodyText {
+                                text: "Bluetooth on:"
                                 Layout.preferredWidth: internal.labelWidth
                             }
 
                             YesNoToggle {
                                 id: bluetoothToggle
                                 KeyNavigation.down: timezoneCombo
-                                KeyNavigation.up: hardcoreModeToggle
+                                KeyNavigation.up: hdmiCecToggle
                                 KeyNavigation.left: menuScrollView
                             }
                         }
@@ -208,7 +300,7 @@ Rectangle {
 
                             ComboScroll {
                                 id: dateFmtCombo
-                                values: ["dd/mm/yyyy", "mm/dd/yyyy"]
+                                values: []
                                 KeyNavigation.down: applyBtn
                                 KeyNavigation.up: timezoneCombo
                                 KeyNavigation.left: menuScrollView
@@ -234,10 +326,12 @@ Rectangle {
                                 KeyNavigation.left: menuScrollView
 
                                 Keys.onReturnPressed: {
-                                    bluetoothToggle.save();
-                                    dateFmtCombo.save();
-                                    hardcoreModeToggle.save();
-                                    timezoneCombo.save();
+                                    if (bluetoothToggle.isDirty() && !bluetoothToggle.getValue()) {
+                                        bluetoothDialog.open();
+                                    }
+                                    else {
+                                        saveSettings();
+                                    }
                                 }
                             }
 
