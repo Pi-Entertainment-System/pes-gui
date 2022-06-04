@@ -22,6 +22,8 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+# pylint: disable=invalid-name
+
 import argparse
 import logging
 import pes
@@ -35,162 +37,162 @@ import shutil
 
 coloredlogsImported = False
 try:
-	import coloredlogs
-	coloredlogsImported = True
+    import coloredlogs
+    coloredlogsImported = True
 except ImportError as e:
-	pass
+    pass
 
 cecImported = False
 try:
-	import cec
-	cecImported = True
+    import cec
+    cecImported = True
 except ImportError as e:
-	pass
+    pass
 
 from sqlalchemy.orm import sessionmaker
 
 def cecEvent(button, dur):
-	"""
-	Wrapper function to work around segmentation fault
-	when adding Qt app as the callback.
-	"""
-	global app
-	if app:
-		app.processCecEvent(button, dur)
+    """
+    Wrapper function to work around segmentation fault
+    when adding Qt app as the callback.
+    """
+    global app
+    if app:
+        app.processCecEvent(button, dur)
 
 if __name__ == "__main__":
 
-	parser = argparse.ArgumentParser(description='Launch the Pi Entertainment System (PES)', add_help=True)
-	parser.add_argument('-v', '--verbose', help='Turn on debug messages', dest='verbose', action='store_true')
-	parser.add_argument('-l', '--log', help='File to log messages to', type=str, dest='logfile')
-	args = parser.parse_args()
+    parser = argparse.ArgumentParser(description='Launch the Pi Entertainment System (PES)', add_help=True)
+    parser.add_argument('-v', '--verbose', help='Turn on debug messages', dest='verbose', action='store_true')
+    parser.add_argument('-l', '--log', help='File to log messages to', type=str, dest='logfile')
+    args = parser.parse_args()
 
-	logLevel = logging.INFO
-	logFormat = "%(asctime)s:%(levelname)s: %(message)s"
-	logDateFormat = "%Y/%m/%d %H:%M:%S"
-	if args.verbose:
-		logLevel = logging.DEBUG
+    logLevel = logging.INFO
+    logFormat = "%(asctime)s:%(levelname)s: %(message)s"
+    logDateFormat = "%Y/%m/%d %H:%M:%S"
+    if args.verbose:
+        logLevel = logging.DEBUG
 
-	if args.logfile:
-		logging.basicConfig(format=logFormat, datefmt=logDateFormat, level=logLevel, filename=args.logfile)
-	else:
-		logging.basicConfig(format=logFormat, datefmt=logDateFormat, level=logLevel)
+    if args.logfile:
+        logging.basicConfig(format=logFormat, datefmt=logDateFormat, level=logLevel, filename=args.logfile)
+    else:
+        logging.basicConfig(format=logFormat, datefmt=logDateFormat, level=logLevel)
 
-	if coloredlogsImported:
-		logger = logging.getLogger(__name__)
-		coloredlogs.install(fmt=logFormat, datefmt=logDateFormat, level=logLevel, logger=logger)
+    if coloredlogsImported:
+        logger = logging.getLogger(__name__)
+        coloredlogs.install(fmt=logFormat, datefmt=logDateFormat, level=logLevel, logger=logger)
 
-	logging.debug("PES %s, date: %s, author: %s" % (pes.VERSION_NUMBER, pes.VERSION_DATE, pes.VERSION_AUTHOR))
-	logging.debug("base dir: %s" % pes.baseDir)
+    logging.debug("PES %s, date: %s, author: %s" % (pes.VERSION_NUMBER, pes.VERSION_DATE, pes.VERSION_AUTHOR))
+    logging.debug("base dir: %s" % pes.baseDir)
 
-	checkDir(pes.baseDir)
-	checkFile(pes.qmlMain)
-	checkDir(pes.qmlDir)
-	checkDir(pes.webDir)
-	logging.debug("config dir: %s" % pes.confDir)
-	checkDir(pes.confDir)
-	logging.debug("user dir: %s" % pes.userDir)
-	mkdir(pes.userDir)
-	mkdir(pes.userBadgeDir)
-	mkdir(pes.userBiosDir)
-	mkdir(pes.userConfDir)
-	mkdir(pes.userCoverartDir)
-	mkdir(pes.userScreenshotDir)
-	mkdir(pes.userRetroArchConfDir)
-	mkdir(pes.userRetroArchJoysticksConfDir)
-	mkdir(pes.userRetroArchRguiConfDir)
-	mkdir(pes.userRomDir)
-	initConfig()
-	initDb()
+    checkDir(pes.baseDir)
+    checkFile(pes.qmlMain)
+    checkDir(pes.qmlDir)
+    checkDir(pes.webDir)
+    logging.debug("config dir: %s" % pes.confDir)
+    checkDir(pes.confDir)
+    logging.debug("user dir: %s" % pes.userDir)
+    mkdir(pes.userDir)
+    mkdir(pes.userBadgeDir)
+    mkdir(pes.userBiosDir)
+    mkdir(pes.userConfDir)
+    mkdir(pes.userCoverartDir)
+    mkdir(pes.userScreenshotDir)
+    mkdir(pes.userRetroArchConfDir)
+    mkdir(pes.userRetroArchJoysticksConfDir)
+    mkdir(pes.userRetroArchRguiConfDir)
+    mkdir(pes.userRomDir)
+    initConfig()
+    initDb()
 
-	checkFile(pes.userPesConfigFile)
-	checkFile(pes.userDb)
-	checkFile(pes.userConsolesConfigFile)
-	checkFile(pes.userGameControllerFile)
-	# look for rasum in $PATH
-	if shutil.which("rasum") == None:
-		pesExit("Error: could not find rasum executable in $PATH", True)
+    checkFile(pes.userPesConfigFile)
+    checkFile(pes.userDb)
+    checkFile(pes.userConsolesConfigFile)
+    checkFile(pes.userGameControllerFile)
+    # look for rasum in $PATH
+    if shutil.which("rasum") == None:
+        pesExit("Error: could not find rasum executable in $PATH", True)
 
-	logging.info("loading settings...")
-	checkFile(pes.userPesConfigFile)
-	userSettings = UserSettings()
+    logging.info("loading settings...")
+    checkFile(pes.userPesConfigFile)
+    userSettings = UserSettings()
 
-	# make directory for each support console
-	logging.debug("connecting to database: %s" % userDb)
-	engine = pes.sql.connect(userDb)
-	session = sessionmaker(bind=engine)()
-	pes.sql.createAll(engine)
-	consoles = session.query(pes.sql.Console).all()
-	logging.debug("creating ROM directories for user")
-	for c in consoles:
-		mkdir(os.path.join(pes.userRomDir, c.name))
-		mkdir(os.path.join(pes.userCoverartDir, c.name))
-		mkdir(os.path.join(pes.userScreenshotDir, c.name))
+    # make directory for each support console
+    logging.debug("connecting to database: %s" % userDb)
+    engine = pes.sql.connect(userDb)
+    session = sessionmaker(bind=engine)()
+    pes.sql.createAll(engine)
+    consoles = session.query(pes.sql.Console).all()
+    logging.debug("creating ROM directories for user")
+    for c in consoles:
+        mkdir(os.path.join(pes.userRomDir, c.name))
+        mkdir(os.path.join(pes.userCoverartDir, c.name))
+        mkdir(os.path.join(pes.userScreenshotDir, c.name))
 
-	romScraper = userSettings.get("settings", "romScraper")
-	if romScraper == None:
-		logging.warning("Could not find \"romScraper\" parameter in \"settings\" section in %s. Adding default setting: %s." % (userPesConfigFile, romScrapers[0]))
-		userSettings.set("settings", "romScraper", romScrapers[0])
-		userSettings.save(userPesConfigFile)
-	elif romScraper not in pes.romScrapers:
-		pesExit("Unknown romScraper value: \"%s\" in \"settings\" section in %s" % (romScraper, userPesConfigFile, romScrapers[0]))
+    romScraper = userSettings.get("settings", "romScraper")
+    if romScraper == None:
+        logging.warning("Could not find \"romScraper\" parameter in \"settings\" section in %s. Adding default setting: %s." % (userPesConfigFile, romScrapers[0]))
+        userSettings.set("settings", "romScraper", romScrapers[0])
+        userSettings.save(userPesConfigFile)
+    elif romScraper not in pes.romScrapers:
+        pesExit("Unknown romScraper value: \"%s\" in \"settings\" section in %s" % (romScraper, userPesConfigFile, romScrapers[0]))
 
-	backend = Backend()
+    backend = Backend()
 
-	# enable web server?
-	if userSettings.get("webServer", "enabled"):
-		try:
-			webPort = int(userSettings.get("webServer", "port"))
-		except Exception as e:
-			logging.error("Could not determine web port from %s" % userPesConfigFile)
-		try:
-			webThread = pes.web.WebThread(webPort, backend)
-			webThread.start()
-		except Exception as e:
-			logging.error("Failed to start web server: %s" % e)
-	else:
-		logging.info("web server disabled")
+    # enable web server?
+    if userSettings.get("webServer", "enabled"):
+        try:
+            webPort = int(userSettings.get("webServer", "port"))
+        except Exception as e:
+            logging.error("Could not determine web port from %s" % userPesConfigFile)
+        try:
+            webThread = pes.web.WebThread(webPort, backend)
+            webThread.start()
+        except Exception as e:
+            logging.error("Failed to start web server: %s" % e)
+    else:
+        logging.info("web server disabled")
 
-	if sdl2.SDL_Init(sdl2.SDL_INIT_JOYSTICK | sdl2.SDL_INIT_GAMECONTROLLER) != 0:
-		pesExit("Failed to initialise SDL")
+    if sdl2.SDL_Init(sdl2.SDL_INIT_JOYSTICK | sdl2.SDL_INIT_GAMECONTROLLER) != 0:
+        pesExit("Failed to initialise SDL")
 
-	logging.debug("loading SDL2 control pad mappings from: %s" % pes.userGameControllerFile)
-	mappingsLoaded = sdl2.SDL_GameControllerAddMappingsFromFile(pes.userGameControllerFile.encode())
-	if mappingsLoaded == -1:
-		pes.common.pesExit("failed to load SDL2 control pad mappings from: %s" % pes.userGameControllerFile)
-	logging.debug("loaded %d control pad mappings" % mappingsLoaded)
+    logging.debug("loading SDL2 control pad mappings from: %s" % pes.userGameControllerFile)
+    mappingsLoaded = sdl2.SDL_GameControllerAddMappingsFromFile(pes.userGameControllerFile.encode())
+    if mappingsLoaded == -1:
+        pes.common.pesExit("failed to load SDL2 control pad mappings from: %s" % pes.userGameControllerFile)
+    logging.debug("loaded %d control pad mappings" % mappingsLoaded)
 
-	app = PESGuiApplication(sys.argv, backend)
+    app = PESGuiApplication(sys.argv, backend)
 
-	userCecEnabled = userSettings.get("settings", "hdmi-cec")
-	if cecImported and (userCecEnabled or userCecEnabled == None):
-		logging.debug("creating CEC config...")
-		cecconfig = cec.libcec_configuration()
-		cecconfig.strDeviceName   = "PES"
-		cecconfig.bActivateSource = 0
-		cecconfig.deviceTypes.Add(cec.CEC_DEVICE_TYPE_RECORDING_DEVICE)
-		cecconfig.clientVersion = cec.LIBCEC_VERSION_CURRENT
-		logging.debug("adding CEC callback...")
-		cecconfig.SetKeyPressCallback(cecEvent)
-		lib = cec.ICECAdapter.Create(cecconfig)
-		logging.debug("looking for CEC adapters...")
-		adapters = lib.DetectAdapters()
-		adapterCount = len(adapters)
-		if adapterCount == 0:
-			logging.warning("could not find any CEC adapters!")
-		else:
-			logging.debug("found %d CEC adapters, attempting to open first adapter..." % adapterCount)
-			if lib.Open(adapters[0].strComName):
-				logging.debug("CEC adapter opened")
-			else:
-				logging.error("unable to open CEC adapter!")
-	else:
-		logging.warning("CEC module disabled")
+    userCecEnabled = userSettings.get("settings", "hdmi-cec")
+    if cecImported and (userCecEnabled or userCecEnabled == None):
+        logging.debug("creating CEC config...")
+        cecconfig = cec.libcec_configuration()
+        cecconfig.strDeviceName   = "PES"
+        cecconfig.bActivateSource = 0
+        cecconfig.deviceTypes.Add(cec.CEC_DEVICE_TYPE_RECORDING_DEVICE)
+        cecconfig.clientVersion = cec.LIBCEC_VERSION_CURRENT
+        logging.debug("adding CEC callback...")
+        cecconfig.SetKeyPressCallback(cecEvent)
+        lib = cec.ICECAdapter.Create(cecconfig)
+        logging.debug("looking for CEC adapters...")
+        adapters = lib.DetectAdapters()
+        adapterCount = len(adapters)
+        if adapterCount == 0:
+            logging.warning("could not find any CEC adapters!")
+        else:
+            logging.debug("found %d CEC adapters, attempting to open first adapter..." % adapterCount)
+            if lib.Open(adapters[0].strComName):
+                logging.debug("CEC adapter opened")
+            else:
+                logging.error("unable to open CEC adapter!")
+    else:
+        logging.warning("CEC module disabled")
 
-	app.run()
+    app.run()
 
-	if cecImported:
-		# remove CEC callbacks to prevent segmentation fault issue #6
-		logging.debug("removing CEC callbacks...")
-		cecconfig.ClearCallbacks()
-	logging.info("exiting...")
+    if cecImported:
+        # remove CEC callbacks to prevent segmentation fault issue #6
+        logging.debug("removing CEC callbacks...")
+        cecconfig.ClearCallbacks()
+    logging.info("exiting...")

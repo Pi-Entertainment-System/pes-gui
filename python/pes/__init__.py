@@ -20,6 +20,12 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+# pylint: disable=invalid-name
+
+"""
+PES provides an interactive GUI for games console emulators
+and is designed to work on the Raspberry Pi.
+"""
 
 import os
 import shutil

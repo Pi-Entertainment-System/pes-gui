@@ -20,6 +20,8 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+# pylint: disable=invalid-name
+
 import logging
 import os
 import pes
@@ -31,230 +33,230 @@ from sqlalchemy.orm import relationship
 Base = declarative_base()
 
 def connect(db=pes.userDb):
-	# disable check_same_thread check
-	# must make sure writes only happen in one thread!
-	s = "sqlite:///%s?check_same_thread=false" % db
-	logging.debug("pes.sql.connect: connecting to: %s" % s)
-	return create_engine(s)
+    # disable check_same_thread check
+    # must make sure writes only happen in one thread!
+    s = "sqlite:///%s?check_same_thread=false" % db
+    logging.debug("pes.sql.connect: connecting to: %s" % s)
+    return create_engine(s)
 
 def createAll(engine):
-	Base.metadata.create_all(engine)
+    Base.metadata.create_all(engine)
 
 class CustomBase(object):
 
-	@staticmethod
-	def getDateStr(column):
-		return column.strftime("%d/%m/%Y %H:%M")
+    @staticmethod
+    def getDateStr(column):
+        return column.strftime("%d/%m/%Y %H:%M")
 
-	def getDict(self):
-		j = {}
-		for c in self.__table__.columns:
-			val = getattr(self, c.name)
-			t = type(c.type)
-			if val:
-				if t is DateTime:
-					j[c.name] = int(val.timestamp())
-				else:
-					j[c.name] = val
-			else:
-				if t is DateTime:
-					j[c.name] = 0
-				elif t is Integer:
-					j[c.name] = 0
-				elif t is Boolean:
-					j[c.name] = False
-				else:
-					j[c.name] = ""
-		return j
+    def getDict(self):
+        j = {}
+        for c in self.__table__.columns:
+            val = getattr(self, c.name)
+            t = type(c.type)
+            if val:
+                if t is DateTime:
+                    j[c.name] = int(val.timestamp())
+                else:
+                    j[c.name] = val
+            else:
+                if t is DateTime:
+                    j[c.name] = 0
+                elif t is Integer:
+                    j[c.name] = 0
+                elif t is Boolean:
+                    j[c.name] = False
+                else:
+                    j[c.name] = ""
+        return j
 
 class Console(Base, CustomBase):
-	__tablename__ = "console"
+    __tablename__ = "console"
 
-	id = Column(Integer, primary_key=True)
-	name = Column(String)
-	gamesDbId = Column(Integer, ForeignKey('gamesdb_platform.id')) # FBA and MAMA use the same ID
-	retroId = Column(Integer, ForeignKey('retroachievement_console.id'), default=0) # Mega Drive & Gensis use same ID
-	nocoverart = Column(String)
-	art = Column(String)
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    gamesDbId = Column(Integer, ForeignKey('gamesdb_platform.id')) # FBA and MAMA use the same ID
+    retroId = Column(Integer, ForeignKey('retroachievement_console.id'), default=0) # Mega Drive & Gensis use same ID
+    nocoverart = Column(String)
+    art = Column(String)
 
-	platform = relationship("GamesDbPlatform", back_populates="consoles")
-	#retroAchievementConsole = relationship("RetroAchievementConsole", back_populates="consoles")
+    platform = relationship("GamesDbPlatform", back_populates="consoles")
+    #retroAchievementConsole = relationship("RetroAchievementConsole", back_populates="consoles")
 
-	def __repr__(self):
-		return "<Console id=%s name=%s retroId=%s>" % (self.id, self.name, self.retroId)
+    def __repr__(self):
+        return "<Console id=%s name=%s retroId=%s>" % (self.id, self.name, self.retroId)
 
 class Game(Base, CustomBase):
-	__tablename__ = "game"
+    __tablename__ = "game"
 
-	id = Column(Integer, primary_key=True)
-	name = Column(Text)
-	consoleId = Column(Integer, ForeignKey('console.id'))
-	rasum = Column(String, index=True, default=0)
-	gamesDbId = Column(Integer, ForeignKey('gamesdb_game.id'), index=True, default=0)
-	retroId = Column(Integer, ForeignKey('retroachievement_game.id'), index=True, default=0)
-	path = Column(Text)
-	coverartFront = Column(Text)
-	coverartBack = Column(Text)
-	lastPlayed = Column(DateTime)
-	added = Column(DateTime)
-	favourite = Column(Boolean, default=False)
-	playCount = Column(Integer, default=0)
-	fileSize = Column(Integer, default=0)
-	found = Column(Boolean, default=False)
+    id = Column(Integer, primary_key=True)
+    name = Column(Text)
+    consoleId = Column(Integer, ForeignKey('console.id'))
+    rasum = Column(String, index=True, default=0)
+    gamesDbId = Column(Integer, ForeignKey('gamesdb_game.id'), index=True, default=0)
+    retroId = Column(Integer, ForeignKey('retroachievement_game.id'), index=True, default=0)
+    path = Column(Text)
+    coverartFront = Column(Text)
+    coverartBack = Column(Text)
+    lastPlayed = Column(DateTime)
+    added = Column(DateTime)
+    favourite = Column(Boolean, default=False)
+    playCount = Column(Integer, default=0)
+    fileSize = Column(Integer, default=0)
+    found = Column(Boolean, default=False)
 
-	console = relationship("Console", back_populates="games")
-	gamesDbGame = relationship("GamesDbGame", back_populates="games")
-	retroAchievementGame = relationship("RetroAchievementGame", back_populates="games")
+    console = relationship("Console", back_populates="games")
+    gamesDbGame = relationship("GamesDbGame", back_populates="games")
+    retroAchievementGame = relationship("RetroAchievementGame", back_populates="games")
 
-	def getDict(self):
-		j = super().getDict()
-		if self.gamesDbGame:
-			j["overview"] = self.gamesDbGame.overview
-			j["releaseDate"] = self.gamesDbGame.releaseDate
-		else:
-			j["overview"] = ""
-			j["releaseDate"] = "N/A"
-		if j["added"] > 0:
-			j["addedStr"] = self.getDateStr(self.added)
-		else:
-			j["addedStr"] = "Unknown"
-		if j["lastPlayed"] > 0:
-			j["lastPlayedStr"] = self.getDateStr(self.lastPlayed)
-		elif self.playCount == 0:
-			j["lastPlayedStr"] = "Not played"
-		else:
-			j["lastPlayedStr"] = "Unknown"
-		if not os.path.exists(j["coverartFront"]):
-			logging.warning("%s does not exist!" % self.coverartFront)
-			j["coverartFront"] = os.path.join(pes.resourcesDir, self.console.nocoverart)
-		j["filename"] = os.path.basename(self.path)
-		j["screenshots"] = []
-		for screenshot in self.screenshots:
-			j["screenshots"].append(screenshot.path)
-		return j
+    def getDict(self):
+        j = super().getDict()
+        if self.gamesDbGame:
+            j["overview"] = self.gamesDbGame.overview
+            j["releaseDate"] = self.gamesDbGame.releaseDate
+        else:
+            j["overview"] = ""
+            j["releaseDate"] = "N/A"
+        if j["added"] > 0:
+            j["addedStr"] = self.getDateStr(self.added)
+        else:
+            j["addedStr"] = "Unknown"
+        if j["lastPlayed"] > 0:
+            j["lastPlayedStr"] = self.getDateStr(self.lastPlayed)
+        elif self.playCount == 0:
+            j["lastPlayedStr"] = "Not played"
+        else:
+            j["lastPlayedStr"] = "Unknown"
+        if not os.path.exists(j["coverartFront"]):
+            logging.warning("%s does not exist!" % self.coverartFront)
+            j["coverartFront"] = os.path.join(pes.resourcesDir, self.console.nocoverart)
+        j["filename"] = os.path.basename(self.path)
+        j["screenshots"] = []
+        for screenshot in self.screenshots:
+            j["screenshots"].append(screenshot.path)
+        return j
 
 class GameScreenshot(Base, CustomBase):
-	__tablename__ = "game_screenshot"
-	id = Column(Integer, primary_key=True)
-	gameId = Column(Integer, ForeignKey('game.id'), index=True)
-	path = Column(Text)
+    __tablename__ = "game_screenshot"
+    id = Column(Integer, primary_key=True)
+    gameId = Column(Integer, ForeignKey('game.id'), index=True)
+    path = Column(Text)
 
-	game = relationship("Game", back_populates="screenshots")
+    game = relationship("Game", back_populates="screenshots")
 
-	def __repr__(self):
-		return "<GameScreenshot id=%d gameId=%d path=\"%s\">" % (self.id, self.gameId, self.path)
+    def __repr__(self):
+        return "<GameScreenshot id=%d gameId=%d path=\"%s\">" % (self.id, self.gameId, self.path)
 
 class GamesDbGame(Base, CustomBase):
-	__tablename__ = "gamesdb_game"
+    __tablename__ = "gamesdb_game"
 
-	id = Column(Integer, primary_key=True)
-	platformId = Column(Integer, ForeignKey('gamesdb_platform.id'), index=True)
-	retroId = Column(Integer, ForeignKey('retroachievement_game.id'), index=True)
-	name = Column(Text)
-	releaseDate = Column(String)
-	overview = Column(Text)
-	boxArtBackOriginal = Column(Text)
-	boxArtBackMedium = Column(Text)
-	boxArtBackLarge = Column(Text)
-	boxArtFrontOriginal = Column(Text)
-	boxArtFrontMedium = Column(Text)
-	boxArtFrontLarge = Column(Text)
+    id = Column(Integer, primary_key=True)
+    platformId = Column(Integer, ForeignKey('gamesdb_platform.id'), index=True)
+    retroId = Column(Integer, ForeignKey('retroachievement_game.id'), index=True)
+    name = Column(Text)
+    releaseDate = Column(String)
+    overview = Column(Text)
+    boxArtBackOriginal = Column(Text)
+    boxArtBackMedium = Column(Text)
+    boxArtBackLarge = Column(Text)
+    boxArtFrontOriginal = Column(Text)
+    boxArtFrontMedium = Column(Text)
+    boxArtFrontLarge = Column(Text)
 
-	platform = relationship("GamesDbPlatform", back_populates="games")
-	retroAchievementGame = relationship("RetroAchievementGame", back_populates="gamesDbGame")
+    platform = relationship("GamesDbPlatform", back_populates="games")
+    retroAchievementGame = relationship("RetroAchievementGame", back_populates="gamesDbGame")
 
-	def __repr__(self):
-		return "<GamesDbGame id=%d platformId=%d name=\"%s\" releaseDate=%s retroId=%s>" % (self.id, self.platformId, self.name, self.releaseDate, self.retroId)
+    def __repr__(self):
+        return "<GamesDbGame id=%d platformId=%d name=\"%s\" releaseDate=%s retroId=%s>" % (self.id, self.platformId, self.name, self.releaseDate, self.retroId)
 
 class GamesDbPlatform(Base, CustomBase):
-	__tablename__ = "gamesdb_platform"
+    __tablename__ = "gamesdb_platform"
 
-	id = Column(Integer, primary_key=True)
-	name = Column(String)
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
 
-	def __repr__(self):
-		return "<GamesDbPlatform id=%d name=%s>" % (self.id, self.name)
+    def __repr__(self):
+        return "<GamesDbPlatform id=%d name=%s>" % (self.id, self.name)
 
 class GamesDbScreenshot(Base, CustomBase):
-	__tablename__ = "gamesdb_screenshot"
-	id = Column(Integer, primary_key=True)
-	gameId = Column(Integer, ForeignKey('gamesdb_game.id'), index=True)
-	original = Column(Text)
-	medium = Column(Text)
-	large = Column(Text)
+    __tablename__ = "gamesdb_screenshot"
+    id = Column(Integer, primary_key=True)
+    gameId = Column(Integer, ForeignKey('gamesdb_game.id'), index=True)
+    original = Column(Text)
+    medium = Column(Text)
+    large = Column(Text)
 
-	game = relationship("GamesDbGame", back_populates="screenshots")
+    game = relationship("GamesDbGame", back_populates="screenshots")
 
-	def __repr__(self):
-		return "<GamesDbScreenShot id=%d gameId=%d url=\"%s\">" % (self.id, self.gameId, self.url)
+    def __repr__(self):
+        return "<GamesDbScreenShot id=%d gameId=%d url=\"%s\">" % (self.id, self.gameId, self.url)
 
 class MameGame(Base, CustomBase):
-	__tablename__ = "mame_game"
+    __tablename__ = "mame_game"
 
-	shortName = Column(String, primary_key=True)
-	name = Column(String)
+    shortName = Column(String, primary_key=True)
+    name = Column(String)
 
 class RetroAchievementBadge(Base, CustomBase):
-	__tablename__ = "retroachievement_badge"
-	id = Column(Integer, primary_key=True)
-	retroGameId = Column(Integer, ForeignKey("retroachievement_game.id"))
-	name = Column(Text)
-	title = Column(Text)
-	description = Column(Text)
-	points = Column(Integer)
-	lockedPath = Column(Text, default="")
-	unlockedPath = Column(Text, default="")
-	earned = Column(DateTime)
-	earnedHardcore = Column(DateTime)
-	displayOrder = Column(Integer)
-	totalAwarded = Column(Integer, default=0)
-	totalAwardedHardcore = Column(Integer, default=0)
+    __tablename__ = "retroachievement_badge"
+    id = Column(Integer, primary_key=True)
+    retroGameId = Column(Integer, ForeignKey("retroachievement_game.id"))
+    name = Column(Text)
+    title = Column(Text)
+    description = Column(Text)
+    points = Column(Integer)
+    lockedPath = Column(Text, default="")
+    unlockedPath = Column(Text, default="")
+    earned = Column(DateTime)
+    earnedHardcore = Column(DateTime)
+    displayOrder = Column(Integer)
+    totalAwarded = Column(Integer, default=0)
+    totalAwardedHardcore = Column(Integer, default=0)
 
-	game = relationship("RetroAchievementGame", back_populates="badges")
+    game = relationship("RetroAchievementGame", back_populates="badges")
 
-	def getDict(self):
-		j = super().getDict()
-		if j["earned"] > 0:
-			j["earnedStr"] = self.getDateStr(self.earned)
-		else:
-			j["earnedStr"] = ""
-		if j["earnedHardcore"]:
-			j["earnedHardcoreStr"] = self.getDateStr(self.earnedHardcore)
-		else:
-			j["earnedHardcoreStr"] = ""
-		return j
+    def getDict(self):
+        j = super().getDict()
+        if j["earned"] > 0:
+            j["earnedStr"] = self.getDateStr(self.earned)
+        else:
+            j["earnedStr"] = ""
+        if j["earnedHardcore"]:
+            j["earnedHardcoreStr"] = self.getDateStr(self.earnedHardcore)
+        else:
+            j["earnedHardcoreStr"] = ""
+        return j
 
 class RetroAchievementConsole(Base, CustomBase):
-	__tablename__ = "retroachievement_console"
-	id = Column(Integer, primary_key=True)
+    __tablename__ = "retroachievement_console"
+    id = Column(Integer, primary_key=True)
 
-	console = relationship("Console", back_populates="retroAchievementConsoles")
+    console = relationship("Console", back_populates="retroAchievementConsoles")
 
 class RetroAchievementGame(Base, CustomBase):
-	__tablename__ = "retroachievement_game"
-	id = Column(Integer, primary_key=True)
-	name = Column(Text)
-	retroConsoleId = Column(Integer, ForeignKey('retroachievement_console.id'))
-	score = Column(Integer, default=0)
-	maxScore = Column(Integer, default=0)
-	totalPlayers = Column(Integer, default=0)
-	totalPlayersHardcore = Column(Integer, default=0)
-	syncDate = Column(DateTime)
+    __tablename__ = "retroachievement_game"
+    id = Column(Integer, primary_key=True)
+    name = Column(Text)
+    retroConsoleId = Column(Integer, ForeignKey('retroachievement_console.id'))
+    score = Column(Integer, default=0)
+    maxScore = Column(Integer, default=0)
+    totalPlayers = Column(Integer, default=0)
+    totalPlayersHardcore = Column(Integer, default=0)
+    syncDate = Column(DateTime)
 
-	console = relationship("RetroAchievementConsole", back_populates="games")
+    console = relationship("RetroAchievementConsole", back_populates="games")
 
-	def __repr__(self):
-		return "<RetroAchievementGame id=%d name=%s retroConsoleId=%d>" % (self.id, self.name, self.retroConsoleId)
+    def __repr__(self):
+        return "<RetroAchievementGame id=%d name=%s retroConsoleId=%d>" % (self.id, self.name, self.retroConsoleId)
 
 class RetroAchievementGameHash(Base, CustomBase):
-	__tablename__ = "retroachievement_game_hash"
-	id = Column(Integer, ForeignKey('retroachievement_game.id'), primary_key=True)
-	rasum = Column(String, primary_key=True)
+    __tablename__ = "retroachievement_game_hash"
+    id = Column(Integer, ForeignKey('retroachievement_game.id'), primary_key=True)
+    rasum = Column(String, primary_key=True)
 
-	game = relationship("RetroAchievementGame", back_populates="hashes")
+    game = relationship("RetroAchievementGame", back_populates="hashes")
 
-	def __repr__(self):
-		return "<RetroAchievementGameHash id=%d rasum=%s>" % (self.id, self.rasum)		
+    def __repr__(self):
+        return "<RetroAchievementGameHash id=%d rasum=%s>" % (self.id, self.rasum)        
 
 Console.games = relationship("Game", order_by=Game.id, back_populates="console")
 Console.retroAchievementConsoles = relationship("RetroAchievementConsole", order_by=RetroAchievementConsole.id, back_populates="console")

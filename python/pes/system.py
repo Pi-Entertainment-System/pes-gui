@@ -20,6 +20,8 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+# pylint: disable=invalid-name
+
 import logging
 import os
 from dbus.mainloop.pyqt5 import DBusQtMainLoop

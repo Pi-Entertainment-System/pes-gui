@@ -20,6 +20,8 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+# pylint: disable=invalid-name
+
 from pes import *
 import configparser
 import csv
@@ -31,319 +33,319 @@ import subprocess
 import struct
 
 def checkDir(d):
-	logging.debug("checking for: %s" % d)
-	if not os.path.exists(d):
-		pesExit("Error: %s does not exist!" % d, True)
-	if not os.path.isdir(d):
-		pesExit("Error: %s is not a directory!" % d, True)
+    logging.debug("checking for: %s" % d)
+    if not os.path.exists(d):
+        pesExit("Error: %s does not exist!" % d, True)
+    if not os.path.isdir(d):
+        pesExit("Error: %s is not a directory!" % d, True)
 
 def checkFile(f):
-	if not os.path.exists(f):
-		pesExit("Error: %s does not exist!" % f, True)
-	if not os.path.isfile(f):
-		pesExit("Error: %s is not a file!" % f, True)
+    if not os.path.exists(f):
+        pesExit("Error: %s does not exist!" % f, True)
+    if not os.path.isfile(f):
+        pesExit("Error: %s is not a file!" % f, True)
 
 def getDefaultInterface():
-	with open('/proc/net/route', 'r') as f:
-		for i in csv.DictReader(f, delimiter="\t"):
-			if int(i['Destination'], 16) == 0:
-				return i['Iface']
-	return None
+    with open('/proc/net/route', 'r') as f:
+        for i in csv.DictReader(f, delimiter="\t"):
+            if int(i['Destination'], 16) == 0:
+                return i['Iface']
+    return None
 
 def getIpAddress(ifname=None):
-	if not ifname:
-		ifname = getDefaultInterface()
-	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	return socket.inet_ntoa(fcntl.ioctl(s.fileno(), 0x8915, struct.pack('256s', ifname[:15].encode()))[20:24])
+    if not ifname:
+        ifname = getDefaultInterface()
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    return socket.inet_ntoa(fcntl.ioctl(s.fileno(), 0x8915, struct.pack('256s', ifname[:15].encode()))[20:24])
 
 def initConfig():
-	logging.debug("initialising config...")
-	checkDir(userConfDir)
-	for root, dirs, files in os.walk(confDir):
-		userRoot = root.replace(baseDir, userDir)
-		for d in dirs:
-			dest = os.path.join(userRoot, d)
-			if not os.path.exists(dest):
-				mkdir(dest)
+    logging.debug("initialising config...")
+    checkDir(userConfDir)
+    for root, dirs, files in os.walk(confDir):
+        userRoot = root.replace(baseDir, userDir)
+        for d in dirs:
+            dest = os.path.join(userRoot, d)
+            if not os.path.exists(dest):
+                mkdir(dest)
 
-		for f in files:
-			dest = os.path.join(userRoot, f)
-			source = os.path.join(root, f)
-			if not os.path.exists(dest):
-				logging.debug("copying %s to %s" % (source, dest))
-				shutil.copy(source, dest)
+        for f in files:
+            dest = os.path.join(userRoot, f)
+            source = os.path.join(root, f)
+            if not os.path.exists(dest):
+                logging.debug("copying %s to %s" % (source, dest))
+                shutil.copy(source, dest)
 
 def initDb():
-	checkFile(masterDb)
-	if not os.path.exists(userDb):
-		logging.debug("initialising %s from %s..." % (userDb, masterDb))
-		shutil.copy(masterDb, userDb)
+    checkFile(masterDb)
+    if not os.path.exists(userDb):
+        logging.debug("initialising %s from %s..." % (userDb, masterDb))
+        shutil.copy(masterDb, userDb)
 
 def mkdir(path):
-	if not os.path.exists(path):
-		logging.debug("mkdir: directory: %s" % path)
-		os.mkdir(path)
-		return True
-	elif not os.path.isdir(path):
-		pesExit("Error: %s is not a directory!" % path, True)
-	elif not os.access(path, os.W_OK):
-		pesExit("Error: %s is not writeable!" % path, True)
-	# did not have to make directory so return false
-	logging.debug("mkdir: %s already exists" % path)
-	return False
+    if not os.path.exists(path):
+        logging.debug("mkdir: directory: %s" % path)
+        os.mkdir(path)
+        return True
+    elif not os.path.isdir(path):
+        pesExit("Error: %s is not a directory!" % path, True)
+    elif not os.access(path, os.W_OK):
+        pesExit("Error: %s is not writeable!" % path, True)
+    # did not have to make directory so return false
+    logging.debug("mkdir: %s already exists" % path)
+    return False
 
 def pesExit(msg = None, error = False):
-	if error:
-		if msg:
-			logging.error(msg)
-		else:
-			logging.error("Unrecoverable error occurred, exiting!")
-		sys.exit(1)
-	if msg:
-		logging.info(msg)
-	else:
-		logging.info("Exiting...")
-	sys.exit(0)
+    if error:
+        if msg:
+            logging.error(msg)
+        else:
+            logging.error("Unrecoverable error occurred, exiting!")
+        sys.exit(1)
+    if msg:
+        logging.info(msg)
+    else:
+        logging.info("Exiting...")
+    sys.exit(0)
 
 def runCommand(cmd):
-	'''
-	Execute the given command and return a tuple that contains the
-	return code, std out and std err output.
-	'''
-	logging.debug('running %s' % cmd)
-	process = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	stdout, stderr = process.communicate()
-	return (process.returncode, stdout.decode(), stderr.decode())
+    '''
+    Execute the given command and return a tuple that contains the
+    return code, std out and std err output.
+    '''
+    logging.debug('running %s' % cmd)
+    process = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    return (process.returncode, stdout.decode(), stderr.decode())
 
 def scaleImage(ix, iy, bx, by):
-	"""
-	Original author: Frank Raiser (crashchaos@gmx.net)
-	URL: http://www.pygame.org/pcr/transform_scale
-	Modified by Neil Munday
-	"""
-	if ix > iy:
-		# fit to width
-		scale_factor = bx/float(ix)
-		sy = scale_factor * iy
-		if sy > by:
-			scale_factor = by/float(iy)
-			sx = scale_factor * ix
-			sy = by
-		else:
-			sx = bx
-	else:
-		# fit to height
-		scale_factor = by/float(iy)
-		sx = scale_factor * ix
-		if sx > bx:
-			scale_factor = bx/float(ix)
-			sx = bx
-			sy = scale_factor * iy
-		else:
-			sy = by
-	return (int(sx),int(sy))
+    """
+    Original author: Frank Raiser (crashchaos@gmx.net)
+    URL: http://www.pygame.org/pcr/transform_scale
+    Modified by Neil Munday
+    """
+    if ix > iy:
+        # fit to width
+        scale_factor = bx/float(ix)
+        sy = scale_factor * iy
+        if sy > by:
+            scale_factor = by/float(iy)
+            sx = scale_factor * ix
+            sy = by
+        else:
+            sx = bx
+    else:
+        # fit to height
+        scale_factor = by/float(iy)
+        sx = scale_factor * ix
+        if sx > bx:
+            scale_factor = bx/float(ix)
+            sx = bx
+            sy = scale_factor * iy
+        else:
+            sy = by
+    return (int(sx),int(sy))
 
 class Settings(object):
 
-	STR_PROP = 1
-	BOOL_PROP = 2
-	INT_PROP = 3
-	LIST_PROP = 4
-	PATH_PROP = 5
+    STR_PROP = 1
+    BOOL_PROP = 2
+    INT_PROP = 3
+    LIST_PROP = 4
+    PATH_PROP = 5
 
-	def __init__(self, f, props=None):
-		logging.debug("Settings.__init__: created using %s" % f)
-		self._configparser = configparser.RawConfigParser()
-		self._configparser.read(f)
-		self._path = f
-		self._props = None
-		if props:
-			self._props = props
+    def __init__(self, f, props=None):
+        logging.debug("Settings.__init__: created using %s" % f)
+        self._configparser = configparser.RawConfigParser()
+        self._configparser.read(f)
+        self._path = f
+        self._props = None
+        if props:
+            self._props = props
 
-	def get(self, section, prop):
-		logging.debug("Settings.get: section = %s, prop = %s" % (section, prop))
-		if not self._configparser.has_section(section):
-			logging.warning("No section \"%s\" in \"%s\"" % (section, self._path))
-			return None
-		if not self._configparser.has_option(section, prop):
-			logging.warning("No property \"[%s]:%s\" in \"%s\"" % (section, prop, self._path))
-			return None
-		if section in self._props and prop in self._props[section]:
-			if self._props[section][prop] == Settings.BOOL_PROP:
-				logging.debug("Settings.get: returning boolean for [%s]:%s" % (section, prop))
-				return self._configparser.getboolean(section, prop)
-			if self._props[section][prop] == Settings.INT_PROP:
-				logging.debug("Settings.get: returning int for [%s]:%s" % (section, prop))
-				return self._configparser.getint(section, prop)
-		# assume string
-		logging.debug("Settings.get: returning string for [%s]:%s" % (section, prop))
-		rslt = self._configparser.get(section, prop)
-		if rslt == None or len(rslt) == 0:
-			return None
-		return rslt
+    def get(self, section, prop):
+        logging.debug("Settings.get: section = %s, prop = %s" % (section, prop))
+        if not self._configparser.has_section(section):
+            logging.warning("No section \"%s\" in \"%s\"" % (section, self._path))
+            return None
+        if not self._configparser.has_option(section, prop):
+            logging.warning("No property \"[%s]:%s\" in \"%s\"" % (section, prop, self._path))
+            return None
+        if section in self._props and prop in self._props[section]:
+            if self._props[section][prop] == Settings.BOOL_PROP:
+                logging.debug("Settings.get: returning boolean for [%s]:%s" % (section, prop))
+                return self._configparser.getboolean(section, prop)
+            if self._props[section][prop] == Settings.INT_PROP:
+                logging.debug("Settings.get: returning int for [%s]:%s" % (section, prop))
+                return self._configparser.getint(section, prop)
+        # assume string
+        logging.debug("Settings.get: returning string for [%s]:%s" % (section, prop))
+        rslt = self._configparser.get(section, prop)
+        if rslt == None or len(rslt) == 0:
+            return None
+        return rslt
 
-	def getSections(self):
-		return self._configparser.sections()
+    def getSections(self):
+        return self._configparser.sections()
 
-	def getType(self, section, prop):
-		if section in self._props and prop in self._props[section]:
-			return self._props[section][prop]
-		return None
+    def getType(self, section, prop):
+        if section in self._props and prop in self._props[section]:
+            return self._props[section][prop]
+        return None
 
-	def hasSection(self, s):
-		return self._configparser.has_section(s)
+    def hasSection(self, s):
+        return self._configparser.has_section(s)
 
-	def save(self):
-		logging.debug("Settings.save: saving to %s" % self._path)
-		with open(self._path, "w") as f:
-			self._configparser.write(f)
+    def save(self):
+        logging.debug("Settings.save: saving to %s" % self._path)
+        with open(self._path, "w") as f:
+            self._configparser.write(f)
 
-	def set(self, section, prop, value):
-		logging.debug("Settings.set: setting %s.%s = %s" % (section, prop, value))
-		self._configparser.set(section, prop, str(value))
+    def set(self, section, prop, value):
+        logging.debug("Settings.set: setting %s.%s = %s" % (section, prop, value))
+        self._configparser.set(section, prop, str(value))
 
 class ConsoleSettings(Settings):
 
-	def __init__(self):
-		super(ConsoleSettings, self).__init__(userConsolesConfigFile)
-		self.__props = {
-			"emulator": Settings.STR_PROP,
-			"ignore_roms": Settings.LIST_PROP,
-			"extensions": Settings.LIST_PROP,
-			"command": Settings.PATH_PROP,
-			"require": Settings.LIST_PROP
-		}
+    def __init__(self):
+        super(ConsoleSettings, self).__init__(userConsolesConfigFile)
+        self.__props = {
+            "emulator": Settings.STR_PROP,
+            "ignore_roms": Settings.LIST_PROP,
+            "extensions": Settings.LIST_PROP,
+            "command": Settings.PATH_PROP,
+            "require": Settings.LIST_PROP
+        }
 
-		self.__optionalProps = ["ignore_roms", "require"]
-		self.__cache = {}
+        self.__optionalProps = ["ignore_roms", "require"]
+        self.__cache = {}
 
-	def get(self, c, prop):
-		if not self._configparser.has_option(c, prop):
-			if prop in self.__optionalProps:
-				return None
-			raise Exception("%s has no option \"%s\" in %s" % (c, prop, self._path))
-		if not prop in self.__props:
-			raise Exception("%s is not in props dictionary" % prop)
-		if c not in self.__cache:
-			self.__cache[c] = {}
-		if not prop in self.__cache[c]:
-			if self.__props[prop] == Settings.INT_PROP:
-				self.__cache[c][prop] = self._configparser.getint(c, prop)
-			elif self.__props[prop] == Settings.PATH_PROP:
-				self.__cache[c][prop] = self.__parseStr(self._configparser.get(c, prop))
-			elif self.__props[prop] == Settings.LIST_PROP:
-				l = []
-				for i in self._configparser.get(c, prop).split(","):
-					l.append(self.__parseStr(i))
-				self.__cache[c][prop] = l
-			else:
-				self.__cache[c][prop] = self._configparser.get(c, prop)
-		return self.__cache[c][prop]
+    def get(self, c, prop):
+        if not self._configparser.has_option(c, prop):
+            if prop in self.__optionalProps:
+                return None
+            raise Exception("%s has no option \"%s\" in %s" % (c, prop, self._path))
+        if not prop in self.__props:
+            raise Exception("%s is not in props dictionary" % prop)
+        if c not in self.__cache:
+            self.__cache[c] = {}
+        if not prop in self.__cache[c]:
+            if self.__props[prop] == Settings.INT_PROP:
+                self.__cache[c][prop] = self._configparser.getint(c, prop)
+            elif self.__props[prop] == Settings.PATH_PROP:
+                self.__cache[c][prop] = self.__parseStr(self._configparser.get(c, prop))
+            elif self.__props[prop] == Settings.LIST_PROP:
+                l = []
+                for i in self._configparser.get(c, prop).split(","):
+                    l.append(self.__parseStr(i))
+                self.__cache[c][prop] = l
+            else:
+                self.__cache[c][prop] = self._configparser.get(c, prop)
+        return self.__cache[c][prop]
 
-	@staticmethod
-	def __parseStr(s):
-		return s.replace("%%USERDIR%%", userDir).replace("%%BASE%%", baseDir).replace("%%USERBIOSDIR%%", userBiosDir).replace("%%USERCONFDIR%%", userConfDir)
+    @staticmethod
+    def __parseStr(s):
+        return s.replace("%%USERDIR%%", userDir).replace("%%BASE%%", baseDir).replace("%%USERBIOSDIR%%", userBiosDir).replace("%%USERCONFDIR%%", userConfDir)
 
 class UserSettings(Settings):
 
-	DATE_FORMATS = {
-		"dd/mm/yyyy": "%d/%m/%Y",
-		"dd/mm/yy": "%d/%m/%y",
-		"mm/dd/yyyy": "%m/%d/%Y",
-		"mm/dd/yy": "%m/%d/%y"
-	}
+    DATE_FORMATS = {
+        "dd/mm/yyyy": "%d/%m/%Y",
+        "dd/mm/yy": "%d/%m/%y",
+        "mm/dd/yyyy": "%m/%d/%Y",
+        "mm/dd/yy": "%m/%d/%y"
+    }
 
-	def __init__(self):
-		props = {
-			"RetroAchievements": {
-				"apiKey": Settings.STR_PROP,
-				"hardcore": Settings.BOOL_PROP,
-				"username": Settings.STR_PROP,
-				"password": Settings.STR_PROP
-			},
-			"settings": {
-				"bluetooth": Settings.BOOL_PROP,
-				"dateFormat": Settings.STR_PROP,
-				"hdmi-cec": Settings.BOOL_PROP,
-				"romScraper": Settings.STR_PROP,
-				"screenSaverTimeout": Settings.INT_PROP
-			},
-			"webServer": {
-				"enabled": Settings.BOOL_PROP,
-				"port": Settings.INT_PROP
-			}
-		}
-		super(UserSettings, self).__init__(userPesConfigFile, props)
+    def __init__(self):
+        props = {
+            "RetroAchievements": {
+                "apiKey": Settings.STR_PROP,
+                "hardcore": Settings.BOOL_PROP,
+                "username": Settings.STR_PROP,
+                "password": Settings.STR_PROP
+            },
+            "settings": {
+                "bluetooth": Settings.BOOL_PROP,
+                "dateFormat": Settings.STR_PROP,
+                "hdmi-cec": Settings.BOOL_PROP,
+                "romScraper": Settings.STR_PROP,
+                "screenSaverTimeout": Settings.INT_PROP
+            },
+            "webServer": {
+                "enabled": Settings.BOOL_PROP,
+                "port": Settings.INT_PROP
+            }
+        }
+        super(UserSettings, self).__init__(userPesConfigFile, props)
 
-	def get(self, section, prop):
-		rslt = super(UserSettings, self).get(section, prop)
-		if self.getType(section, prop) == Settings.STR_PROP:
-			if rslt == None or len(rslt) == 0:
-				return None
-			return rslt.replace("%%USERDIR%%", userDir)
-		return rslt
+    def get(self, section, prop):
+        rslt = super(UserSettings, self).get(section, prop)
+        if self.getType(section, prop) == Settings.STR_PROP:
+            if rslt == None or len(rslt) == 0:
+                return None
+            return rslt.replace("%%USERDIR%%", userDir)
+        return rslt
 
-	@property
-	def bluetooth(self):
-		value = self.get("settings", "bluetooth")
-		if value == None:
-			logging.warning("UserSettings.bluetooth: Bluetooth setting is not defined, defaulting to true")
-			value = True
-		return value
+    @property
+    def bluetooth(self):
+        value = self.get("settings", "bluetooth")
+        if value == None:
+            logging.warning("UserSettings.bluetooth: Bluetooth setting is not defined, defaulting to true")
+            value = True
+        return value
 
-	@bluetooth.setter
-	def bluetooth(self, value):
-		self.set("settings", "bluetooth", value)
+    @bluetooth.setter
+    def bluetooth(self, value):
+        self.set("settings", "bluetooth", value)
 
-	@property
-	def dateFormat(self):
-		value = self.get("settings", "dateFormat")
-		if value == None:
-			value = next(iter(UserSettings.DATE_FORMATS[0]))
-			logging.warning("UserSettings.bluetooth: dateTimeFormat is not defined, defaulting to \"%s\"", value)
-		elif value not in UserSettings.DATE_FORMATS:
-			logging.error("UserSettings.dateFormat: invalid value: \"%s\", resetting to default", value)
-			value = next(iter(UserSettings.DATE_FORMATS[0]))
-		return value
+    @property
+    def dateFormat(self):
+        value = self.get("settings", "dateFormat")
+        if value == None:
+            value = next(iter(UserSettings.DATE_FORMATS[0]))
+            logging.warning("UserSettings.bluetooth: dateTimeFormat is not defined, defaulting to \"%s\"", value)
+        elif value not in UserSettings.DATE_FORMATS:
+            logging.error("UserSettings.dateFormat: invalid value: \"%s\", resetting to default", value)
+            value = next(iter(UserSettings.DATE_FORMATS[0]))
+        return value
 
-	@dateFormat.setter
-	def dateFormat(self, value):
-		if value not in UserSettings.DATE_FORMATS:
-			raise ValueError("Invalid value for UserSettings.dateFormat: \"%s\"" % value)
-		self.set("settings", "dateFormat", value)
+    @dateFormat.setter
+    def dateFormat(self, value):
+        if value not in UserSettings.DATE_FORMATS:
+            raise ValueError("Invalid value for UserSettings.dateFormat: \"%s\"" % value)
+        self.set("settings", "dateFormat", value)
 
-	@property
-	def hdmiCec(self):
-		return self.get("settings", "hdmi-cec")
+    @property
+    def hdmiCec(self):
+        return self.get("settings", "hdmi-cec")
 
-	@hdmiCec.setter
-	def hdmiCec(self, value):
-		self.set("settings", "hdmi-cec", value)
+    @hdmiCec.setter
+    def hdmiCec(self, value):
+        self.set("settings", "hdmi-cec", value)
 
-	@property
-	def kodiCommand(self):
-		return self.get("commands", "kodi")
+    @property
+    def kodiCommand(self):
+        return self.get("commands", "kodi")
 
-	@property
-	def hardcore(self):
-		value = self.get("RetroAchievements", "hardcore")
-		if value == None:
-			logging.warning("UserSettings.hardcore: RetroAchievements hardcore setting is not defined, defaulting to false")
-			value = False
-		return value
+    @property
+    def hardcore(self):
+        value = self.get("RetroAchievements", "hardcore")
+        if value == None:
+            logging.warning("UserSettings.hardcore: RetroAchievements hardcore setting is not defined, defaulting to false")
+            value = False
+        return value
 
-	@hardcore.setter
-	def hardcore(self, value):
-		self.set("RetroAchievements", "hardcore", value)
+    @hardcore.setter
+    def hardcore(self, value):
+        self.set("RetroAchievements", "hardcore", value)
 
-	@property
-	def rebootCommand(self):
-		return self.get("commands", "reboot")
+    @property
+    def rebootCommand(self):
+        return self.get("commands", "reboot")
 
-	@property
-	def setTimezoneCommand(self):
-		return self.get("commands", "setTimezone")
+    @property
+    def setTimezoneCommand(self):
+        return self.get("commands", "setTimezone")
 
-	@property
-	def shutdownCommand(self):
-		return self.get("commands", "shutdown")
+    @property
+    def shutdownCommand(self):
+        return self.get("commands", "shutdown")
