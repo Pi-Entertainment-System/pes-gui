@@ -20,20 +20,29 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name,line-too-long,missing-class-docstring,missing-function-docstring,too-many-branches,too-many-instance-attributes,too-many-public-methods,too-many-nested-blocks,too-many-return-statements,too-many-statements
+
+"""
+This module creates the PES GUI.
+"""
 
 import datetime
 import logging
 import os
+import pes
+import pes.common
+import pes.retroachievement
+import pes.romscan
+import pes.sql
+import pes.system
 import sdl2
 import sdl2.ext
 import sdl2.joystick
+import sqlalchemy.orm
 
 from PyQt5.QtGui import QGuiApplication, QKeyEvent
 from PyQt5.QtQml import QQmlApplicationEngine, QJSValue, qmlRegisterType
 from PyQt5.QtCore import Qt, pyqtProperty, pyqtSignal, pyqtSlot, QObject, QEvent, QVariant
-
-import sqlalchemy.orm
 
 cecImported = False
 try:
@@ -42,12 +51,6 @@ try:
 except ImportError as e:
     pass
 
-import pes
-import pes.common
-import pes.retroachievement
-import pes.romscan
-import pes.sql
-import pes.system
 
 JOYSTICK_AXIS_MIN = -30000
 JOYSTICK_AXIS_MAX =  30000
@@ -78,7 +81,7 @@ def getRetroArchConfigAxisValue(param, controller, axis, both=False):
     if bind:
         if bind.bindType == sdl2.SDL_CONTROLLER_BINDTYPE_AXIS:
             if both:
-                    return "%s_plus_axis = \"+%d\"\n%s_minus_axis = \"-%d\"\n" % (param, bind.value.axis, param, bind.value.axis)
+                return "%s_plus_axis = \"+%d\"\n%s_minus_axis = \"-%d\"\n" % (param, bind.value.axis, param, bind.value.axis)
             return "%s_axis = \"+%d\"\n" % (param, bind.value.axis)
         if bind.bindType == sdl2.SDL_CONTROLLER_BINDTYPE_BUTTON:
             return "%s_btn = \"%d\"\n" % (param, bind.value.button)
@@ -94,7 +97,7 @@ def getRetroArchConfigButtonValue(param, controller, button):
             return "%s_btn = \"%d\"\n" % (param, bind.value.button)
         if bind.bindType == sdl2.SDL_CONTROLLER_BINDTYPE_AXIS:
             #return PESApp.getRetroArchConfigAxisValue(param, controller, bind.value.axis)
-            if button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP or button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+            if button in [sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP, sdl2.SDL_CONTROLLER_BUTTON_DPAD_LEFT]:
                 return "%s_axis = \"-%d\"\n" % (param, bind.value.axis)
             return "%s_axis = \"+%d\"\n" % (param, bind.value.axis)
         if bind.bindType == sdl2.SDL_CONTROLLER_BINDTYPE_HAT:
@@ -116,7 +119,7 @@ class Backend(QObject):
     gamepadTotalSignal = pyqtSignal(int, arguments=['total'])
 
     def __init__(self, parent=None):
-        super(Backend, self).__init__(parent)
+        super().__init__(parent)
         self.__userSettings = pes.common.UserSettings()
         self.__consoleSettings = pes.common.ConsoleSettings()
         self.__updateDateTimeFormat()
@@ -133,7 +136,7 @@ class Backend(QObject):
             self.__btAgent = None
         self.__screenSaverTimeout = self.__userSettings.get("settings", "screenSaverTimeout")
         self.__gamepadTotal = 0
-        logging.debug("Backend.__init__: connecting to database: %s" % pes.userDb)
+        logging.debug("Backend.__init__: connecting to database: %s", pes.userDb)
         #self.__romscanThread = None
         engine = pes.sql.connect()
         self.__session = sqlalchemy.orm.sessionmaker(bind=engine)()
@@ -145,6 +148,7 @@ class Backend(QObject):
 
     @pyqtProperty(bool, constant=True)
     def cecEnabled(self):
+        # pylint: disable=no-self-use
         return cecImported
 
     @pyqtSlot()
@@ -154,7 +158,7 @@ class Backend(QObject):
 
     @staticmethod
     def __createCommandFile(command):
-        logging.debug("Backend.__createCommandFile: creating %s" % pes.userScriptFile)
+        logging.debug("Backend.__createCommandFile: creating %s", pes.userScriptFile)
         with open(pes.userScriptFile, "w") as f:
             f.write("#!/bin/bash\n")
             f.write("# THIS FILE WAS AUTOMATICALLY CREATED BY PES\n")
@@ -173,14 +177,14 @@ class Backend(QObject):
 
     @pyqtSlot(int, bool)
     def favouriteGame(self, gameId, favourite):
-        logging.debug("Backend.favouriteGame: %d -> %s" % (gameId, favourite))
+        logging.debug("Backend.favouriteGame: %d -> %s", gameId, favourite)
         game = self.__session.query(pes.sql.Game).get(gameId)
         if game:
             game.favourite = favourite
             self.__session.add(game)
             self.__session.commit()
         else:
-            logging.error("Backend.favouriteGame: could not find game with ID: %d" % gameId)
+            logging.error("Backend.favouriteGame: could not find game with ID: %d", gameId)
 
     @pyqtProperty(int)
     def gamepadTotal(self):
@@ -203,27 +207,27 @@ class Backend(QObject):
 
     @pyqtSlot(int, result=str)
     def getConsoleArt(self, consoleId):
-        logging.debug("Backend.getConsoleArt: getting console art URL for %d" % consoleId)
+        logging.debug("Backend.getConsoleArt: getting console art URL for %d", consoleId)
         console = self.__session.query(pes.sql.Console).get(consoleId)
         if console:
             path = os.path.join(pes.resourcesDir, console.art)
-            logging.debug("Backend.getConsoleArt: path is %s" % path)
+            logging.debug("Backend.getConsoleArt: path is %s", path)
             return path
-        logging.error("Backend.getConsoleArt: could not find console with ID: %d" % consoleId)
+        logging.error("Backend.getConsoleArt: could not find console with ID: %d", consoleId)
         return None
 
     @pyqtSlot(int, result=str)
     def getConsole(self, consoleId):
-        logging.debug("Backend.getConsole: getting console with ID: %d" % consoleId)
+        logging.debug("Backend.getConsole: getting console with ID: %d", consoleId)
         console = self.__session.query(pes.sql.Console).get(consoleId)
         if console:
             return console.getDict()
-        logging.error("Backend.getConsole: could not find console with ID: %d" % consoleId)
+        logging.error("Backend.getConsole: could not find console with ID: %d", consoleId)
         return None
 
     @pyqtSlot(bool, result=list)
     def getConsoles(self, withGames=False):
-        logging.debug("Backend.getConsoles: getting consoles, withGames = %s" % withGames)
+        logging.debug("Backend.getConsoles: getting consoles, withGames = %s", withGames)
         consoleList = []
         if withGames:
             result = self.__session.query(pes.sql.Console).join(pes.sql.Game).order_by(pes.sql.Console.name).all()
@@ -245,11 +249,11 @@ class Backend(QObject):
 
     @pyqtSlot(int, result=QVariant)
     def getGame(self, gameId):
-        logging.debug("Backend.getGame: getting game: %d" % gameId)
+        logging.debug("Backend.getGame: getting game: %d", gameId)
         game = self.__session.query(pes.sql.Game).get(gameId)
         if game:
             return game.getDict()
-        logging.error("Backend.getGame: could not find game for: %d" % gameId)
+        logging.error("Backend.getGame: could not find game for: %d", gameId)
         return None
 
     @pyqtSlot(int, result=list)
@@ -257,17 +261,17 @@ class Backend(QObject):
         games = []
         if not consoleId or consoleId == 0:
             logging.debug("Backand.getFavouriteGames: getting favourite games for all consoles")
-            result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.favourite == True).order_by(pes.sql.Game.name)
+            result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.favourite).order_by(pes.sql.Game.name)
         else:
-            logging.debug("Backend.getFavouriteGames: getting favourite games for console %d" % consoleId)
-            result = self.__session.query(pes.sql.Game).filter(sqlalchemy.sql.expression.and_(pes.sql.Game.consoleId == consoleId, pes.sql.Game.favourite == True)).order_by(pes.sql.Game.name)
+            logging.debug("Backend.getFavouriteGames: getting favourite games for console %d", consoleId)
+            result = self.__session.query(pes.sql.Game).filter(sqlalchemy.sql.expression.and_(pes.sql.Game.consoleId == consoleId, pes.sql.Game.favourite)).order_by(pes.sql.Game.name)
         for g in result:
             games.append(g.getDict())
         return games
 
     @pyqtSlot(int, result=list)
     def getGames(self, consoleId):
-        logging.debug("Backend.getGames: getting games for console %d" % consoleId)
+        logging.debug("Backend.getGames: getting games for console %d", consoleId)
         games = []
         result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).order_by(pes.sql.Game.name)
         for g in result:
@@ -293,7 +297,7 @@ class Backend(QObject):
             if limit > 0:
                 result = result.limit(limit)
         else:
-            logging.debug("Backend.getMostPlayedGames: getting most played games for console %d" % consoleId)
+            logging.debug("Backend.getMostPlayedGames: getting most played games for console %d", consoleId)
             result = self.__session.query(pes.sql.Game).filter(sqlalchemy.sql.expression.and_(pes.sql.Game.consoleId == consoleId, pes.sql.Game.playCount > 0)).order_by(pes.sql.Game.playCount)
             if limit > 0:
                 result = result.limit(limit)
@@ -303,6 +307,7 @@ class Backend(QObject):
 
     @pyqtSlot(result=bool)
     def getNetworkAvailable(self):
+        # pylint: disable=no-self-use
         return pes.common.getIpAddress() != "127.0.0.1"
 
     @pyqtSlot(int, int, result=list)
@@ -314,7 +319,7 @@ class Backend(QObject):
             if limit > 0:
                 result = result.limit(limit)
         else:
-            logging.debug("Backend.getRecentlyAddedGames: getting games for console %d" % consoleId)
+            logging.debug("Backend.getRecentlyAddedGames: getting games for console %d", consoleId)
             result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).order_by(pes.sql.Game.added.desc())
             if limit > 0:
                 result = result.limit(limit)
@@ -331,7 +336,7 @@ class Backend(QObject):
             if limit > 0:
                 result = result.limit(limit)
         else:
-            logging.debug("Backend.getRecentlyPlayedGames: getting games for console %d" % consoleId)
+            logging.debug("Backend.getRecentlyPlayedGames: getting games for console %d", consoleId)
             result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).filter(pes.sql.Game.playCount > 0).order_by(pes.sql.Game.lastPlayed.desc())
             if limit > 0:
                 result = result.limit(limit)
@@ -357,21 +362,22 @@ class Backend(QObject):
         self.close()
 
     @pyqtSlot(int, result=QVariant)
-    def playGame(self, id):
-        game = self.__session.query(pes.sql.Game).get(id)
+    def playGame(self, gameId):
+        # pylint: disable=too-many-locals
+        game = self.__session.query(pes.sql.Game).get(gameId)
         if game:
-            logging.debug("Backend.playGame: found game ID %d" % id)
+            logging.debug("Backend.playGame: found game ID %d", gameId)
 
             requireFiles = self.__consoleSettings.get(game.console.name, "require")
             if requireFiles:
                 for f in requireFiles:
                     f = f.strip()
-                    logging.debug("Backend.playGame: checking for: %s" % f)
+                    logging.debug("Backend.playGame: checking for: %s", f)
                     if not os.path.exists(f) or not os.path.isfile(f):
-                        logging.error("Backend.playGame: could not find required file: %s" % f)
+                        logging.error("Backend.playGame: could not find required file: %s", f)
                         return { "result": False, "msg": "Could not find required file: %s" % f}
             else:
-                logging.debug("Backend.playGame: no required files for console %s" % game.console.name)
+                logging.debug("Backend.playGame: no required files for console %s", game.console.name)
 
             # generate emulator config
             emulator = self.__consoleSettings.get(game.console.name, "emulator")
@@ -388,7 +394,7 @@ class Backend(QObject):
                                 j = sdl2.SDL_GameControllerGetJoystick(c)
                                 jsName = sdl2.SDL_JoystickName(j).decode()
                                 jsConfig = os.path.join(pes.userRetroArchJoysticksConfDir, "%s.cfg" % jsName)
-                                logging.debug("Backend.playGame: creating configuration file %s for %s" % (jsConfig, jsName))
+                                logging.debug("Backend.playGame: creating configuration file %s for %s", jsConfig, jsName)
                                 vendorId, productId = getJoystickDeviceInfoFromGUID(getJoystickGUIDString(sdl2.SDL_JoystickGetDeviceGUID(i)))
                                 with open(jsConfig, 'w') as f:
                                     # control pad id etc.
@@ -439,7 +445,7 @@ class Backend(QObject):
                 retroUser = self.__userSettings.get("RetroAchievements", "username")
                 retroPass = self.__userSettings.get("RetroAchievements", "password")
                 s = "# THIS FILE IS AUTOMATICALLY GENERATED BY PES!\n"
-                if retroUser == None or retroPass == None:
+                if retroUser is None or retroPass is None:
                     s += "cheevos_enable = false\n"
                 else:
                     s += "cheevos_username = %s\n" % retroUser
@@ -455,9 +461,9 @@ class Backend(QObject):
             # get emulator launch string
             command = self.__consoleSettings.get(game.console.name, "command").replace("%%GAME%%", "\"%s\"" % game.path)
             if not command:
-                logging.error("Backend.playGame: could not determine launch command for the %s console" % game.console.name)
+                logging.error("Backend.playGame: could not determine launch command for the %s console", game.console.name)
                 return { "result": False, "msg": "Could not determine launch command for the %s console" % game.console.name }
-            logging.debug("Backend.playGame: launch string: %s" % command)
+            logging.debug("Backend.playGame: launch string: %s", command)
             self.__createCommandFile(command)
             game.playCount += 1
             game.lastPlayed = datetime.datetime.now()
@@ -465,8 +471,8 @@ class Backend(QObject):
             self.__session.commit()
             self.close()
             return { "result": True, "msg": "Loading %s" % game.name }
-        logging.error("Backend.playGame: coult not find game ID %d" % id)
-        return { "result": False, "msg": "Could not find game %d" % id }
+        logging.error("Backend.playGame: coult not find game ID %d", gameId)
+        return { "result": False, "msg": "Could not find game %d" % gameId }
 
     @pyqtSlot()
     def reboot(self):
@@ -475,9 +481,10 @@ class Backend(QObject):
 
     @pyqtSlot(QJSValue)
     def saveSettings(self, settings):
+        # pylint: disable=comparison-with-callable
         logging.info("Saving settings")
         settings = settings.toVariant()
-        logging.debug("Backend.saveSettings: %s" % settings)
+        logging.debug("Backend.saveSettings: %s", settings)
         self.__userSettings.bluetooth = settings["bluetoothEnabled"]
         self.__userSettings.dateFormat = settings["dateFormat"]
         self.__userSettings.hardcore = settings["hardcoreEnabled"]
@@ -486,7 +493,7 @@ class Backend(QObject):
         self.__userSettings.save()
         if self.__btAgent:
             self.__dbusBroker.btPowered = self.__userSettings.bluetooth
-        if self.getTimezone() != settings["timezone"]:
+        if self.getTimezone() != settings["timezone"]: # generates comparison-with-callable pylint warning
             logging.debug("Backend.saveSettings: changing timezone")
             pes.common.runCommand("%s %s" % (self.__userSettings.setTimezoneCommand, settings["timezone"]))
 
@@ -499,9 +506,10 @@ class Backend(QObject):
         self.__dateTimeFormat = self.__userSettings.DATE_FORMATS[self.__userSettings.dateFormat] + " %H:%M:%S"
 
 class PESGuiApplication(QGuiApplication):
+    # pylint: disable=unused-private-member
 
     def __init__(self, argv, backend, windowed=False):
-        super(PESGuiApplication, self).__init__(argv)
+        super().__init__(argv)
         self.__windowed = windowed
         self.__running = True
         self.__player1Controller = None
@@ -515,7 +523,7 @@ class PESGuiApplication(QGuiApplication):
         qmlRegisterType(pes.retroachievement.RetroAchievementThread, 'RetroAchievementThread', 1, 0, 'RetroAchievementThread')
         self.__engine = QQmlApplicationEngine()
         self.__engine.rootContext().setContextProperty("backend", self.__backend)
-        logging.debug("loading QML from: %s" % pes.qmlMain)
+        logging.debug("loading QML from: %s", pes.qmlMain)
         self.__engine.load(pes.qmlMain)
 
     def close(self):
@@ -551,7 +559,7 @@ class PESGuiApplication(QGuiApplication):
         if not cecImported:
             raise Exception("PESGuiApplication.processCecEvent: CEC module not imported")
         if dur > 0:
-            logging.debug("PESGuiApplication.processCecEvent: button %s" % button)
+            logging.debug("PESGuiApplication.processCecEvent: button %s", button)
             event = None
             if button == cec.CEC_USER_CONTROL_CODE_UP:
                 event = QKeyEvent(QEvent.KeyPress, Qt.Key_Up, Qt.NoModifier)
@@ -563,7 +571,7 @@ class PESGuiApplication(QGuiApplication):
                 event = QKeyEvent(QEvent.KeyPress, Qt.Key_Right, Qt.NoModifier)
             elif button == cec.CEC_USER_CONTROL_CODE_SELECT:
                 event = QKeyEvent(QEvent.KeyPress, Qt.Key_Return, Qt.NoModifier)
-            elif button == cec.CEC_USER_CONTROL_CODE_AN_RETURN or button == cec.CECDEVICE_RESERVED2:
+            elif button in [cec.CEC_USER_CONTROL_CODE_AN_RETURN, cec.CECDEVICE_RESERVED2]:
                 event = QKeyEvent(QEvent.KeyPress, Qt.Key_Backspace, Qt.NoModifier)
             if event:
                 self.sendEvent(self.__engine.rootObjects()[0], event)
@@ -601,21 +609,21 @@ class PESGuiApplication(QGuiApplication):
                         self.__backend.emitHomeButtonPress()
                 elif event.type == sdl2.SDL_CONTROLLERAXISMOTION:
                     if event.caxis.value < JOYSTICK_AXIS_MIN or event.caxis.value > JOYSTICK_AXIS_MAX:
-                            logging.debug("player: axis \"%s\" activated: %d" % (sdl2.SDL_GameControllerGetStringForAxis(event.caxis.axis), event.caxis.value))
-                            if event.caxis.axis == sdl2.SDL_CONTROLLER_AXIS_LEFTY:
-                                if event.caxis.value > 0:
-                                    logging.debug("player: left axis down")
-                                    self.__sendKeyEvent(Qt.Key_Down)
-                                else:
-                                    logging.debug("player: left axis up")
-                                    self.__sendKeyEvent(Qt.Key_Up)
-                            elif event.caxis.axis == sdl2.SDL_CONTROLLER_AXIS_LEFTX:
-                                if event.caxis.value > 0:
-                                    logging.debug("player: left axis right")
-                                    self.__sendKeyEvent(Qt.Key_Right)
-                                else:
-                                    logging.debug("player: left axis left")
-                                    self.__sendKeyEvent(Qt.Key_Left)
+                        logging.debug("player: axis \"%s\" activated: %d", sdl2.SDL_GameControllerGetStringForAxis(event.caxis.axis), event.caxis.value)
+                        if event.caxis.axis == sdl2.SDL_CONTROLLER_AXIS_LEFTY:
+                            if event.caxis.value > 0:
+                                logging.debug("player: left axis down")
+                                self.__sendKeyEvent(Qt.Key_Down)
+                            else:
+                                logging.debug("player: left axis up")
+                                self.__sendKeyEvent(Qt.Key_Up)
+                        elif event.caxis.axis == sdl2.SDL_CONTROLLER_AXIS_LEFTX:
+                            if event.caxis.value > 0:
+                                logging.debug("player: left axis right")
+                                self.__sendKeyEvent(Qt.Key_Right)
+                            else:
+                                logging.debug("player: left axis left")
+                                self.__sendKeyEvent(Qt.Key_Left)
                 #elif event.type == sdl2.SDL_JOYHATMOTION:
                 # NOTE: could be handling an already handled game controller event!
                 #    if event.jhat.value == sdl2.SDL_HAT_UP:
@@ -642,9 +650,9 @@ class PESGuiApplication(QGuiApplication):
                             c = sdl2.SDL_GameControllerOpen(i)
                             if sdl2.SDL_GameControllerGetAttached(c):
                                 controlPadTotal += 1
-                                #logging.debug("PESWindow.run: %s is attached at %d" % (sdl2.SDL_GameControllerNameForIndex(i).decode(), i))
-                                if self.__player1Controller == None:
-                                    logging.debug("PESApp.run: switching player 1 to control pad #%d: %s (%s)" % (i, sdl2.SDL_GameControllerNameForIndex(i).decode(), getJoystickGUIDString(sdl2.SDL_JoystickGetDeviceGUID(i))))
+                                #logging.debug("PESWindow.run: %s is attached at %d", sdl2.SDL_GameControllerNameForIndex(i).decode(), i)
+                                if self.__player1Controller is None:
+                                    logging.debug("PESApp.run: switching player 1 to control pad #%d: %s (%s)", i, sdl2.SDL_GameControllerNameForIndex(i).decode(), getJoystickGUIDString(sdl2.SDL_JoystickGetDeviceGUID(i)))
                                     self.__player1ControllerIndex = i
                                     self.__player1Controller = c
                                     #self.__updateControlPad(self.__player1ControllerIndex)

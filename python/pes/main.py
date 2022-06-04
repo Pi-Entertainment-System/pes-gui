@@ -22,7 +22,7 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name,line-too-long,missing-class-docstring,missing-function-docstring
 
 import argparse
 import logging

@@ -20,7 +20,7 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name,line-too-long,missing-class-docstring,missing-function-docstring
 
 """
 PES provides an interactive GUI for games console emulators
@@ -33,7 +33,7 @@ import sys
 import logging
 
 VERSION_NUMBER = '3.0 (ALPHA)'
-VERSION_DATE = '2022-01-01'
+VERSION_DATE = '2022-06-04'
 VERSION_AUTHOR = 'Neil Munday'
 
 romScrapers = ['theGamesDb.net'] # list of ROM scrapers, default scraper is assumed to be at index 0
@@ -47,7 +47,7 @@ qmlDir = os.path.join(moduleDir, 'qml')
 qmlMain = os.path.join(qmlDir, 'main.qml')
 webDir = os.path.join(moduleDir, 'web')
 dataDir = os.path.join(baseDir, 'data')
-masterDb = os.path.join(dataDir, 'pes.db')
+primaryDb = os.path.join(dataDir, 'pes.db')
 resourcesDir = os.path.join(baseDir, 'resources')
 userHomeDir = os.path.expanduser('~')
 userDir = os.path.join(userHomeDir, 'pes')
