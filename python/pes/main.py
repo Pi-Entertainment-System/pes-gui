@@ -22,18 +22,28 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# pylint: disable=invalid-name,line-too-long,missing-class-docstring,missing-function-docstring
+# pylint: disable=broad-except,invalid-name,line-too-long,missing-class-docstring,missing-function-docstring
+
+"""
+This module is the entry point for the PES application.
+It bootstraps the GUI and loads it.
+"""
 
 import argparse
 import logging
+import os
+import shutil
+import sys
+
 import pes
-from pes.common import *
-from pes.gui import Backend, PESGuiApplication
 import pes.retroachievement
 import pes.sql
 import pes.web
 import sdl2
-import shutil
+
+from pes.common import checkDir, checkFile, mkdir, initConfig, initDb, pesExit, UserSettings
+from pes.gui import Backend, PESGuiApplication
+from sqlalchemy.orm import sessionmaker
 
 coloredlogsImported = False
 try:
@@ -49,13 +59,12 @@ try:
 except ImportError as e:
     pass
 
-from sqlalchemy.orm import sessionmaker
-
 def cecEvent(button, dur):
     """
     Wrapper function to work around segmentation fault
     when adding Qt app as the callback.
     """
+    # pylint: disable=global-statement
     global app
     if app:
         app.processCecEvent(button, dur)
@@ -82,16 +91,16 @@ if __name__ == "__main__":
         logger = logging.getLogger(__name__)
         coloredlogs.install(fmt=logFormat, datefmt=logDateFormat, level=logLevel, logger=logger)
 
-    logging.debug("PES %s, date: %s, author: %s" % (pes.VERSION_NUMBER, pes.VERSION_DATE, pes.VERSION_AUTHOR))
-    logging.debug("base dir: %s" % pes.baseDir)
+    logging.debug("PES %s, date: %s, author: %s", pes.VERSION_NUMBER, pes.VERSION_DATE, pes.VERSION_AUTHOR)
+    logging.debug("base dir: %s", pes.baseDir)
 
     checkDir(pes.baseDir)
     checkFile(pes.qmlMain)
     checkDir(pes.qmlDir)
     checkDir(pes.webDir)
-    logging.debug("config dir: %s" % pes.confDir)
+    logging.debug("config dir: %s", pes.confDir)
     checkDir(pes.confDir)
-    logging.debug("user dir: %s" % pes.userDir)
+    logging.debug("user dir: %s", pes.userDir)
     mkdir(pes.userDir)
     mkdir(pes.userBadgeDir)
     mkdir(pes.userBiosDir)
@@ -110,7 +119,7 @@ if __name__ == "__main__":
     checkFile(pes.userConsolesConfigFile)
     checkFile(pes.userGameControllerFile)
     # look for rasum in $PATH
-    if shutil.which("rasum") == None:
+    if shutil.which("rasum") is None:
         pesExit("Error: could not find rasum executable in $PATH", True)
 
     logging.info("loading settings...")
@@ -118,8 +127,8 @@ if __name__ == "__main__":
     userSettings = UserSettings()
 
     # make directory for each support console
-    logging.debug("connecting to database: %s" % userDb)
-    engine = pes.sql.connect(userDb)
+    logging.debug("connecting to database: %s", pes.userDb)
+    engine = pes.sql.connect(pes.userDb)
     session = sessionmaker(bind=engine)()
     pes.sql.createAll(engine)
     consoles = session.query(pes.sql.Console).all()
@@ -130,12 +139,12 @@ if __name__ == "__main__":
         mkdir(os.path.join(pes.userScreenshotDir, c.name))
 
     romScraper = userSettings.get("settings", "romScraper")
-    if romScraper == None:
-        logging.warning("Could not find \"romScraper\" parameter in \"settings\" section in %s. Adding default setting: %s." % (userPesConfigFile, romScrapers[0]))
-        userSettings.set("settings", "romScraper", romScrapers[0])
-        userSettings.save(userPesConfigFile)
+    if romScraper is None:
+        logging.warning("Could not find \"romScraper\" parameter in \"settings\" section in %s. Adding default setting: %s.", pes.userPesConfigFile, pes.romScrapers[0])
+        userSettings.set("settings", "romScraper", pes.romScrapers[0])
+        userSettings.save()
     elif romScraper not in pes.romScrapers:
-        pesExit("Unknown romScraper value: \"%s\" in \"settings\" section in %s" % (romScraper, userPesConfigFile, romScrapers[0]))
+        pesExit("Unknown romScraper value: \"%s\" in \"settings\" section in %s" % (romScraper, pes.userPesConfigFile))
 
     backend = Backend()
 
@@ -144,28 +153,28 @@ if __name__ == "__main__":
         try:
             webPort = int(userSettings.get("webServer", "port"))
         except Exception as e:
-            logging.error("Could not determine web port from %s" % userPesConfigFile)
+            logging.error("Could not determine web port from %s", pes.userPesConfigFile)
         try:
             webThread = pes.web.WebThread(webPort, backend)
             webThread.start()
         except Exception as e:
-            logging.error("Failed to start web server: %s" % e)
+            logging.error("Failed to start web server: %s", e)
     else:
         logging.info("web server disabled")
 
     if sdl2.SDL_Init(sdl2.SDL_INIT_JOYSTICK | sdl2.SDL_INIT_GAMECONTROLLER) != 0:
         pesExit("Failed to initialise SDL")
 
-    logging.debug("loading SDL2 control pad mappings from: %s" % pes.userGameControllerFile)
+    logging.debug("loading SDL2 control pad mappings from: %s", pes.userGameControllerFile)
     mappingsLoaded = sdl2.SDL_GameControllerAddMappingsFromFile(pes.userGameControllerFile.encode())
     if mappingsLoaded == -1:
         pes.common.pesExit("failed to load SDL2 control pad mappings from: %s" % pes.userGameControllerFile)
-    logging.debug("loaded %d control pad mappings" % mappingsLoaded)
+    logging.debug("loaded %d control pad mappings", mappingsLoaded)
 
     app = PESGuiApplication(sys.argv, backend)
 
     userCecEnabled = userSettings.get("settings", "hdmi-cec")
-    if cecImported and (userCecEnabled or userCecEnabled == None):
+    if cecImported and (userCecEnabled or userCecEnabled is None):
         logging.debug("creating CEC config...")
         cecconfig = cec.libcec_configuration()
         cecconfig.strDeviceName   = "PES"
@@ -181,7 +190,7 @@ if __name__ == "__main__":
         if adapterCount == 0:
             logging.warning("could not find any CEC adapters!")
         else:
-            logging.debug("found %d CEC adapters, attempting to open first adapter..." % adapterCount)
+            logging.debug("found %d CEC adapters, attempting to open first adapter...", adapterCount)
             if lib.Open(adapters[0].strComName):
                 logging.debug("CEC adapter opened")
             else:
