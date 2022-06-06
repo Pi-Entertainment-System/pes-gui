@@ -28,7 +28,7 @@ Once you have cloned this repository you can create the database like so:
 
 ```
 export PYTHONPATH=python
-bin/populate-db -g -m -d data -r --match -v
+bin/populate-db.py -g -m -d data -r --match -v
 ```
 
 # Load GUI
