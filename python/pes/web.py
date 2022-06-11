@@ -22,20 +22,23 @@
 
 # pylint: disable=invalid-name,line-too-long,missing-class-docstring,missing-function-docstring
 
+"""
+Experimental PES web GUI.
+"""
+
 import logging
 import os
 import pes
 
 from flask import abort, Flask, render_template, request, send_file
-from PyQt5.QtCore import pyqtProperty, pyqtSignal, pyqtSlot, QThread
+from PyQt5.QtCore import QThread
 from waitress import serve
-
 
 class WebThread(QThread):
 
     def __init__(self, port, backend, parent=None):
         logging.debug("WebThread.__init__: created")
-        super(WebThread, self).__init__(parent)
+        super().__init__(parent)
         if port < 1:
             raise ValueError("WebThread.__init__: port is less than 1")
         self._backend = backend
@@ -51,19 +54,19 @@ class WebThread(QThread):
         self._server.add_url_rule("/reboot", "reboot", self.reboot, methods=["GET"])
         self._consoles = self._backend.getConsoles(True)
 
-    def coverart(self):
+    def coverart(self): # pylint: disable=inconsistent-return-statements
         gameId = self._getGameId()
         game = self._backend.getGame(gameId)
         if game:
             return send_file(game["coverartFront"])
         abort(404)
 
-    def game(self):
+    def game(self): # pylint: disable=inconsistent-return-statements
         gameId = self._getGameId()
         game = self._backend.getGame(gameId)
         if game:
             return render_template("game.html", consoleId=game["consoleId"], consoles=self._consoles, game=game)
-        abort(404)            
+        abort(404)
 
     def games(self):
         consoleId = int(request.args.get("id"))
@@ -73,7 +76,8 @@ class WebThread(QThread):
         games = self._backend.getGames(consoleId)
         return render_template("games.html", consoleId=consoleId, console=console, consoles=self._consoles, games=games)
 
-    def _getGameId(self):
+    @staticmethod
+    def _getGameId():
         return int(request.args.get("id"))
 
     def index(self):
@@ -98,5 +102,5 @@ class WebThread(QThread):
         return render_template("result.json", result=True, msg="")
 
     def run(self):
-        logging.debug("WebThread.run: starting Flask app via Waitress on port %d" % self._port)
+        logging.debug("WebThread.run: starting Flask app via Waitress on port %d", self._port)
         serve(self._server, host="0.0.0.0", port=self._port, _quiet=True)
