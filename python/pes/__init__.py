@@ -20,7 +20,7 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# pylint: disable=invalid-name,line-too-long,missing-class-docstring,missing-function-docstring
+# pylint: disable=invalid-name,line-too-long
 
 """
 PES provides an interactive GUI for games console emulators
@@ -39,7 +39,7 @@ VERSION_AUTHOR = 'Neil Munday'
 romScrapers = ['theGamesDb.net'] # list of ROM scrapers, default scraper is assumed to be at index 0
 
 moduleDir = os.path.dirname(os.path.realpath(__file__))
-baseDir = os.path.abspath('%s%s../../' % (moduleDir, os.sep))
+baseDir = os.path.abspath(f'{moduleDir}/../../')
 binDir = os.path.join(baseDir, 'bin')
 confDir = os.path.join(baseDir, 'conf.d')
 themeDir = os.path.join(baseDir, 'themes')
