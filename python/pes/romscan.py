@@ -20,15 +20,20 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# pylint: disable=invalid-name,line-too-long,missing-class-docstring,missing-function-docstring
+# pylint: disable=invalid-name,line-too-long,missing-class-docstring,missing-function-docstring,too-many-branches,too-many-instance-attributes,too-many-locals,too-many-nested-blocks,too-many-statements
+
+"""
+This module provides classes and functions to process meta data for ROMS.
+"""
 
 import abc
 import datetime
 import glob
-import json
 import logging
 import multiprocessing
 import os
+import time
+
 import pes
 import pes.common
 import pes.retroachievement
@@ -37,7 +42,6 @@ import PIL
 import requests
 import sqlalchemy
 import sqlalchemy.orm
-import time
 
 from PyQt5.QtCore import pyqtProperty, pyqtSignal, pyqtSlot, QThread
 
@@ -45,7 +49,7 @@ logging.getLogger("PIL").setLevel(logging.WARNING)
 logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
-class RomTaskResult(object):
+class RomTaskResult():
 
     STATE_ADDED = 1
     STATE_UPDATED = 2
@@ -79,15 +83,15 @@ class RomTaskResult(object):
 
     @state.setter
     def state(self, state: int):
-        if state == RomTaskResult.STATE_ADDED or state == RomTaskResult.STATE_UPDATED or state == RomTaskResult.STATE_FAILED or state == RomTaskResult.STATE_SKIPPED:
+        if state in [RomTaskResult.STATE_ADDED, RomTaskResult.STATE_UPDATED, RomTaskResult.STATE_FAILED, RomTaskResult.STATE_SKIPPED]:
             self.__state = state
         else:
-            raise ValueError("Invalid state: %s" % state)
+            raise ValueError(f"Invalid state: {state}")
 
     def __repr__(self):
-        return "<RomTaskResult state=%d >" % self.state
+        return f"<RomTaskResult state={self.state} >"
 
-class RomProcessResult(object):
+class RomProcessResult():
 
     def __init__(self):
         self.__added = 0
@@ -109,7 +113,7 @@ class RomProcessResult(object):
         elif result.state == RomTaskResult.STATE_SKIPPED:
             self.__skipped += 1
         else:
-            raise ValueError("Invalid state for RomTaskResult: %s" % result)
+            raise ValueError(f"Invalid state for RomTaskResult: {result}")
 
     @property
     def failed(self) -> int:
@@ -126,8 +130,8 @@ class RomProcessResult(object):
 
 class RomProcess(multiprocessing.Process):
 
-    def __init__(self, processNumber, taskQueue, resultQueue, exitEvent, lock, romList):
-        super(RomProcess, self).__init__()
+    def __init__(self, processNumber, taskQueue, resultQueue, exitEvent, lock, romList): # pylint: disable=too-many-arguments
+        super().__init__()
         self.__processNumber = processNumber
         self.__taskQueue = taskQueue
         self.__resultQueue = resultQueue
@@ -141,7 +145,7 @@ class RomProcess(multiprocessing.Process):
         while True:
             task = self.__taskQueue.get()
             if task is None:
-                logging.debug("%s: exiting..." % self.name)
+                logging.debug("%s: exiting...", self.name)
                 self.__taskQueue.task_done()
                 break
             if self.__exitEvent.is_set():
@@ -153,8 +157,8 @@ class RomProcess(multiprocessing.Process):
                     romProcessResult.addRomTaskResult(romTaskResult)
                     if not self.__exitEvent.is_set():
                         self.__romList.append({ "name": romTaskResult.name, "coverart": romTaskResult.coverart })
-                except Exception as e:
-                    logging.exception("%s: Failed to process task due to the following error:" % self.name)
+                except Exception as e: # pylint: disable=broad-except
+                    logging.exception("%s: Failed to process task due to the following error: %s", self.name, e)
                     self.__resultQueue.put(RomTaskResult(RomTaskResult.STATE_FAILED, ""))
                 self.__taskQueue.task_done()
         self.__resultQueue.put(romProcessResult)
@@ -176,6 +180,7 @@ class RomTask(abc.ABC):
         self._console = console
         self._rom = rom
         self._fullscan = fullscan
+        self._lock = None
         self._romFileSize = os.path.getsize(rom)
 
     @abc.abstractmethod
@@ -195,7 +200,7 @@ class RomTask(abc.ABC):
         img = PIL.Image.open(path)
         imgFormat = img.format
         filename, extension = os.path.splitext(path)
-        logging.debug("RomTask._scaleImage: %s format is %s" % (path, imgFormat))
+        logging.debug("RomTask._scaleImage: %s format is %s", path, imgFormat)
         width, height = img.size
         scaleWidth = RomTask.SCALE_WIDTH
         ratio = min(float(scaleWidth / width), float(scaleWidth / height))
@@ -213,9 +218,9 @@ class RomTask(abc.ABC):
         else:
             imgFormat = "PNG"
             extension = ".png"
-        newPath = "%s%s" % (filename, extension)
+        newPath = f"{filename}{extension}"
         if newPath != path:
-            logging.warning("RomTask._scaleImage: %s will be deleted and saved as %s due to incorrect image format" % (path, newPath))
+            logging.warning("RomTask._scaleImage: %s will be deleted and saved as %s due to incorrect image format", path, newPath)
             os.remove(path)
         img.save(newPath, imgFormat)
         img.close()
@@ -226,15 +231,12 @@ class RomTask(abc.ABC):
 
 class GamesDbRomTask(RomTask):
 
-    def __init__(self, console: pes.sql.Console, rom: str, fullscan: bool = False):
-        super(GamesDbRomTask, self).__init__(console, rom, fullscan)
-
     def run(self, processNumber: int) -> RomTaskResult:
-        logPrefix = "GamesDbRomTask(%d).run:" % processNumber
+        logPrefix = f"GamesDbRomTask({processNumber}).run:"
         filename = os.path.split(self._rom)[1]
         romName = os.path.splitext(os.path.basename(self._rom))[0]
         romTaskResult = RomTaskResult(RomTaskResult.STATE_FAILED, romName)
-        logging.debug("%s processing -> %s" % (logPrefix, filename))
+        logging.debug("%s processing -> %s", logPrefix, filename)
 
         engine = pes.sql.connect()
         session = sqlalchemy.orm.sessionmaker(bind=engine)()
@@ -247,7 +249,7 @@ class GamesDbRomTask(RomTask):
         rasum = None
         retroGame = None
         if result:
-            logging.debug("%s already in database" % logPrefix)
+            logging.debug("%s already in database", logPrefix)
             game = result
             game.found = True
             with self._lock:
@@ -258,20 +260,20 @@ class GamesDbRomTask(RomTask):
             romTaskResult.name = game.name
             romTaskResult.coverart = game.coverartFront
         else:
-            logging.debug("%s new game" % logPrefix)
+            logging.debug("%s new game", logPrefix)
             if self._console.retroId:
                 # find a game with matching rasum
                 rasum = pes.retroachievement.getRasum(self._rom, self._console.retroId)
-                logging.debug("%s rasum for %s is %s" % (logPrefix, self._rom, rasum))
+                logging.debug("%s rasum for %s is %s", logPrefix, self._rom, rasum)
                 with self._lock:
                     retroGame = session.query(pes.sql.RetroAchievementGame).join(pes.sql.RetroAchievementGameHash).filter(pes.sql.RetroAchievementGame.retroConsoleId == self._console.retroId).filter(pes.sql.RetroAchievementGameHash.rasum == rasum).first()
                 if retroGame:
-                    logging.debug("%s found match for RetroAchievement game %d, rasum: %s" % (logPrefix, retroGame.id, rasum))
+                    logging.debug("%s found match for RetroAchievement game %d, rasum: %s", logPrefix, retroGame.id, rasum)
                     # now is there a GamesDbGame match?
                     if retroGame.gamesDbGame and len(retroGame.gamesDbGame) > 0:
                         gamesDbGame = retroGame.gamesDbGame[0]
                         with self._lock:
-                            game = pes.sql.Game(
+                            game = pes.sql.Game( # pylint: disable=unexpected-keyword-arg
                                 consoleId=self._console.id,
                                 added=datetime.datetime.now(),
                                 name=gamesDbGame.name,
@@ -284,27 +286,27 @@ class GamesDbRomTask(RomTask):
                             )
                             session.add(game)
                             session.commit()
-                        logging.debug("%s saved new record" % logPrefix)
+                        logging.debug("%s saved new record", logPrefix)
                         romTaskResult.state = RomTaskResult.STATE_ADDED
                     else:
-                        logging.debug("%s no GamesDbGame associated with RetroAchievementGame %d" % (logPrefix, retroGame.id))
+                        logging.debug("%s no GamesDbGame associated with RetroAchievementGame %d", logPrefix, retroGame.id)
             else:
-                logging.debug("%s %s has no retroId" % (logPrefix, self._console.name))
+                logging.debug("%s %s has no retroId", logPrefix, self._console.name)
 
-            if game == None:
+            if game is None:
                 # try searching by name
                 if rasum:
-                    logging.debug("%s no match for rasum: %s, trying name match" % (logPrefix, rasum))
+                    logging.debug("%s no match for rasum: %s, trying name match", logPrefix, rasum)
                 else:
-                    logging.debug("%s trying name match" % logPrefix)
+                    logging.debug("%s trying name match", logPrefix)
                 with self._lock:
                     gamesDbGame = session.query(pes.sql.GamesDbGame).filter(sqlalchemy.func.lower(sqlalchemy.func.replace(pes.sql.GamesDbGame.name, " ", "")) == romName.replace(" ", "").lower()).first()
                 if gamesDbGame:
-                    logging.debug("%s found match for name: \"%s\"" % (logPrefix, romName))
+                    logging.debug("%s found match for name: \"%s\"", logPrefix, romName)
                     retroId = gamesDbGame.retroId
-                    if (retroId == None or retroId == 0) and retroGame:
+                    if (retroId is None or retroId == 0) and retroGame:
                         retroId = retroGame.id
-                    game = pes.sql.Game(
+                    game = pes.sql.Game( # pylint: disable=unexpected-keyword-arg
                         consoleId=self._console.id,
                         added=datetime.datetime.now(),
                         name=gamesDbGame.name,
@@ -317,8 +319,8 @@ class GamesDbRomTask(RomTask):
                         found=True
                     )
                 else:
-                    logging.warning("%s could not find any match for %s" % (logPrefix, self._rom))
-                    game = pes.sql.Game(
+                    logging.warning("%s could not find any match for %s", logPrefix, self._rom)
+                    game = pes.sql.Game( # pylint: disable=unexpected-keyword-arg
                         consoleId=self._console.id,
                         added=datetime.datetime.now(),
                         name=romName,
@@ -331,11 +333,11 @@ class GamesDbRomTask(RomTask):
                 with self._lock:
                     session.add(game)
                     session.commit()
-                logging.debug("%s saved new record" % logPrefix)
+                logging.debug("%s saved new record", logPrefix)
                 romTaskResult.state = RomTaskResult.STATE_ADDED
 
         if game and (newGame or self._fullscan):
-            logging.debug("%s downloading cover art" % logPrefix)
+            logging.debug("%s downloading cover art", logPrefix)
             romTaskResult.name = game.name
 
             url = None
@@ -349,15 +351,15 @@ class GamesDbRomTask(RomTask):
                 if game.gamesDbGame.boxArtFrontOriginal:
                     urls.append(game.gamesDbGame.boxArtFrontOriginal)
 
-                logging.debug("%s URLs to try: %s" % (logPrefix, urls))
+                logging.debug("%s URLs to try: %s", logPrefix, urls)
 
                 if len(urls) > 0:
                     i = 0
                     imgSaved = False
                     for url in urls:
-                        logging.debug("%s URL attempt %d for %s (front) is %s" % (logPrefix, (i + 1), self._rom, url))
+                        logging.debug("%s URL attempt %d for %s (front) is %s", logPrefix, (i + 1), self._rom, url)
                         extension = url[url.rfind('.'):]
-                        path = os.path.join(pes.userCoverartDir, self._console.name, "%s-front%s" % (romName, extension))
+                        path = os.path.join(pes.userCoverartDir, self._console.name, f"{romName}-front{extension}")
                         if self._fullscan or not os.path.exists(path):
                             try:
                                 response = requests.get(
@@ -366,7 +368,7 @@ class GamesDbRomTask(RomTask):
                                     timeout=self.URL_TIMEOUT
                                 )
                                 if response.status_code == requests.codes.ok:
-                                    logging.debug("%s saving to %s" % (logPrefix, path))
+                                    logging.debug("%s saving to %s", logPrefix, path)
                                     with open(path, "wb") as f:
                                         f.write(response.content)
                                     self._scaleImage(path)
@@ -374,13 +376,12 @@ class GamesDbRomTask(RomTask):
                                     if not newGame:
                                         romTaskResult.state = RomTaskResult.STATE_UPDATED
                                     break
-                                else:
-                                    if newGame:
-                                        logging.warning("%s unable to download %s" % (logPrefix, url))
-                            except Exception as e:
-                                logging.error("%s failed to download %s due to %s" % (logPrefix, url, e))
+                                if newGame:
+                                    logging.warning("%s unable to download %s", logPrefix, url)
+                            except Exception as e: # pylint: disable=broad-except
+                                logging.error("%s failed to download %s due to %s", logPrefix, url, e)
                         else:
-                            logging.debug("%s using existing front cover art: %s" % (logPrefix, path))
+                            logging.debug("%s using existing front cover art: %s", logPrefix, path)
                             imgSaved = True
                             break
                         i += 1
@@ -405,9 +406,9 @@ class GamesDbRomTask(RomTask):
                     imgSaved = False
                     for url in urls:
                         extension = url[url.rfind('.'):]
-                        path = os.path.join(pes.userCoverartDir, self._console.name, "%s-back%s" % (romName, extension))
+                        path = os.path.join(pes.userCoverartDir, self._console.name, f"{romName}-back{extension}")
                         if self._fullscan or not os.path.exists(path):
-                            logging.debug("%s URL attempt %d for %s (back) is %s" % (logPrefix, (i + 1), self._rom, url))
+                            logging.debug("%s URL attempt %d for %s (back) is %s", logPrefix, (i + 1), self._rom, url)
                             try:
                                 response = requests.get(
                                     url,
@@ -415,15 +416,15 @@ class GamesDbRomTask(RomTask):
                                     timeout=self.URL_TIMEOUT
                                 )
                                 if response.status_code == requests.codes.ok:
-                                    logging.debug("%s saving to %s" % (logPrefix, path))
+                                    logging.debug("%s saving to %s", logPrefix, path)
                                     with open(path, "wb") as f:
                                         f.write(response.content)
                                     self._scaleImage(path)
                                     imgSaved = True
-                            except Exception as e:
-                                logging.error("%s failed to download %s due to %s" % (logPrefix, url, e))
+                            except Exception as e: # pylint: disable=broad-except
+                                logging.error("%s failed to download %s due to %s", logPrefix, url, e)
                         else:
-                            logging.debug("%s using existing rear cover art: %s" % (logPrefix, path))
+                            logging.debug("%s using existing rear cover art: %s", logPrefix, path)
                             imgSaved = True
                         if imgSaved and newGame:
                             game.coverartBack = path
@@ -446,11 +447,11 @@ class GamesDbRomTask(RomTask):
 
                         i = 0
                         for url in urls:
-                            logging.debug("%s screen shot url: %s" % (logPrefix, url))
+                            logging.debug("%s screen shot url: %s", logPrefix, url)
                             extension = url[url.rfind('.'):]
-                            path = os.path.join(pes.userScreenshotDir, self._console.name, "%s-%d%s" % (romName, (count + 1), extension))
+                            path = os.path.join(pes.userScreenshotDir, self._console.name, f"{romName}-{count + 1}{extension}")
                             if self._fullscan or not os.path.exists(path):
-                                logging.debug("%s URL attempt %d for %s (screenshot) is %s" % (logPrefix, (i + 1), self._rom, url))
+                                logging.debug("%s URL attempt %d for %s (screenshot) is %s", logPrefix, (i + 1), self._rom, url)
                                 try:
                                     response = requests.get(
                                         url,
@@ -458,7 +459,7 @@ class GamesDbRomTask(RomTask):
                                         timeout=self.URL_TIMEOUT
                                     )
                                     if response.status_code == requests.codes.ok:
-                                        logging.debug("%s saving to %s" % (logPrefix, path))
+                                        logging.debug("%s saving to %s", logPrefix, path)
                                         with open(path, "wb") as f:
                                             f.write(response.content)
                                         self._scaleImage(path)
@@ -468,21 +469,21 @@ class GamesDbRomTask(RomTask):
                                             if session.query(pes.sql.GameScreenshot).filter(pes.sql.GameScreenshot.path == path):
                                                 mustSave = False
                                         if mustSave:
-                                            screenshots.append(pes.sql.GameScreenshot(path=path))
+                                            screenshots.append(pes.sql.GameScreenshot(path=path)) # pylint: disable=unexpected-keyword-arg
                                         count += 1
                                         break
-                                except Exception as e:
-                                    logging.error("%s failed to download %s due to %s" % (logPrefix, url, e))
+                                except Exception as e: # pylint: disable=broad-except
+                                    logging.error("%s failed to download %s due to %s", logPrefix, url, e)
                             else:
                                 count += 1
-                                logging.debug("%s already dowloaded %s" % (logPrefix, path))
+                                logging.debug("%s already dowloaded %s", logPrefix, path)
                                 mustSave = True
                                 if not newGame:
                                     # does the DB entry already exist?
                                     if session.query(pes.sql.GameScreenshot).filter(pes.sql.GameScreenshot.path == path):
                                         mustSave = False
                                 if mustSave:
-                                    screenshots.append(pes.sql.GameScreenshot(path=path))
+                                    screenshots.append(pes.sql.GameScreenshot(path=path)) # pylint: disable=unexpected-keyword-arg
                                 break
                             i += 1
                         # only save a max of three screen shots per game
@@ -494,7 +495,7 @@ class GamesDbRomTask(RomTask):
                             session.add(game)
                             session.commit()
                 else:
-                    logging.warning("%s no cover art URL for %s (%d)" % (logPrefix, self._rom, game.gamesDbId))
+                    logging.warning("%s no cover art URL for %s (%d)", logPrefix, self._rom, game.gamesDbId)
 
         return romTaskResult
 
@@ -505,7 +506,7 @@ class RomScanMonitorThread(QThread):
     stateChangeSignal = pyqtSignal(str, arguments=['state'])
 
     def __init__(self, parent=None):
-        super(RomScanMonitorThread, self).__init__(parent)
+        super().__init__(parent)
         logging.debug("RomScanMonitorThread.__init__: created")
         self.__scanThread = None
         self.__fullscan = False
@@ -563,7 +564,7 @@ class RomScanMonitorThread(QThread):
         self.__scanThread.stateChangeSignal.connect(self.__handleStateChangeSignal)
         logging.debug("RomScanMonitorThread.run: starting RomScanThread")
         self.__scanThread.start()
-        while (True):
+        while True:
             if not self.__scanThread.hasStarted():
                 continue
             if not self.__scanThread.isRunning():
@@ -586,7 +587,7 @@ class RomScanThread(QThread):
     stateChangeSignal = pyqtSignal(str, arguments=['state'])
 
     def __init__(self, parent=None):
-        super(RomScanThread, self).__init__(parent)
+        super().__init__(parent)
         logging.debug("RomScanThread.__init__")
         self.__fullscan = False
         self.__done = False
@@ -615,7 +616,6 @@ class RomScanThread(QThread):
         for e in extensions:
             e = e.strip()
             if filename.endswith(e) or filename.endswith(e.upper()):
-                name = os.path.split(filename)[1]
                 return True
         return False
 
@@ -640,14 +640,14 @@ class RomScanThread(QThread):
         return self.__interrupted
 
     def getLastRom(self) -> dict:
-        if self.__romList == None or not self.__started or (self.__exitEvent != None and self.__exitEvent.is_set()) or len(self.__romList) == 0:
+        if self.__romList is None or not self.__started or (self.__exitEvent is not None and self.__exitEvent.is_set()) or len(self.__romList) == 0:
             return None
         return self.__romList[-1]
 
     def getProgress(self) -> float:
         if not self.isRunning() and self.__done:
             return 1
-        if not self.__started or self.__tasks == None or self.__romTotal == 0 or not self.__processStarted:
+        if not self.__started or self.__tasks is None or self.__romTotal == 0 or not self.__processStarted:
             return 0
         qsize = self.__tasks.qsize()
         if qsize == 0:
@@ -703,7 +703,7 @@ class RomScanThread(QThread):
         self.__romList = manager.list()
         self.__exitEvent = multiprocessing.Event()
         results = multiprocessing.Queue()
-        logging.debug("RomScanThread.run: will use %d ROM processes" % self.__romProcessTotal)
+        logging.debug("RomScanThread.run: will use %d ROM processes", self.__romProcessTotal)
         romProcesses = [RomProcess(i, self.__tasks, results, self.__exitEvent, lock, self.__romList) for i in range(self.__romProcessTotal)]
 
         engine = pes.sql.connect()
@@ -714,25 +714,25 @@ class RomScanThread(QThread):
         consoles = session.query(pes.sql.Console).all()
         for console in consoles:
             if self.__consoleSettings.hasSection(console.name):
-                logging.debug("RomScanThread.run: processing console %s" % console.name)
+                logging.debug("RomScanThread.run: processing console %s", console.name)
                 extensions = self.__consoleSettings.get(console.name, "extensions")
                 ignoreRoms = self.__consoleSettings.get(console.name, "ignore_roms")
-                logging.debug("RomScanThread.run: extensions for %s are: %s" % (console.name, ','.join(extensions)))
+                logging.debug("RomScanThread.run: extensions for %s are: %s", console.name, ','.join(extensions))
                 romFiles = []
                 for f in glob.glob(os.path.join(self.__romsDir, console.name, "*")):
                     if os.path.isfile(f):
-                        if (ignoreRoms == None or f not in ignoreRoms) and self.__extensionOk(extensions, f):
+                        if (ignoreRoms is None or f not in ignoreRoms) and self.__extensionOk(extensions, f):
                             romFiles.append(f)
                             if self.__romScraper == "theGamesDb.net":
                                 platform = console.platform
-                                if platform == None:
-                                    pes.common.pesExit("RomScanThread.run: no platform relationship with console ID: %d" % console.id)
+                                if platform is None:
+                                    pes.common.pesExit(f"RomScanThread.run: no platform relationship with console ID: {console.id}")
                                 self.__tasks.put(GamesDbRomTask(console, f, self.__fullscan))
 
                 consoleRomTotal = len(romFiles)
                 self.__romTotal += consoleRomTotal
-                logging.debug("RomScanThread.run: found %d ROMs for %s" % (consoleRomTotal, console.name))
-                self.progressMessageSignal.emit("Processing %s: %d ROMs found" % (console.name, consoleRomTotal))
+                logging.debug("RomScanThread.run: found %d ROMs for %s", consoleRomTotal, console.name)
+                self.progressMessageSignal.emit(f"Processing {console.name}: {consoleRomTotal} ROMs found")
 
         # our session must be closed before starting the sub processes
         session.close()
@@ -745,11 +745,11 @@ class RomScanThread(QThread):
 
         self.stateChangeSignal.emit("update")
 
-        self.progressMessageSignal.emit("Found %d ROMs, update in progress" % self.__romTotal)
+        self.progressMessageSignal.emit(f"Found {self.__romTotal} ROMs, update in progress")
 
         # add poison pills
         for i in range(self.__romProcessTotal):
-                self.__tasks.put(None)
+            self.__tasks.put(None)
 
         logging.debug("RomScanThread.run: poison pills added to process queue")
         logging.debug("RomScanThread.run: starting ROM processes...")
@@ -770,16 +770,19 @@ class RomScanThread(QThread):
             self.__failed += romProcessResult.failed
             self.__skipped += romProcessResult.skipped
             count += 1
-        logging.debug("RomScanThread.run: finished processing %d result(s) from queue. Added: %d, Updated: %d, Skipped: %d, Failed: %d." % (count, self.__added, self.__updated, self.__skipped, self.__failed))
+        logging.debug(
+            "RomScanThread.run: finished processing %d result(s) from queue. Added: %d, Updated: %d, Skipped: %d, Failed: %d.",
+            count, self.__added, self.__updated, self.__skipped, self.__failed
+        )
         session = sqlalchemy.orm.sessionmaker(bind=engine)()
         if self.__interrupted:
             # reset found status
             session.query(pes.sql.Game).filter(not pes.sql.Game.found).update({pes.sql.Game.found: True})
         else:
-            self.__deleted = session.query(pes.sql.Game).filter(pes.sql.Game.found == False).count()
+            self.__deleted = session.query(pes.sql.Game).filter(not pes.sql.Game.found).count()
             if self.__deleted > 0:
-                logging.warning("RomScanThread.run: deleted %d games from database" % self.__deleted)
-                session.query(pes.sql.Game).filter(pes.sql.Game.found == False).delete()
+                logging.warning("RomScanThread.run: deleted %d games from database", self.__deleted)
+                session.query(pes.sql.Game).filter(not pes.sql.Game.found).delete()
         session.commit()
         session.close()
         self.__timeTaken = time.time() - self.__startTime
