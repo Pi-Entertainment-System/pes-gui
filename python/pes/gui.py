@@ -56,21 +56,21 @@ JOYSTICK_AXIS_MIN = -30000
 JOYSTICK_AXIS_MAX =  30000
 
 def getLitteEndianFromHex(x):
-    return int("%s%s" % (x[2:4], x[0:2]), 16)
+    return int(f"{x[2:4]}{x[0:2]}", 16)
 
 # workaround for http://bugs.python.org/issue22273
 # thanks to https://github.com/GreatFruitOmsk/py-sdl2/commit/e9b13cb5a13b0f5265626d02b0941771e0d1d564
 def getJoystickGUIDString(guid):
     s = ''
     for g in guid.data:
-        s += "{:x}".format(g >> 4)
-        s += "{:x}".format(g & 0x0F)
+        s += "{:x}".format(g >> 4) # pylint: disable=consider-using-f-string
+        s += "{:x}".format(g & 0x0F) # pylint: disable=consider-using-f-string
     return s
 
 def getJoystickDeviceInfoFromGUID(guid):
     vendorId = guid[8:12]
     productId = guid[16:20]
-    print("%s\n%s" % (vendorId, productId))
+    #print("%s\n%s" % (vendorId, productId))
     # swap from big endian to little endian and covert to an int
     vendorId = getLitteEndianFromHex(vendorId)
     productId = getLitteEndianFromHex(productId)
@@ -81,35 +81,35 @@ def getRetroArchConfigAxisValue(param, controller, axis, both=False):
     if bind:
         if bind.bindType == sdl2.SDL_CONTROLLER_BINDTYPE_AXIS:
             if both:
-                return "%s_plus_axis = \"+%d\"\n%s_minus_axis = \"-%d\"\n" % (param, bind.value.axis, param, bind.value.axis)
-            return "%s_axis = \"+%d\"\n" % (param, bind.value.axis)
+                return f"{param}_plus_axis = \"+{bind.value.axis}\"\n{param}_minus_axis = \"-{bind.value.axis}\"\n"
+            return f"{param}_axis = \"+{bind.value.axis}\"\n"
         if bind.bindType == sdl2.SDL_CONTROLLER_BINDTYPE_BUTTON:
-            return "%s_btn = \"%d\"\n" % (param, bind.value.button)
+            return f"{param}_btn = \"{bind.value.button}\"\n"
 
     if both:
-        return "%s_plus_axis = \"nul\"\n%s_minus_axis = \"nul\"\n" % (param, param)
-    return "%s = \"nul\"\n" % param
+        return f"{param}_plus_axis = \"nul\"\n{param}_minus_axis = \"nul\"\n"
+    return f"{param} = \"nul\"\n"
 
 def getRetroArchConfigButtonValue(param, controller, button):
     bind = sdl2.SDL_GameControllerGetBindForButton(controller, button)
     if bind:
         if bind.bindType == sdl2.SDL_CONTROLLER_BINDTYPE_BUTTON:
-            return "%s_btn = \"%d\"\n" % (param, bind.value.button)
+            return f"{param}_btn = \"{bind.value.button}\"\n"
         if bind.bindType == sdl2.SDL_CONTROLLER_BINDTYPE_AXIS:
             #return PESApp.getRetroArchConfigAxisValue(param, controller, bind.value.axis)
             if button in [sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP, sdl2.SDL_CONTROLLER_BUTTON_DPAD_LEFT]:
-                return "%s_axis = \"-%d\"\n" % (param, bind.value.axis)
-            return "%s_axis = \"+%d\"\n" % (param, bind.value.axis)
+                return f"{param}_axis = \"-{bind.value.axis}\"\n"
+            return f"{param}_axis = \"+{bind.value.axis}\"\n"
         if bind.bindType == sdl2.SDL_CONTROLLER_BINDTYPE_HAT:
             if button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP:
-                return "%s_btn = \"h%d%s\"\n" % (param, bind.value.hat.hat, "up")
+                return f"{param}_btn = \"h{bind.value.hat.hat}up\"\n"
             if button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                return "%s_btn = \"h%d%s\"\n" % (param, bind.value.hat.hat, "down")
+                return f"{param}_btn = \"h{bind.value.hat.hat}down\"\n"
             if button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_LEFT:
-                return "%s_btn = \"h%d%s\"\n" % (param, bind.value.hat.hat, "left")
+                return f"{param}_btn = \"h{bind.value.hat.hat}left\"\n"
             if button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
-                return "%s_btn = \"h%d%s\"\n" % (param, bind.value.hat.hat, "right")
-    return "%s = \"nul\"\n" % param
+                return f"{param}_btn = \"h{bind.value.hat.hat}right\"\n"
+    return f"{param} = \"nul\"\n"
 
 class Backend(QObject):
 
@@ -148,7 +148,6 @@ class Backend(QObject):
 
     @pyqtProperty(bool, constant=True)
     def cecEnabled(self):
-        # pylint: disable=no-self-use
         return cecImported
 
     @pyqtSlot()
@@ -159,14 +158,14 @@ class Backend(QObject):
     @staticmethod
     def __createCommandFile(command):
         logging.debug("Backend.__createCommandFile: creating %s", pes.userScriptFile)
-        with open(pes.userScriptFile, "w") as f:
+        with open(pes.userScriptFile, "w", encoding="utf-8") as f:
             f.write("#!/bin/bash\n")
             f.write("# THIS FILE WAS AUTOMATICALLY CREATED BY PES\n")
-            f.write("%s\n" % command)
+            f.write(f"{command}\n")
             if logging.getLogger().isEnabledFor(logging.DEBUG):
-                f.write("exec %s/pes -v\n" % pes.binDir)
+                f.write(f"exec {pes.binDir}/pes -v\n")
             else:
-                f.write("exec %s/pes\n" % pes.binDir)
+                f.write(f"exec {pes.binDir}/pes\n")
         os.chmod(pes.userScriptFile, 0o700)
 
     def emitHomeButtonPress(self):
@@ -307,7 +306,6 @@ class Backend(QObject):
 
     @pyqtSlot(result=bool)
     def getNetworkAvailable(self):
-        # pylint: disable=no-self-use
         return pes.common.getIpAddress() != "127.0.0.1"
 
     @pyqtSlot(int, int, result=list)
@@ -375,7 +373,7 @@ class Backend(QObject):
                     logging.debug("Backend.playGame: checking for: %s", f)
                     if not os.path.exists(f) or not os.path.isfile(f):
                         logging.error("Backend.playGame: could not find required file: %s", f)
-                        return { "result": False, "msg": "Could not find required file: %s" % f}
+                        return { "result": False, "msg": f"Could not find required file: {f}"}
             else:
                 logging.debug("Backend.playGame: no required files for console %s", game.console.name)
 
@@ -393,14 +391,14 @@ class Backend(QObject):
                                 # get joystick name
                                 j = sdl2.SDL_GameControllerGetJoystick(c)
                                 jsName = sdl2.SDL_JoystickName(j).decode()
-                                jsConfig = os.path.join(pes.userRetroArchJoysticksConfDir, "%s.cfg" % jsName)
+                                jsConfig = os.path.join(pes.userRetroArchJoysticksConfDir, "{jsName}.cfg")
                                 logging.debug("Backend.playGame: creating configuration file %s for %s", jsConfig, jsName)
                                 vendorId, productId = getJoystickDeviceInfoFromGUID(getJoystickGUIDString(sdl2.SDL_JoystickGetDeviceGUID(i)))
-                                with open(jsConfig, 'w') as f:
+                                with open(jsConfig, "w", encoding="utf-8") as f:
                                     # control pad id etc.
-                                    f.write("input_device = \"%s\"\n" % jsName)
-                                    f.write("input_vendor_id = \"%s\"\n" % vendorId)
-                                    f.write("input_product_id = \"%s\"\n" % productId)
+                                    f.write(f"input_device = \"{jsName}\"\n")
+                                    f.write(f"input_vendor_id = \"{vendorId}\"\n")
+                                    f.write(f"input_product_id = \"{productId}\"\n")
                                     #f.write("input_driver = \"udev\"\n")
                                     # buttons
                                     f.write(getRetroArchConfigButtonValue("input_a", c, sdl2.SDL_CONTROLLER_BUTTON_B))
@@ -448,21 +446,21 @@ class Backend(QObject):
                 if retroUser is None or retroPass is None:
                     s += "cheevos_enable = false\n"
                 else:
-                    s += "cheevos_username = %s\n" % retroUser
-                    s += "cheevos_password = %s\n" % retroPass
+                    s += f"cheevos_username = {retroUser}\n"
+                    s += f"cheevos_password = {retroPass}\n"
                     s += "cheevos_enable = true\n"
                     if self.__userSettings.get("RetroAchievements", "hardcore"):
                         s += "cheevos_hardcore_mode_enable = true\n"
                     else:
                         s += "cheevos_hardcore_mode_enable = false\n"
-                with open(pes.userRetroArchCheevosConfFile, "w") as f:
+                with open(pes.userRetroArchCheevosConfFile, "w", encoding="utf-8") as f:
                     f.write(s)
 
             # get emulator launch string
-            command = self.__consoleSettings.get(game.console.name, "command").replace("%%GAME%%", "\"%s\"" % game.path)
+            command = self.__consoleSettings.get(game.console.name, "command").replace("%%GAME%%", f"\"{game.path}\"")
             if not command:
                 logging.error("Backend.playGame: could not determine launch command for the %s console", game.console.name)
-                return { "result": False, "msg": "Could not determine launch command for the %s console" % game.console.name }
+                return { "result": False, "msg": f"Could not determine launch command for the {game.console.name} console" }
             logging.debug("Backend.playGame: launch string: %s", command)
             self.__createCommandFile(command)
             game.playCount += 1
@@ -470,9 +468,9 @@ class Backend(QObject):
             self.__session.add(game)
             self.__session.commit()
             self.close()
-            return { "result": True, "msg": "Loading %s" % game.name }
+            return { "result": True, "msg": f"Loading {game.name}" }
         logging.error("Backend.playGame: coult not find game ID %d", gameId)
-        return { "result": False, "msg": "Could not find game %d" % gameId }
+        return { "result": False, "msg": f"Could not find game {gameId}" }
 
     @pyqtSlot()
     def reboot(self):
@@ -495,7 +493,7 @@ class Backend(QObject):
             self.__dbusBroker.btPowered = self.__userSettings.bluetooth
         if self.getTimezone() != settings["timezone"]: # generates comparison-with-callable pylint warning
             logging.debug("Backend.saveSettings: changing timezone")
-            pes.common.runCommand("%s %s" % (self.__userSettings.setTimezoneCommand, settings["timezone"]))
+            pes.common.runCommand(f"{self.__userSettings.setTimezoneCommand} {settings['timezone']}")
 
     @pyqtSlot()
     def shutdown(self):
