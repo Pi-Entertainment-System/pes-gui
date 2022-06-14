@@ -64,9 +64,8 @@ def cecEvent(button, dur):
     Wrapper function to work around segmentation fault
     when adding Qt app as the callback.
     """
-    # pylint: disable=global-statement
-    global app
-    if app:
+    global app # pylint: disable=global-variable-not-assigned
+    if app is not None:
         app.processCecEvent(button, dur)
 
 if __name__ == "__main__":
@@ -144,7 +143,7 @@ if __name__ == "__main__":
         userSettings.set("settings", "romScraper", pes.romScrapers[0])
         userSettings.save()
     elif romScraper not in pes.romScrapers:
-        pesExit("Unknown romScraper value: \"%s\" in \"settings\" section in %s" % (romScraper, pes.userPesConfigFile))
+        pesExit(f"Unknown romScraper value: \"{romScraper}\" in \"settings\" section in {pes.userPesConfigFile}")
 
     backend = Backend()
 
@@ -168,7 +167,7 @@ if __name__ == "__main__":
     logging.debug("loading SDL2 control pad mappings from: %s", pes.userGameControllerFile)
     mappingsLoaded = sdl2.SDL_GameControllerAddMappingsFromFile(pes.userGameControllerFile.encode())
     if mappingsLoaded == -1:
-        pes.common.pesExit("failed to load SDL2 control pad mappings from: %s" % pes.userGameControllerFile)
+        pes.common.pesExit(f"failed to load SDL2 control pad mappings from: {pes.userGameControllerFile}")
     logging.debug("loaded %d control pad mappings", mappingsLoaded)
 
     app = PESGuiApplication(sys.argv, backend)
