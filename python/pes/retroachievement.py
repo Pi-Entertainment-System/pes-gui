@@ -20,17 +20,25 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# pylint: disable=invalid-name,line-too-long,missing-class-docstring,missing-function-docstring
+# pylint: disable=invalid-name,line-too-long,missing-class-docstring,missing-function-docstring,too-many-branches,too-many-instance-attributes,too-many-statements
 
+"""
+This module provides classes and functions to access RetroAchievement.org data.
+"""
+
+# standard imports
 import logging
+import os
+
+from datetime import datetime
+
+# additional imports
 import pes
 import pes.common
-import os
 import requests
 import sqlalchemy
 import sqlalchemy.orm
 
-from datetime import datetime
 from PyQt5.QtCore import QThread, QVariant, pyqtSignal, pyqtSlot, pyqtProperty, QObject
 
 URL_TIMEOUT = 30
@@ -42,10 +50,10 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 def getGameHashes(consoleId):
-    logging.debug("retroachievement.getGameHashes: consoleId = %d" % consoleId)
+    logging.debug("retroachievement.getGameHashes: consoleId = %d", consoleId)
     response = requests.get(RETRO_URL, params={ "r": "hashlibrary", "c": consoleId }, timeout=URL_TIMEOUT)
-    if not response.status_code == requests.codes.ok:
-        logging.error("retroachievement.getGameHashes: could not download game hashes, response code - %s" % response.status_code)
+    if not response.status_code == requests.codes.ok: # pylint: disable=no-member
+        logging.error("retroachievement.getGameHashes: could not download game hashes, response code - %s", response.status_code)
         return None
     hashData = response.json()
     if not hashData['Success']:
@@ -53,15 +61,15 @@ def getGameHashes(consoleId):
         return None
     games = {}
     # games can have multiple hashes!
-    for hash, gameId in hashData['MD5List'].items():
+    for gameHash, gameId in hashData['MD5List'].items():
         gameId = int(gameId)
-        if gameId in games.keys():
-            games[gameId]['hashes'].append(hash)
+        if gameId in games:
+            games[gameId]['hashes'].append(gameHash)
         else:
-            games[gameId] = { 'hashes': [hash] }
+            games[gameId] = { 'hashes': [gameHash] }
     response = requests.get(RETRO_URL, params={ "r": "gameslist", "c": consoleId }, timeout=URL_TIMEOUT)
-    if not response.status_code == requests.codes.ok:
-        logging.error("retroachievement.getGameHashes: could not download game list, response code - %s" % response.status_code)
+    if not response.status_code == requests.codes.ok: # pylint: disable=no-member
+        logging.error("retroachievement.getGameHashes: could not download game list, response code - %s", response.status_code)
         return None
     gameData = response.json()
     if not gameData['Success']:
@@ -69,38 +77,38 @@ def getGameHashes(consoleId):
         return None
     for gameId, title in gameData['Response'].items():
         gameId = int(gameId)
-        if gameId in games.keys():
+        if gameId in games:
             games[gameId]['name'] = title.strip()
     return games
 
 def getRasum(path, retroAchievementId):
     if not os.path.exists(path):
-        raise FileNotFoundError("getRasum: %s does not exist" % path)
+        raise FileNotFoundError(f"getRasum: {path} does not exist")
     if not os.path.isfile(path):
-        raise ValueError("getRasum: %s is not a file" % path)
-    if retroAchievementId == None:
+        raise ValueError(f"getRasum: {path} is not a file")
+    if retroAchievementId is None:
         raise ValueError("getRasum: retroAchievementId is None")
-    command = "rasum -i %d \"%s\"" % (int(retroAchievementId), path)
+    command = f"rasum -i {retroAchievementId} \"{path}\""
     rtn, stdout, stderr = pes.common.runCommand(command)
     if rtn != 0:
-        raise Exception("Failed to run '%s'\nstdout: %s\nstderr: %s" % (command, stdout, stderr))
+        raise Exception(f"Failed to run '{command}'\nstdout: {stdout}\nstderr: {stderr}")
     return stdout.replace("\n", "")
 
 def getRetroAchievementId(rasum):
     try:
         response = requests.get(RETRO_URL, params={"r": "gameid", "m": rasum}, timeout=URL_TIMEOUT)
-        if response.status_code != requests.codes.ok:
+        if response.status_code != requests.codes.ok: # pylint: disable=no-member
             return None
         data = response.json()
         if "Success" not in data:
             logging.error("retroachievement.getRetroAchievementId: could not find \"Success\" in JSON")
             return None
         if not data["Success"]:
-            logging.error("retroachievement.getRetroAchievementId: could not get ID for hash \"%s\"" % rasum)
+            logging.error("retroachievement.getRetroAchievementId: could not get ID for hash \"%s\"", rasum)
             return None
         return data["GameID"]
-    except Exception as e:
-        logging.error("retroachievement.getRetroAchievementId: could not get ID for hash \"%s\"" % rasum)
+    except Exception as e: # pylint: disable=broad-except
+        logging.error("retroachievement.getRetroAchievementId: could not get ID for hash \"%s\"", rasum)
         logging.error(e)
     return None
 
@@ -117,19 +125,19 @@ class RetroAchievementUser(QObject):
     scoreChanged = pyqtSignal()
 
     def __init__(self, username=None, password=None, apikey=None):
-        super(RetroAchievementUser, self).__init__()
-        if username == None:
+        super().__init__()
+        if username is None:
             # load from user settings file
             userSettings = pes.common.UserSettings()
             username = userSettings.get("RetroAchievements", "username")
             password = userSettings.get("RetroAchievements", "password")
             apikey = userSettings.get("RetroAchievements", "apiKey")
             if username and password:
-                logging.debug("RetroAchievementUser.__init__: using username and password from %s" % pes.userPesConfigFile)
+                logging.debug("RetroAchievementUser.__init__: using username and password from %s", pes.userPesConfigFile)
             if apikey:
-                logging.debug("RetroAchievementUser.__init__: api key: %s" % apikey)
+                logging.debug("RetroAchievementUser.__init__: api key: %s", apikey)
                 self.__apikey = apikey
-        logging.debug("RetroAchievementUser.__init__: user = %s" % username)
+        logging.debug("RetroAchievementUser.__init__: user = %s", username)
         self.__username = username
         self.__password = password
         self.__apikey = apikey
@@ -145,36 +153,36 @@ class RetroAchievementUser(QObject):
         if parameters:
             for k, v in parameters.items():
                 params[k] = v
-        url = "%s/%s" % (RetroAchievementUser.__URL, apiUrl)
-        logging.debug("RetroachievementUser.__doRequest: loading URL %s with %s" % (url, params))
+        url = f"{RetroAchievementUser.__URL}/{apiUrl}"
+        logging.debug("RetroachievementUser.__doRequest: loading URL %s with %s", url, params)
         response = requests.get(
             url,
             params=params,
             timeout=URL_TIMEOUT
         )
-        if response.status_code == requests.codes.ok:
+        if response.status_code == requests.codes.ok: # pylint: disable=no-member
             if response.text == 'Invalid API Key':
                 raise RetroAchievementException("Invalid RetroAchievement API key")
             logging.debug("RetroAchievementUser.__doRequest: loaded ok")
             return response.json()
-        raise RetroAchievementException("Failed to load URL %s with %s" % (url, params))
+        raise RetroAchievementException(f"Failed to load URL {url} with {params}")
 
     def getGameInfoAndProgress(self, gameId):
         return self.getGameInfoAndUserProgress(self.__username, gameId)
 
     def getGameInfoAndUserProgress(self, user, gameId):
-        logging.debug("RetroAchievementUser.getGameInfoAndUserProgress: user = %s, gameId = %d" % (user, gameId))
+        logging.debug("RetroAchievementUser.getGameInfoAndUserProgress: user = %s, gameId = %d", user, gameId)
         return self.__doRequest('API_GetGameInfoAndUserProgress.php', {'u': user, 'g': gameId})
 
     def getUserSummary(self, user=None, recentGames=0):
-        if user == None:
+        if user is None:
             user = self.__username
-        logging.debug("RetroAchievementUser.getUserSummary: getting user %s and games %s" % (user, recentGames))
+        logging.debug("RetroAchievementUser.getUserSummary: getting user %s and games %s", user, recentGames)
         return self.__doRequest('API_GetUserSummary.php', {'u': user, 'g': recentGames, 'a': 5})
 
     @pyqtSlot(result=bool)
     def hasApiKey(self):
-        return self.__apikey != None
+        return self.__apikey is not None
 
     def hasEarnedBadge(self, badgeId):
         # has the user earned this badge?
@@ -188,41 +196,40 @@ class RetroAchievementUser(QObject):
 
     @pyqtProperty(bool, notify=loginSignal)
     def loggedIn(self):
-        return self.__token != None
+        return self.__token is not None
 
     @pyqtSlot()
     def login(self):
-        if self.__username == None or self.__password == None:
+        if self.__username is None or self.__password is None:
             logging.warning("RetroAchievementUser.login: no username or password, not logging in")
-            return
+            return False
         try:
             response = requests.get(RETRO_URL, params={ "r": "login", "u": self.__username, "p": self.__password }, timeout=URL_TIMEOUT)
-            if response.status_code == requests.codes.ok:
+            if response.status_code == requests.codes.ok: # pylint: disable=no-member
                 data = response.json()
                 if "Success" in data:
                     if data["Success"]:
-                        logging.debug("RetroAchievementUser.login: data dump: %s" % data)
+                        logging.debug("RetroAchievementUser.login: data dump: %s", data)
                         if "Token" in data:
                             self.__token = data["Token"]
                             # score == total_points
                             self.__score = int(data["Score"])
-                            logging.info("RetroAchievementUser.login: %s (%d)" % (self.__username, self.__score))
-                            logging.debug("RetroAchievementUser.login: token: %s" % self.__token)
+                            logging.info("RetroAchievementUser.login: %s (%d)", self.__username, self.__score)
+                            logging.debug("RetroAchievementUser.login: token: %s", self.__token)
                             # next two items do not appear to be in the returned JSON since 18/12/2021 :-S
                             #self.__totalPoints = int(data["TotalPoints"])
                             #self.__totalTruePoints = int(data["TotalTruePoints"])
                             self.loginSignal.emit()
                             self.scoreChanged.emit()
                             return True
-                        else:
-                            logging.error("RetroAchievementUser.login: could not log in - token not in response")
+                        logging.error("RetroAchievementUser.login: could not log in - token not in response")
                     elif "Error" in data:
-                        logging.error("RetroAchievementUser.login: could not log in - %s" % data["Error"])
+                        logging.error("RetroAchievementUser.login: could not log in - %s", data["Error"])
                     else:
                         logging.error("RetroAchievementUser.login: could not log in")
             else:
-                logging.error("RetroAchievementUser.login: could not log in, response code - %s" % response.status_code)
-        except Exception as e:
+                logging.error("RetroAchievementUser.login: could not log in, response code - %s", response.status_code)
+        except Exception as e: # pylint: disable=broad-except
             logging.error("RetroAchievementUser.login: could not log in")
             logging.error(e)
         return False
@@ -259,7 +266,7 @@ class RetroAchievementThread(QThread):
     progressSignal = pyqtSignal(float, arguments=["progress"])
 
     def __init__(self, parent=None):
-        super(RetroAchievementThread, self).__init__(parent)
+        super().__init__(parent)
         logging.debug("RetroAchievementThred.__init__: created")
         self.__gameId = None
         self.__retroGameId = None
@@ -273,8 +280,8 @@ class RetroAchievementThread(QThread):
         return self.__gameId
 
     @gameId.setter
-    def gameId(self, id):
-        self.__gameId = id
+    def gameId(self, gameId):
+        self.__gameId = gameId
 
     @pyqtSlot(result=list)
     def getBadges(self):
@@ -293,23 +300,23 @@ class RetroAchievementThread(QThread):
         return self.__retroGameId
 
     @retroGameId.setter
-    def retroGameId(self, id):
-        self.__retroGameId = id
+    def retroGameId(self, retroGameId):
+        self.__retroGameId = retroGameId
 
     def run(self):
         # note: QThread will emit finished signal for us
         self.__badges = []
         self.__progress = 0.0
-        logging.debug("RetroAchievementThread.run: started for RetroAchievement game: %d" % self.__gameId)
+        logging.debug("RetroAchievementThread.run: started for RetroAchievement game: %d", self.__gameId)
         engine = pes.sql.connect()
         session = sqlalchemy.orm.sessionmaker(bind=engine)()
         self.__retroGame = session.query(pes.sql.RetroAchievementGame).get(self.__retroGameId)
         if not self.__retroGame:
-            logging.error("RetroAchievementThread.run: could not find RetroAchievementGame with id: %d" % self.__retroGameId)
+            logging.error("RetroAchievementThread.run: could not find RetroAchievementGame with id: %d", self.__retroGameId)
             return
         game = session.query(pes.sql.Game).get(self.__gameId)
         if not game:
-            logging.error("RetroAchievementThread.run: could not find Game with id: %d" % game.id)
+            logging.error("RetroAchievementThread.run: could not find Game with id: %d", game.id)
             return
         # create badge dir (if needed)
         badgeDir = os.path.join(pes.userBadgeDir, str(self.__retroGameId))
@@ -324,23 +331,23 @@ class RetroAchievementThread(QThread):
             if 'Achievements' in rslt and len(rslt['Achievements']) > 0:
                 count = 0
                 total = len(rslt['Achievements'])
-                for id, data in rslt['Achievements'].items():
-                    id = int(id)
-                    badge = session.query(pes.sql.RetroAchievementBadge).get(id)
+                for badgeId, data in rslt['Achievements'].items():
+                    badgeId = int(badgeId)
+                    badge = session.query(pes.sql.RetroAchievementBadge).get(badgeId)
                     if badge:
                         badge.title = data["Title"]
                         badge.description = data["Description"]
                         badge.points = int(data["Points"])
                     else:
-                        badge = pes.sql.RetroAchievementBadge(
-                            id=id,
+                        badge = pes.sql.RetroAchievementBadge( # pylint: disable=unexpected-keyword-arg
+                            id=badgeId,
                             name=data["BadgeName"],
                             retroGameId=self.__retroGameId,
                             title=data["Title"],
                             description=data["Description"],
                             points=int(data["Points"]),
-                            lockedPath=os.path.join(badgeDir, "%s_lock.png" % data["BadgeName"]),
-                            unlockedPath=os.path.join(badgeDir, "%s.png" % data["BadgeName"]),
+                            lockedPath=os.path.join(badgeDir, f"{data['BadgeName']}_lock.png"),
+                            unlockedPath=os.path.join(badgeDir, f"{data['BadgeName']}.png"),
                             displayOrder=int(data["DisplayOrder"]),
                             totalAwarded=int(data["NumAwarded"]),
                             totalAwardedHardcore=int(data["NumAwardedHardcore"])
@@ -365,7 +372,7 @@ class RetroAchievementThread(QThread):
                 session.add(self.__retroGame)
                 session.commit()
             else:
-                logging.deug("RetroAchievementThread.run: no achievements found for %d" % self.__retroGameId)
+                logging.debug("RetroAchievementThread.run: no achievements found for %d", self.__retroGameId)
                 self.__progress = 100
                 return
         badges = session.query(pes.sql.RetroAchievementBadge).filter(pes.sql.RetroAchievementBadge.retroGameId == self.__retroGameId).order_by(pes.sql.RetroAchievementBadge.displayOrder)
@@ -379,18 +386,18 @@ class RetroAchievementThread(QThread):
     @staticmethod
     def __saveBadge(badge):
         tasks = [
-            {"url": "%s/%s_lock.png" % (RETRO_BADGE_URL, badge.name), "path": badge.lockedPath},
-            {"url": "%s/%s.png" % (RETRO_BADGE_URL, badge.name), "path": badge.unlockedPath}
+            {"url": f"{RETRO_BADGE_URL}/{badge.name}_lock.png", "path": badge.lockedPath},
+            {"url": f"{RETRO_BADGE_URL}/{badge.name}.png", "path": badge.unlockedPath}
         ]
         for t in tasks:
             if not os.path.exists(t["path"]):
-                logging.debug("RetroAchievementThread.__saveBadge: saving %s to %s" % (t["url"], t["path"]))
+                logging.debug("RetroAchievementThread.__saveBadge: saving %s to %s", t["url"], t["path"])
                 response = requests.get(t["url"], headers=HEADERS, timeout=URL_TIMEOUT)
-                if response.status_code == requests.codes.ok:
+                if response.status_code == requests.codes.ok: # pylint: disable=no-member
                     with open(t["path"], "wb") as f:
                         f.write(response.content)
                 else:
-                    logging.warning("RetroAchievementThread.__saveBadge: unable to download %s" % t["url"])
+                    logging.warning("RetroAchievementThread.__saveBadge: unable to download %s", t["url"])
 
     @pyqtProperty(RetroAchievementUser)
     def user(self):
