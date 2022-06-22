@@ -43,18 +43,18 @@ from pes import baseDir, confDir, primaryDb, userBiosDir, userConfDir, userConso
 def checkDir(d):
     logging.debug("checking for: %s", d)
     if not os.path.exists(d):
-        pesExit("Error: %s does not exist!" % d, True)
+        pesExit(f"Error: {d} does not exist!", True)
     if not os.path.isdir(d):
-        pesExit("Error: %s is not a directory!" % d, True)
+        pesExit(f"Error: {d} is not a directory!", True)
 
 def checkFile(f):
     if not os.path.exists(f):
-        pesExit("Error: %s does not exist!" % f, True)
+        pesExit(f"Error: {f} does not exist!", True)
     if not os.path.isfile(f):
-        pesExit("Error: %s is not a file!" % f, True)
+        pesExit(f"Error: {f} is not a file!", True)
 
 def getDefaultInterface():
-    with open('/proc/net/route', 'r') as f:
+    with open('/proc/net/route', 'r') as f: # pylint: disable=unspecified-encoding
         for i in csv.DictReader(f, delimiter="\t"):
             if int(i['Destination'], 16) == 0:
                 return i['Iface']
@@ -95,9 +95,9 @@ def mkdir(path):
         os.mkdir(path)
         return True
     if not os.path.isdir(path):
-        pesExit("Error: %s is not a directory!" % path, True)
+        pesExit(f"Error: {path} is not a directory!", True)
     elif not os.access(path, os.W_OK):
-        pesExit("Error: %s is not writeable!" % path, True)
+        pesExit(f"Error: {path} is not writeable!", True)
     else:
         # did not have to make directory so return false
         logging.debug("mkdir: %s already exists", path)
@@ -137,17 +137,17 @@ def scaleImage(ix, iy, bx, by):
         scale_factor = bx/float(ix)
         sy = scale_factor * iy
         if sy > by:
-            scale_factor = by/float(iy)
+            scale_factor = by / float(iy)
             sx = scale_factor * ix
             sy = by
         else:
             sx = bx
     else:
         # fit to height
-        scale_factor = by/float(iy)
+        scale_factor = by / float(iy)
         sx = scale_factor * ix
         if sx > bx:
-            scale_factor = bx/float(ix)
+            scale_factor = bx / float(ix)
             sx = bx
             sy = scale_factor * iy
         else:
@@ -206,7 +206,7 @@ class Settings:
 
     def save(self):
         logging.debug("Settings.save: saving to %s", self._path)
-        with open(self._path, "w") as f:
+        with open(self._path, "w", encoding="utf-8") as f:
             self._configparser.write(f)
 
     def set(self, section, prop, value):
@@ -232,9 +232,9 @@ class ConsoleSettings(Settings):
         if not self._configparser.has_option(section, prop):
             if prop in self.__optionalProps:
                 return None
-            raise Exception("%s has no option \"%s\" in %s" % (section, prop, self._path))
+            raise Exception(f"{section} has no option \"{prop}\" in {self._path}")
         if not prop in self.__props:
-            raise Exception("%s is not in props dictionary" % prop)
+            raise Exception(f"{prop} is not in props dictionary")
         if section not in self.__cache:
             self.__cache[section] = {}
         if not prop in self.__cache[section]:
@@ -320,7 +320,7 @@ class UserSettings(Settings):
     @dateFormat.setter
     def dateFormat(self, value):
         if value not in UserSettings.DATE_FORMATS:
-            raise ValueError("Invalid value for UserSettings.dateFormat: \"%s\"" % value)
+            raise ValueError(f"Invalid value for UserSettings.dateFormat: \"{value}\"")
         self.set("settings", "dateFormat", value)
 
     @property
