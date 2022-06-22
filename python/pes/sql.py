@@ -29,18 +29,19 @@ This module provides classes and functions for PES' database functionality.
 from datetime import datetime
 import logging
 import os
-import pes
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine, Column, DateTime, ForeignKey, Integer, String, Text, Boolean
 from sqlalchemy.orm import class_mapper, relationship, ColumnProperty
+
+import pes
 
 Base = declarative_base()
 
 def connect(db=pes.userDb):
     # disable check_same_thread check
     # must make sure writes only happen in one thread!
-    s = "sqlite:///%s?check_same_thread=false" % db
+    s = f"sqlite:///{db}?check_same_thread=false"
     logging.debug("pes.sql.connect: connecting to: %s", s)
     return create_engine(s)
 
@@ -82,8 +83,8 @@ class CustomBase:
     def __repr__(self) -> str:
         vals = []
         for prop in class_mapper(self.__class__).iterate_properties:
-                if isinstance(prop, ColumnProperty):
-                    vals.append(f"{prop.key}={getattr(self, prop.key)}")    
+            if isinstance(prop, ColumnProperty):
+                vals.append(f"{prop.key}={getattr(self, prop.key)}")
         return f"<{self.__class__.__name__} {' '.join(vals)} >"
 
 class Console(Base, CustomBase):
@@ -156,7 +157,7 @@ class GameScreenshot(Base, CustomBase):
     path = Column(Text)
 
     game = relationship("Game", back_populates="screenshots")
-    
+
 class GamesDbGame(Base, CustomBase):
     __tablename__ = "gamesdb_game"
 
