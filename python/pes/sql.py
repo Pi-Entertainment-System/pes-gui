@@ -26,13 +26,14 @@
 This module provides classes and functions for PES' database functionality.
 """
 
+from datetime import datetime
 import logging
 import os
 import pes
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine, Column, DateTime, ForeignKey, Integer, String, Text, Boolean
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import class_mapper, relationship, ColumnProperty
 
 Base = declarative_base()
 
@@ -52,30 +53,38 @@ class CustomBase:
         self.__table__ = None
 
     @staticmethod
-    def getDateStr(column):
+    def getDateStr(column: datetime) -> str:
         return column.strftime("%d/%m/%Y %H:%M")
 
-    def getDict(self):
+    def getDict(self) -> dict:
         j = {}
         if self.__table__ is not None:
-            for c in self.__table__.columns:
-                val = getattr(self, c.name)
-                t = type(c.type)
-                if val:
-                    if t is DateTime:
-                        j[c.name] = int(val.timestamp())
+            for prop in class_mapper(self.__class__).iterate_properties:
+                if isinstance(prop, ColumnProperty):
+                    val = getattr(self, prop.key)
+                    t = prop.columns[0].type
+                    if val:
+                        if t is DateTime:
+                            j[prop.key] = int(val.timestamp())
+                        else:
+                            j[prop.key] = val
                     else:
-                        j[c.name] = val
-                else:
-                    if t is DateTime:
-                        j[c.name] = 0
-                    elif t is Integer:
-                        j[c.name] = 0
-                    elif t is Boolean:
-                        j[c.name] = False
-                    else:
-                        j[c.name] = ""
+                        if t is DateTime:
+                            j[prop.key] = 0
+                        elif t is Integer:
+                            j[prop.key] = 0
+                        elif t is Boolean:
+                            j[prop.key] = False
+                        else:
+                            j[prop.key] = ""
         return j
+
+    def __repr__(self) -> str:
+        vals = []
+        for prop in class_mapper(self.__class__).iterate_properties:
+                if isinstance(prop, ColumnProperty):
+                    vals.append(f"{prop.key}={getattr(self, prop.key)}")    
+        return f"<{self.__class__.__name__} {' '.join(vals)} >"
 
 class Console(Base, CustomBase):
     __tablename__ = "console"
@@ -89,9 +98,6 @@ class Console(Base, CustomBase):
 
     platform = relationship("GamesDbPlatform", back_populates="consoles")
     #retroAchievementConsole = relationship("RetroAchievementConsole", back_populates="consoles")
-
-    def __repr__(self):
-        return "<Console id=%s name=%s retroId=%s>" % (self.id, self.name, self.retroId)
 
 class Game(Base, CustomBase):
     __tablename__ = "game"
@@ -116,7 +122,7 @@ class Game(Base, CustomBase):
     gamesDbGame = relationship("GamesDbGame", back_populates="games")
     retroAchievementGame = relationship("RetroAchievementGame", back_populates="games")
 
-    def getDict(self):
+    def getDict(self) -> dict:
         j = super().getDict()
         if self.gamesDbGame:
             j["overview"] = self.gamesDbGame.overview
@@ -150,10 +156,7 @@ class GameScreenshot(Base, CustomBase):
     path = Column(Text)
 
     game = relationship("Game", back_populates="screenshots")
-
-    def __repr__(self):
-        return "<GameScreenshot id=%s gameId=%s path=\"%s\">" % (self.id, self.gameId, self.path)
-
+    
 class GamesDbGame(Base, CustomBase):
     __tablename__ = "gamesdb_game"
 
@@ -173,17 +176,11 @@ class GamesDbGame(Base, CustomBase):
     platform = relationship("GamesDbPlatform", back_populates="games")
     retroAchievementGame = relationship("RetroAchievementGame", back_populates="gamesDbGame")
 
-    def __repr__(self):
-        return "<GamesDbGame id=%s platformId=%s name=\"%s\" releaseDate=%s retroId=%s>" % (self.id, self.platformId, self.name, self.releaseDate, self.retroId)
-
 class GamesDbPlatform(Base, CustomBase):
     __tablename__ = "gamesdb_platform"
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
-
-    def __repr__(self):
-        return "<GamesDbPlatform id=%s name=%s>" % (self.id, self.name)
 
 class GamesDbScreenshot(Base, CustomBase):
     __tablename__ = "gamesdb_screenshot"
@@ -194,9 +191,6 @@ class GamesDbScreenshot(Base, CustomBase):
     large = Column(Text)
 
     game = relationship("GamesDbGame", back_populates="screenshots")
-
-    def __repr__(self):
-        return "<GamesDbScreenShot id=%s gameId=%s original=\"%s\">" % (self.id, self.gameId, self.original)
 
 class MameGame(Base, CustomBase):
     __tablename__ = "mame_game"
@@ -222,7 +216,7 @@ class RetroAchievementBadge(Base, CustomBase):
 
     game = relationship("RetroAchievementGame", back_populates="badges")
 
-    def getDict(self):
+    def getDict(self) -> dict:
         j = super().getDict()
         if j["earned"] > 0:
             j["earnedStr"] = self.getDateStr(self.earned)
@@ -253,18 +247,12 @@ class RetroAchievementGame(Base, CustomBase):
 
     console = relationship("RetroAchievementConsole", back_populates="games")
 
-    def __repr__(self):
-        return "<RetroAchievementGame id=%s name=%s retroConsoleId=%s>" % (self.id, self.name, self.retroConsoleId)
-
 class RetroAchievementGameHash(Base, CustomBase):
     __tablename__ = "retroachievement_game_hash"
     id = Column(Integer, ForeignKey('retroachievement_game.id'), primary_key=True)
     rasum = Column(String, primary_key=True)
 
     game = relationship("RetroAchievementGame", back_populates="hashes")
-
-    def __repr__(self):
-        return "<RetroAchievementGameHash id=%s rasum=%s>" % (self.id, self.rasum)
 
 Console.games = relationship("Game", order_by=Game.id, back_populates="console")
 Console.retroAchievementConsoles = relationship("RetroAchievementConsole", order_by=RetroAchievementConsole.id, back_populates="console")
