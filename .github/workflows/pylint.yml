@@ -34,4 +34,4 @@ jobs:
         pip install waitress
     - name: Analysing the code with pylint
       run: |
-        pylint --extension-pkg-whitelist=PyQt5 $(git ls-files '*.py')
+        pylint --extension-pkg-whitelist=dbus,PyQt5 $(git ls-files '*.py')

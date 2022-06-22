@@ -22,21 +22,24 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+# pylint: disable=broad-except,invalid-name,line-too-long,missing-class-docstring,missing-function-docstring,redefined-outer-name,too-many-locals
+
 """
 A simple program that can be used to test the functionality
 of PES' dbus module.
 """
 
 import logging
-import os
 import signal
 import sys
-import pes.system
-from dbus.mainloop.pyqt5 import DBusQtMainLoop
-from PyQt5.QtCore import Qt, QCoreApplication, QTimer
 
-def handleSignal(sig, frame):
-    global app
+from dbus.mainloop.pyqt5 import DBusQtMainLoop
+from PyQt5.QtCore import QCoreApplication, QTimer
+
+import pes.system
+
+def handleSignal(sig, frame): # pylint: disable=no-value-for-parameter,unused-argument
+    global app # pylint: disable=global-variable-not-assigned
     if sig == signal.SIGINT:
         print("Exiting...")
         app.quit()
@@ -56,18 +59,18 @@ if __name__ == "__main__":
     timer.start()
     timer.timeout.connect(lambda: None)
 
-    logging.info("Timezone: %s" % broker.timezone)
+    logging.info("Timezone: %s", broker.timezone)
     logging.info("Available timezones:")
     for t in broker.getTimezones():
-        logging.info("TZ = %s" % t)
+        logging.info("TZ = %s", t)
 
     if broker.btAvailable():
         agent = pes.system.BluetoothAgent()
-        #logging.info("Adapter: %s" % broker.btAdapter)
-        logging.info("Powered: %s" % broker.btPowered)
-        logging.info("Discoverable: %s" % broker.btDiscoverable)
-        logging.info("Discoverable timeout: %d" % broker.btDiscoverableTimeout)
-        logging.info("Pairable: %s" % broker.btPairable)
+        #logging.info("Adapter: %s", broker.btAdapter)
+        logging.info("Powered: %s", broker.btPowered)
+        logging.info("Discoverable: %s", broker.btDiscoverable)
+        logging.info("Discoverable timeout: %d", broker.btDiscoverableTimeout)
+        logging.info("Pairable: %s", broker.btPairable)
         broker.btPowered = True
         broker.btDiscoverableTimeout = 0
         broker.btDiscoverable = True
