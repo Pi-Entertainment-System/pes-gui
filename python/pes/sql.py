@@ -63,7 +63,7 @@ class CustomBase:
             for prop in class_mapper(self.__class__).iterate_properties:
                 if isinstance(prop, ColumnProperty):
                     val = getattr(self, prop.key)
-                    t = prop.columns[0].type
+                    t = type(prop.columns[0].type)
                     if val:
                         if t is DateTime:
                             j[prop.key] = int(val.timestamp())
