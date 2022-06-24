@@ -22,8 +22,13 @@
 
 # pylint: disable=invalid-name,line-too-long,missing-class-docstring,missing-function-docstring
 
+"""
+This module provides system level classes that make use of dbus
+to adjust Bluetooth and date/time settings.
+"""
+
 import logging
-import os
+
 from dbus.mainloop.pyqt5 import DBusQtMainLoop
 from PyQt5.QtCore import Q_CLASSINFO, QObject, QVariant, pyqtProperty, pyqtSlot, QMetaType
 from PyQt5.QtDBus import QDBusArgument, QDBusConnection, QDBusAbstractAdaptor, QDBusInterface, QDBusVariant, QDBusMessage, QDBusObjectPath, QDBusError
@@ -63,7 +68,7 @@ class BluetoothAdapter(QDBusAbstractAdaptor):
     #</method>
 
     def __init__(self, parent=None):
-        super(BluetoothAdapter, self).__init__(parent)
+        super().__init__(parent)
         #self._devicePINTries = {}
         DBusQtMainLoop(set_as_default=True)
         self._bus = QDBusConnection.systemBus()
@@ -75,13 +80,13 @@ class BluetoothAdapter(QDBusAbstractAdaptor):
         device, service = message.arguments()
         connection = QDBusInterface(BT_SERVICE, device, DBUS_PROPERTIES_INTERFACE, self._bus)
         alias = connection.call("Get", BT_DEVICE_INTERFACE, "Alias").arguments()[0]
-        address = connection.call("Get", BT_DEVICE_INTERFACE, "Address").arguments()[0]
+        #address = connection.call("Get", BT_DEVICE_INTERFACE, "Address").arguments()[0]
         if alias in CONTROLLERS:
             # authorized
-            logging.info("BluetoothAdapter.AuthorizeService: authorized %s %s" % (alias, device))
+            logging.info("BluetoothAdapter.AuthorizeService: authorized %s %s", alias, device)
             return
         # deny unknown devices
-        logging.warning("BluetoothAdapter.AuthorizeService: denied for %s (%s), service %s" % (device, alias, service))
+        logging.warning("BluetoothAdapter.AuthorizeService: denied for %s (%s), service %s", device, alias, service)
         error = message.createErrorReply(QDBusError.AccessDenied, "Failed")
         self._bus.send(error)
 
@@ -108,7 +113,7 @@ class BluetoothAgent(QObject):
     PATH = "/com/mundayweb/pes/agent"
 
     def __init__(self, parent=None):
-        super(BluetoothAgent, self).__init__(parent)
+        super().__init__(parent)
         self._bus = QDBusConnection.systemBus()
         self._apdater = BluetoothAdapter(self)
         agentManager = QDBusInterface(BT_SERVICE, "/org/bluez", "org.bluez.AgentManager1", self._bus, self)
@@ -116,12 +121,12 @@ class BluetoothAgent(QObject):
             raise Exception("BluetoothAgent.__init__: failed to register object")
         logging.debug("BluetoothAgent.__init__: registered object")
         msg = agentManager.call("RegisterAgent", QDBusObjectPath(BluetoothAgent.PATH), "DisplayYesNo")
-        if msg.type() == QDBusMessage.MessageType.ErrorMessage:
-            logging.warning("DbusBroker.__init__: Failed to register Bluetooth agent: %s" % msg.errorMessage())
+        if msg.type() == QDBusMessage.ErrorMessage:
+            logging.warning("DbusBroker.__init__: Failed to register Bluetooth agent: %s", msg.errorMessage())
         else:
             result = agentManager.call("RequestDefaultAgent", QDBusObjectPath(BluetoothAgent.PATH)).arguments()
-            if result[0] != None:
-                raise Exception("BluetoothAgent.__init__: failed to register default agent: %s" % result[0])
+            if result[0] is not None:
+                raise Exception(f"BluetoothAgent.__init__: failed to register default agent: {result[0]}")
 
 class DbusBroker(QObject):
     """
@@ -129,7 +134,7 @@ class DbusBroker(QObject):
     """
 
     def __init__(self, parent=None):
-        super(DbusBroker, self).__init__(parent)
+        super().__init__(parent)
         self._bus = QDBusConnection.systemBus()
         self._adapterPath = None
         self.__timezones = None
@@ -142,25 +147,25 @@ class DbusBroker(QObject):
 
         if bluezFound:
             self._adapterPath = self._getBtAdapter()
-            if self._adapterPath == None:
+            if self._adapterPath is None:
                 logging.warning("DbusBroker.__init__: could not find BT adapter")
             else:
-                logging.debug("DbusBroker.__init__: found BT adapter %s" % self._adapterPath)
+                logging.debug("DbusBroker.__init__: found BT adapter %s", self._adapterPath)
                 # listen for devices being added
                 if not self._bus.connect("", "", "org.freedesktop.DBus.ObjectManager", "InterfacesAdded", self.btDeviceAdded):
                     raise Exception("DbusBroker.__init__: failed to connect to org.freedesktop.DBus.ObjectManager:InterfacesAdded")
                 # listen for all Bluez related property changes
                 if not self._bus.connect(BT_SERVICE, "", DBUS_PROPERTIES_INTERFACE, "PropertiesChanged", self.btPropertyChange):
-                    raise Exception("DbusBroker.__init__: failed to connected to org.freedesktop.DBus.Properties:PropertiesChanged for %s" % BT_SERVICE)
+                    raise Exception(f"DbusBroker.__init__: failed to connected to org.freedesktop.DBus.Properties:PropertiesChanged for {BT_SERVICE}")
         else:
-            logging.warning("DbusBroker.__init__: could not find %s" % BT_SERVICE)
+            logging.warning("DbusBroker.__init__: could not find %s", BT_SERVICE)
 
     def _getBtAdapter(self):
         adapterPath = None
         connection = QDBusInterface(BT_SERVICE, "/", "org.freedesktop.DBus.ObjectManager", self._bus)
         msg = connection.call("GetManagedObjects")
-        if msg.type() == QDBusMessage.MessageType.ErrorMessage:
-            logging.warning("DbusBroker._getBtAdapter: %s" % msg.errorMessage())
+        if msg.type() == QDBusMessage.ErrorMessage:
+            logging.warning("DbusBroker._getBtAdapter: %s", msg.errorMessage())
         else:
             for path, value in msg.arguments()[0].items():
                 if BT_ADAPTER_INTERFACE in value:
@@ -168,46 +173,46 @@ class DbusBroker(QObject):
                     break
         return adapterPath
 
-    def _getBtAdapterProperty(self, property):
+    def _getBtAdapterProperty(self, prop):
         if self._adapterPath:
             connection = QDBusInterface(BT_SERVICE, self._adapterPath, DBUS_PROPERTIES_INTERFACE, self._bus)
-            return connection.call("Get", BT_ADAPTER_INTERFACE, property).arguments()[0]
+            return connection.call("Get", BT_ADAPTER_INTERFACE, prop).arguments()[0]
         raise Exception("DbusBroker._getBtAdapterProperty: Bluetooth adapter not found")
 
-    def _setBtAdapterProperty(self, property, value):
+    def _setBtAdapterProperty(self, prop, value):
         if self._adapterPath:
             connection = QDBusInterface(BT_SERVICE, self._adapterPath, DBUS_PROPERTIES_INTERFACE, self._bus)
-            if type(value) == int:
+            if isinstance(value, int):
                 # convert integer properties to UInt32
-                rslt = connection.call("Set", BT_ADAPTER_INTERFACE, property, QDBusVariant(QDBusArgument(value, QMetaType.UInt))).arguments()
+                rslt = connection.call("Set", BT_ADAPTER_INTERFACE, prop, QDBusVariant(QDBusArgument(value, QMetaType.UInt))).arguments()
             else:
-                rslt = connection.call("Set", BT_ADAPTER_INTERFACE, property, QDBusVariant(value)).arguments()
-            if rslt[0] != None:
-                raise Exception("DbusBroker._setBtAdapterProperty: %s" % rslt[0])
+                rslt = connection.call("Set", BT_ADAPTER_INTERFACE, prop, QDBusVariant(value)).arguments()
+            if rslt[0] is not None:
+                raise Exception(f"DbusBroker._setBtAdapterProperty: {rslt[0]}")
             return
-        raise Exception("DbusBroker._setBtAdapterProperty: Bluetooth adapter not found when seting '%s'" % property)
+        raise Exception(f"DbusBroker._setBtAdapterProperty: Bluetooth adapter not found when seting '{prop}'")
 
     def _getTimedateConnection(self, interface=TIMEDATE_INTERFACE):
         return QDBusInterface(TIMEDATE_SERVICE, TIMEDATE_PATH, interface, self._bus)
 
-    def _getTimedateProperty(self, property):
-        return self._getTimedateConnection(DBUS_PROPERTIES_INTERFACE).call("Get", TIMEDATE_INTERFACE, property).arguments()[0]
+    def _getTimedateProperty(self, prop):
+        return self._getTimedateConnection(DBUS_PROPERTIES_INTERFACE).call("Get", TIMEDATE_INTERFACE, prop).arguments()[0]
 
     @pyqtSlot(result=bool)
     def btAvailable(self):
-        logging.debug("DbusBroker.btAvailale: %s" % (self._adapterPath != None))
-        return self._adapterPath != None
+        logging.debug("DbusBroker.btAvailale: %s", (self._adapterPath is not None))
+        return self._adapterPath is not None
 
     @pyqtSlot(QDBusMessage)
     def btDeviceAdded(self, message):
         args = message.arguments()
         if "org.bluez.Device1" in args[1]:
             device = args[0]
-            logging.debug("DbusBroker.btDeviceAdded: detected device %s" % device)
+            logging.debug("DbusBroker.btDeviceAdded: detected device %s", device)
             connection = QDBusInterface(BT_SERVICE, device, DBUS_PROPERTIES_INTERFACE, self._bus)
             alias = connection.call("Get", BT_DEVICE_INTERFACE, "Alias").arguments()[0]
             address = connection.call("Get", BT_DEVICE_INTERFACE, "Address").arguments()[0]
-            logging.debug("DbusBroker.btDeviceAdded: alias = %s, address = %s " % (alias, address))
+            logging.debug("DbusBroker.btDeviceAdded: alias = %s, address = %s ", alias, address)
             if alias in CONTROLLERS:
                 if connection.call("Get", BT_DEVICE_INTERFACE, "Trusted").arguments()[0]:
                     logging.debug("DbusBroker.btDeviceAdded: already truested")
@@ -218,17 +223,17 @@ class DbusBroker(QObject):
                     # PS4 / PS5 and possibly others...
                     logging.debug("DbusBroker.btDeviceAdded: wireless controller detected, initiating pairing")
                     connection = QDBusInterface(BT_SERVICE, device, BT_DEVICE_INTERFACE, self._bus, self)
-                    connection.call("Pair").arguments()[0]
+                    connection.call("Pair").arguments()
                 elif alias == WII_CONTROLLER:
-                    logging.debug("DbusBroker.btDeviceAdded: connecting to Wii mote")
+                    logging.debug("DbusBroker.btDeviceAdded: connecting to Wiimote")
                     connection = QDBusInterface(BT_SERVICE, device, BT_DEVICE_INTERFACE, self._bus, self)
-                    connection.call("Connect").arguments()[0]
+                    connection.call("Connect").arguments()
 
     @pyqtSlot(QDBusMessage)
-    def btPropertyChange(self, message):
+    def btPropertyChange(self, message): # pylint: disable=no-self-use
         path = message.path()
         args = message.arguments()
-        logging.debug("DbusBroker.btPropertyChange: property change: %s -> %s" % (path, args))
+        logging.debug("DbusBroker.btPropertyChange: property change: %s -> %s", path, args)
 
     @pyqtProperty(bool)
     def btDiscoverable(self) -> bool:
@@ -237,7 +242,7 @@ class DbusBroker(QObject):
 
     @btDiscoverable.setter
     def btDiscoverable(self, discoverable: bool):
-        logging.debug("DbusBroker.btDiscoverable: setting to %s" % discoverable)
+        logging.debug("DbusBroker.btDiscoverable: setting to %s", discoverable)
         self._setBtAdapterProperty("Discoverable", discoverable)
 
     @pyqtProperty(int)
@@ -247,7 +252,7 @@ class DbusBroker(QObject):
 
     @btDiscoverableTimeout.setter
     def btDiscoverableTimeout(self, timeout: int):
-        logging.debug("DbusBroker.btDiscoverableTimeout: setting to %d" % timeout)
+        logging.debug("DbusBroker.btDiscoverableTimeout: setting to %d", timeout)
         self._setBtAdapterProperty("DiscoverableTimeout", timeout)
 
     @pyqtProperty(bool)
@@ -257,7 +262,7 @@ class DbusBroker(QObject):
 
     @btPairable.setter
     def btPairable(self, pairable: bool):
-        logging.debug("DbusBroker.btPairable: setting to %s" % pairable)
+        logging.debug("DbusBroker.btPairable: setting to %s", pairable)
         self._setBtAdapterProperty("Pairable", pairable)
 
     @pyqtProperty(bool)
@@ -267,20 +272,20 @@ class DbusBroker(QObject):
 
     @btPowered.setter
     def btPowered(self, powered: bool):
-        logging.debug("DbusBroker.btPowered: setting to %s" % powered)
+        logging.debug("DbusBroker.btPowered: setting to %s", powered)
         return self._setBtAdapterProperty("Powered", powered)
 
     @pyqtSlot()
     def btStartDiscovery(self):
         logging.debug("DbusBroker.btStartDiscovery: starting")
         connection = QDBusInterface(BT_SERVICE, self._adapterPath, BT_ADAPTER_INTERFACE, self._bus, self)
-        connection.call("StartDiscovery").arguments()[0]
+        connection.call("StartDiscovery").arguments()
 
     @pyqtSlot(result=QVariant)
     def getBtGamingDevices(self):
         devices = {}
         connection = QDBusInterface(BT_SERVICE, "/", "org.freedesktop.DBus.ObjectManager", self._bus)
-        for path, value in connection.call("GetManagedObjects").arguments()[0].items():
+        for _, value in connection.call("GetManagedObjects").arguments()[0].items():
             if BT_DEVICE_INTERFACE in value:
                 if value[BT_DEVICE_INTERFACE]["Alias"] in CONTROLLERS:
                     devices[value[BT_DEVICE_INTERFACE]["Address"]] = value[BT_DEVICE_INTERFACE]["Alias"]
@@ -292,7 +297,7 @@ class DbusBroker(QObject):
         Get all available timezones as a list.
         """
         logging.debug("DbusBroker.getTimezones: getting timezones")
-        if self.__timezones == None:
+        if self.__timezones is None:
             self.__timezones = self._getTimedateConnection().call("ListTimezones").arguments()[0]
         return self.__timezones
 
@@ -310,10 +315,10 @@ class DbusBroker(QObject):
         Sets the current timezone.
         Note: requires root privileges!
         """
-        logging.debug("DbusBroker.timezone: setting to %s" % tz)
+        logging.debug("DbusBroker.timezone: setting to %s", tz)
         if tz not in self.getTimezones():
-            raise ValueError("%s is not a valid timezone" % tz)
+            raise ValueError(f"{tz} is not a valid timezone")
         rslt = self._getTimedateConnection().call("SetTimezone", tz, False).arguments()
-        if rslt[0] != None:
-            raise Exception("DbusBroker.timezone: %s" % rslt[0])            
+        if rslt[0] is not None:
+            raise Exception(f"DbusBroker.timezone: {rslt[0]}")
         
