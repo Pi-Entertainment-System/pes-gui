@@ -33,7 +33,7 @@ import logging
 import signal
 import sys
 
-from dbus.mainloop.pyqt5 import DBusQtMainLoop
+from dbus.mainloop.pyqt5 import DBusQtMainLoop # pylint: disable=import-error
 from PyQt5.QtCore import QCoreApplication, QTimer
 
 import pes.system

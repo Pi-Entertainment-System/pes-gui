@@ -29,7 +29,7 @@ to adjust Bluetooth and date/time settings.
 
 import logging
 
-from dbus.mainloop.pyqt5 import DBusQtMainLoop
+from dbus.mainloop.pyqt5 import DBusQtMainLoop # pylint: disable=import-error
 from PyQt5.QtCore import Q_CLASSINFO, QObject, QVariant, pyqtProperty, pyqtSlot, QMetaType
 from PyQt5.QtDBus import QDBusArgument, QDBusConnection, QDBusAbstractAdaptor, QDBusInterface, QDBusVariant, QDBusMessage, QDBusObjectPath, QDBusError
 
