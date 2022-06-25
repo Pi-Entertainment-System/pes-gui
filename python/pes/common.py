@@ -66,15 +66,6 @@ def getIpAddress(ifname: str=None) -> str:
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     return socket.inet_ntoa(fcntl.ioctl(s.fileno(), 0x8915, struct.pack('256s', ifname[:15].encode()))[20:24])
 
-def importCEC() -> bool:
-    cecImported = False
-    try:
-        import cec
-        cecImported = True
-    except ImportError as e:
-        pass
-    return cecImported
-
 def initConfig():
     logging.debug("initialising config...")
     checkDir(userConfDir)

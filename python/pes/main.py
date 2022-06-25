@@ -41,7 +41,7 @@ import pes.sql
 import pes.web
 import sdl2
 
-from pes.common import checkDir, checkFile, mkdir, initConfig, importCEC, initDb, pesExit, UserSettings
+from pes.common import checkDir, checkFile, mkdir, initConfig, initDb, pesExit, UserSettings
 from pes.gui import Backend, PESGuiApplication
 from sqlalchemy.orm import sessionmaker
 
@@ -52,7 +52,12 @@ try:
 except ImportError as e:
     pass
 
-cecImported = importCEC()
+cecImported = False # pylint: disable=duplicate-code
+try:  # pylint: disable=duplicate-code
+    import cec  # pylint: disable=duplicate-code
+    cecImported = True  # pylint: disable=duplicate-code
+except ImportError:  # pylint: disable=duplicate-code
+    pass  # pylint: disable=duplicate-code
 
 def cecEvent(button, dur):
     """
