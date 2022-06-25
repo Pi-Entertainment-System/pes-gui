@@ -44,13 +44,7 @@ from PyQt5.QtGui import QGuiApplication, QKeyEvent
 from PyQt5.QtQml import QQmlApplicationEngine, QJSValue, qmlRegisterType
 from PyQt5.QtCore import Qt, pyqtProperty, pyqtSignal, pyqtSlot, QObject, QEvent, QVariant
 
-cecImported = False
-try:
-    import cec
-    cecImported = True
-except ImportError as e:
-    pass
-
+cecImported = pes.common.importCEC()
 
 JOYSTICK_AXIS_MIN = -30000
 JOYSTICK_AXIS_MAX =  30000

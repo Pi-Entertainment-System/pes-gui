@@ -40,31 +40,40 @@ import struct
 
 from pes import baseDir, confDir, primaryDb, userBiosDir, userConfDir, userConsolesConfigFile, userDb, userDir, userPesConfigFile
 
-def checkDir(d):
+def checkDir(d: str):
     logging.debug("checking for: %s", d)
     if not os.path.exists(d):
         pesExit(f"Error: {d} does not exist!", True)
     if not os.path.isdir(d):
         pesExit(f"Error: {d} is not a directory!", True)
 
-def checkFile(f):
+def checkFile(f: str):
     if not os.path.exists(f):
         pesExit(f"Error: {f} does not exist!", True)
     if not os.path.isfile(f):
         pesExit(f"Error: {f} is not a file!", True)
 
-def getDefaultInterface():
+def getDefaultInterface() -> str:
     with open('/proc/net/route', 'r') as f: # pylint: disable=unspecified-encoding
         for i in csv.DictReader(f, delimiter="\t"):
             if int(i['Destination'], 16) == 0:
                 return i['Iface']
     return None
 
-def getIpAddress(ifname=None):
+def getIpAddress(ifname: str=None) -> str:
     if not ifname:
         ifname = getDefaultInterface()
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     return socket.inet_ntoa(fcntl.ioctl(s.fileno(), 0x8915, struct.pack('256s', ifname[:15].encode()))[20:24])
+
+def importCEC() -> bool:
+    cecImported = False
+    try:
+        import cec
+        cecImported = True
+    except ImportError as e:
+        pass
+    return cecImported
 
 def initConfig():
     logging.debug("initialising config...")
@@ -89,7 +98,7 @@ def initDb():
         logging.debug("initialising %s from %s...", userDb, primaryDb)
         shutil.copy(primaryDb, userDb)
 
-def mkdir(path):
+def mkdir(path: str):
     if not os.path.exists(path):
         logging.debug("mkdir: directory: %s", path)
         os.mkdir(path)
@@ -103,7 +112,7 @@ def mkdir(path):
         logging.debug("mkdir: %s already exists", path)
     return False
 
-def pesExit(msg = None, error = False):
+def pesExit(msg: str=None, error: bool=False):
     if error:
         if msg:
             logging.error(msg)
@@ -116,7 +125,7 @@ def pesExit(msg = None, error = False):
         logging.info("Exiting...")
     sys.exit(0)
 
-def runCommand(cmd):
+def runCommand(cmd: str) -> tuple:
     '''
     Execute the given command and return a tuple that contains the
     return code, std out and std err output.
@@ -126,7 +135,7 @@ def runCommand(cmd):
         stdout, stderr = process.communicate()
         return (process.returncode, stdout.decode(), stderr.decode())
 
-def scaleImage(ix, iy, bx, by):
+def scaleImage(ix: int, iy: int, bx: int, by: int) -> tuple:
     """
     Original author: Frank Raiser (crashchaos@gmx.net)
     URL: http://www.pygame.org/pcr/transform_scale
@@ -162,7 +171,7 @@ class Settings:
     LIST_PROP = 4
     PATH_PROP = 5
 
-    def __init__(self, f, props=None):
+    def __init__(self, f: str, props: dict=None):
         logging.debug("Settings.__init__: created using %s", f)
         self._configparser = configparser.RawConfigParser()
         self._configparser.read(f)
@@ -171,7 +180,7 @@ class Settings:
         if props:
             self._props = props
 
-    def get(self, section, prop):
+    def get(self, section: str, prop: str) -> str:
         logging.debug("Settings.get: section = %s, prop = %s", section, prop)
         if not self._configparser.has_section(section):
             logging.warning("No section \"%s\" in \"%s\"", section, self._path)
@@ -193,15 +202,15 @@ class Settings:
             return None
         return rslt
 
-    def getSections(self):
+    def getSections(self) -> list:
         return self._configparser.sections()
 
-    def getType(self, section, prop):
+    def getType(self, section: str, prop: str) -> int:
         if section in self._props and prop in self._props[section]:
             return self._props[section][prop]
         return None
 
-    def hasSection(self, s):
+    def hasSection(self, s: str) -> bool:
         return self._configparser.has_section(s)
 
     def save(self):
@@ -209,7 +218,7 @@ class Settings:
         with open(self._path, "w", encoding="utf-8") as f:
             self._configparser.write(f)
 
-    def set(self, section, prop, value):
+    def set(self, section: str, prop: str, value):
         logging.debug("Settings.set: setting %s.%s = %s", section, prop, value)
         self._configparser.set(section, prop, str(value))
 
@@ -228,7 +237,7 @@ class ConsoleSettings(Settings):
         self.__optionalProps = ["ignore_roms", "require"]
         self.__cache = {}
 
-    def get(self, section, prop):
+    def get(self, section: str, prop: str) -> str:
         if not self._configparser.has_option(section, prop):
             if prop in self.__optionalProps:
                 return None
@@ -252,7 +261,7 @@ class ConsoleSettings(Settings):
         return self.__cache[section][prop]
 
     @staticmethod
-    def __parseStr(s):
+    def __parseStr(s: str) -> str:
         return s.replace("%%USERDIR%%", userDir).replace("%%BASE%%", baseDir).replace("%%USERBIOSDIR%%", userBiosDir).replace("%%USERCONFDIR%%", userConfDir)
 
 class UserSettings(Settings):
@@ -286,7 +295,7 @@ class UserSettings(Settings):
         }
         super().__init__(userPesConfigFile, props)
 
-    def get(self, section, prop):
+    def get(self, section: str, prop: str) -> str:
         rslt = super().get(section, prop)
         if self.getType(section, prop) == Settings.STR_PROP:
             if rslt is None or len(rslt) == 0:
@@ -295,7 +304,7 @@ class UserSettings(Settings):
         return rslt
 
     @property
-    def bluetooth(self):
+    def bluetooth(self) -> bool:
         value = self.get("settings", "bluetooth")
         if value is None:
             logging.warning("UserSettings.bluetooth: Bluetooth setting is not defined, defaulting to true")
@@ -303,11 +312,11 @@ class UserSettings(Settings):
         return value
 
     @bluetooth.setter
-    def bluetooth(self, value):
+    def bluetooth(self, value: bool):
         self.set("settings", "bluetooth", value)
 
     @property
-    def dateFormat(self):
+    def dateFormat(self) -> str:
         value = self.get("settings", "dateFormat")
         if value is None:
             value = next(iter(UserSettings.DATE_FORMATS[0]))
@@ -318,25 +327,25 @@ class UserSettings(Settings):
         return value
 
     @dateFormat.setter
-    def dateFormat(self, value):
+    def dateFormat(self, value: str):
         if value not in UserSettings.DATE_FORMATS:
             raise ValueError(f"Invalid value for UserSettings.dateFormat: \"{value}\"")
         self.set("settings", "dateFormat", value)
 
     @property
-    def hdmiCec(self):
+    def hdmiCec(self) -> bool:
         return self.get("settings", "hdmi-cec")
 
     @hdmiCec.setter
-    def hdmiCec(self, value):
+    def hdmiCec(self, value: bool):
         self.set("settings", "hdmi-cec", value)
 
     @property
-    def kodiCommand(self):
+    def kodiCommand(self) -> str:
         return self.get("commands", "kodi")
 
     @property
-    def hardcore(self):
+    def hardcore(self) -> bool:
         value = self.get("RetroAchievements", "hardcore")
         if value is None:
             logging.warning("UserSettings.hardcore: RetroAchievements hardcore setting is not defined, defaulting to false")
@@ -344,17 +353,17 @@ class UserSettings(Settings):
         return value
 
     @hardcore.setter
-    def hardcore(self, value):
+    def hardcore(self, value: str):
         self.set("RetroAchievements", "hardcore", value)
 
     @property
-    def rebootCommand(self):
+    def rebootCommand(self) -> str:
         return self.get("commands", "reboot")
 
     @property
-    def setTimezoneCommand(self):
+    def setTimezoneCommand(self) -> str:
         return self.get("commands", "setTimezone")
 
     @property
-    def shutdownCommand(self):
+    def shutdownCommand(self) -> str:
         return self.get("commands", "shutdown")

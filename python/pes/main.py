@@ -41,7 +41,7 @@ import pes.sql
 import pes.web
 import sdl2
 
-from pes.common import checkDir, checkFile, mkdir, initConfig, initDb, pesExit, UserSettings
+from pes.common import checkDir, checkFile, mkdir, initConfig, importCEC, initDb, pesExit, UserSettings
 from pes.gui import Backend, PESGuiApplication
 from sqlalchemy.orm import sessionmaker
 
@@ -52,12 +52,7 @@ try:
 except ImportError as e:
     pass
 
-cecImported = False
-try:
-    import cec
-    cecImported = True
-except ImportError as e:
-    pass
+cecImported = importCEC()
 
 def cecEvent(button, dur):
     """
