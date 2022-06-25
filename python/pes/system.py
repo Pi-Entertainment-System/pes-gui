@@ -20,7 +20,7 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# pylint: disable=invalid-name,line-too-long,missing-class-docstring,missing-function-docstring
+# pylint: disable=invalid-name,line-too-long,missing-class-docstring,missing-function-docstring,too-few-public-methods
 
 """
 This module provides system level classes that make use of dbus
@@ -230,7 +230,7 @@ class DbusBroker(QObject):
                     connection.call("Connect").arguments()
 
     @pyqtSlot(QDBusMessage)
-    def btPropertyChange(self, message): # pylint: disable=no-self-use
+    def btPropertyChange(self, message):
         path = message.path()
         args = message.arguments()
         logging.debug("DbusBroker.btPropertyChange: property change: %s -> %s", path, args)
