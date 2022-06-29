@@ -129,13 +129,12 @@ class RomProcessResult():
 
 class RomProcess(multiprocessing.Process):
 
-    def __init__(self, processNumber, taskQueue, resultQueue, exitEvent, lock, romList): # pylint: disable=too-many-arguments
+    def __init__(self, processNumber, taskQueue, resultQueue, exitEvent, romList): # pylint: disable=too-many-arguments
         super().__init__()
         self.__processNumber = processNumber
         self.__taskQueue = taskQueue
         self.__resultQueue = resultQueue
         self.__exitEvent = exitEvent
-        self.__lock = lock
         self.__romList = romList
 
     def run(self):
@@ -150,7 +149,6 @@ class RomProcess(multiprocessing.Process):
             if self.__exitEvent.is_set():
                 self.__taskQueue.task_done()
             else:
-                task.setLock(self.__lock)
                 try:
                     romTaskResult = task.run(self.__processNumber)
                     romProcessResult.addRomTaskResult(romTaskResult)
@@ -179,7 +177,6 @@ class RomTask(abc.ABC):
         self._console = console
         self._rom = rom
         self._fullscan = fullscan
-        self._lock = None
         self._romFileSize = os.path.getsize(rom)
 
     @abc.abstractmethod
@@ -225,9 +222,6 @@ class RomTask(abc.ABC):
         img.close()
         return newPath
 
-    def setLock(self, lock):
-        self._lock = lock
-
 class GamesDbRomTask(RomTask):
 
     def run(self, processNumber: int) -> RomTaskResult:
@@ -239,9 +233,8 @@ class GamesDbRomTask(RomTask):
 
         pes.sql.connect()
 
-        # have we already saved this game?
-        #with self._lock:
         with pes.sql.Session() as session:
+            # have we already saved this game?
             result = session.query(pes.sql.Game).filter(pes.sql.Game.path == self._rom).first()
             game = None
             newGame = True
@@ -690,14 +683,13 @@ class RomScanThread(QThread):
         self.__skipped = 0
         self.__updated = 0
 
-        lock = multiprocessing.Lock()
         self.__tasks = multiprocessing.JoinableQueue()
         manager = multiprocessing.Manager()
         self.__romList = manager.list()
         self.__exitEvent = multiprocessing.Event()
         results = multiprocessing.Queue()
         logging.debug("RomScanThread.run: will use %d ROM processes", self.__romProcessTotal)
-        romProcesses = [RomProcess(i, self.__tasks, results, self.__exitEvent, lock, self.__romList) for i in range(self.__romProcessTotal)]
+        romProcesses = [RomProcess(i, self.__tasks, results, self.__exitEvent, self.__romList) for i in range(self.__romProcessTotal)]
 
         pes.sql.connect()
         with pes.sql.Session.begin() as session:
