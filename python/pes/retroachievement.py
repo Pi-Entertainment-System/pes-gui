@@ -36,8 +36,6 @@ from datetime import datetime
 import pes
 import pes.common
 import requests
-import sqlalchemy
-import sqlalchemy.orm
 
 from PyQt5.QtCore import QThread, QVariant, pyqtSignal, pyqtSlot, pyqtProperty, QObject
 
