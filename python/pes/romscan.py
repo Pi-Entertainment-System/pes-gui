@@ -41,7 +41,6 @@ import pes.sql
 import PIL
 import requests
 import sqlalchemy
-import sqlalchemy.orm
 
 from PyQt5.QtCore import pyqtProperty, pyqtSignal, pyqtSlot, QThread
 
@@ -238,41 +237,38 @@ class GamesDbRomTask(RomTask):
         romTaskResult = RomTaskResult(RomTaskResult.STATE_FAILED, romName)
         logging.debug("%s processing -> %s", logPrefix, filename)
 
-        engine = pes.sql.connect()
-        session = sqlalchemy.orm.sessionmaker(bind=engine)()
+        pes.sql.connect()
 
         # have we already saved this game?
-        with self._lock:
+        #with self._lock:
+        with pes.sql.Session() as session:
             result = session.query(pes.sql.Game).filter(pes.sql.Game.path == self._rom).first()
-        game = None
-        newGame = True
-        rasum = None
-        retroGame = None
-        if result:
-            logging.debug("%s already in database", logPrefix)
-            game = result
-            game.found = True
-            with self._lock:
+            game = None
+            newGame = True
+            rasum = None
+            retroGame = None
+            if result:
+                logging.debug("%s already in database", logPrefix)
+                game = result
+                game.found = True
                 session.add(game)
                 session.commit()
-            newGame = False
-            romTaskResult.state = RomTaskResult.STATE_SKIPPED
-            romTaskResult.name = game.name
-            romTaskResult.coverart = game.coverartFront
-        else:
-            logging.debug("%s new game", logPrefix)
-            if self._console.retroId:
-                # find a game with matching rasum
-                rasum = pes.retroachievement.getRasum(self._rom, self._console.retroId)
-                logging.debug("%s rasum for %s is %s", logPrefix, self._rom, rasum)
-                with self._lock:
+                newGame = False
+                romTaskResult.state = RomTaskResult.STATE_SKIPPED
+                romTaskResult.name = game.name
+                romTaskResult.coverart = game.coverartFront
+            else:
+                logging.debug("%s new game", logPrefix)
+                if self._console.retroId:
+                    # find a game with matching rasum
+                    rasum = pes.retroachievement.getRasum(self._rom, self._console.retroId)
+                    logging.debug("%s rasum for %s is %s", logPrefix, self._rom, rasum)
                     retroGame = session.query(pes.sql.RetroAchievementGame).join(pes.sql.RetroAchievementGameHash).filter(pes.sql.RetroAchievementGame.retroConsoleId == self._console.retroId).filter(pes.sql.RetroAchievementGameHash.rasum == rasum).first()
-                if retroGame:
-                    logging.debug("%s found match for RetroAchievement game %d, rasum: %s", logPrefix, retroGame.id, rasum)
-                    # now is there a GamesDbGame match?
-                    if retroGame.gamesDbGame and len(retroGame.gamesDbGame) > 0:
-                        gamesDbGame = retroGame.gamesDbGame[0]
-                        with self._lock:
+                    if retroGame:
+                        logging.debug("%s found match for RetroAchievement game %d, rasum: %s", logPrefix, retroGame.id, rasum)
+                        # now is there a GamesDbGame match?
+                        if retroGame.gamesDbGame and len(retroGame.gamesDbGame) > 0:
+                            gamesDbGame = retroGame.gamesDbGame[0]
                             game = pes.sql.Game( # pylint: disable=unexpected-keyword-arg
                                 consoleId=self._console.id,
                                 added=datetime.datetime.now(),
@@ -286,172 +282,81 @@ class GamesDbRomTask(RomTask):
                             )
                             session.add(game)
                             session.commit()
-                        logging.debug("%s saved new record", logPrefix)
-                        romTaskResult.state = RomTaskResult.STATE_ADDED
-                    else:
-                        logging.debug("%s no GamesDbGame associated with RetroAchievementGame %d", logPrefix, retroGame.id)
-            else:
-                logging.debug("%s %s has no retroId", logPrefix, self._console.name)
+                            logging.debug("%s saved new record", logPrefix)
+                            romTaskResult.state = RomTaskResult.STATE_ADDED
+                        else:
+                            logging.debug("%s no GamesDbGame associated with RetroAchievementGame %d", logPrefix, retroGame.id)
+                else:
+                    logging.debug("%s %s has no retroId", logPrefix, self._console.name)
 
-            if game is None:
-                # try searching by name
-                if rasum:
-                    logging.debug("%s no match for rasum: %s, trying name match", logPrefix, rasum)
-                else:
-                    logging.debug("%s trying name match", logPrefix)
-                with self._lock:
+                if game is None:
+                    # try searching by name
+                    if rasum:
+                        logging.debug("%s no match for rasum: %s, trying name match", logPrefix, rasum)
+                    else:
+                        logging.debug("%s trying name match", logPrefix)
                     gamesDbGame = session.query(pes.sql.GamesDbGame).filter(sqlalchemy.func.lower(sqlalchemy.func.replace(pes.sql.GamesDbGame.name, " ", "")) == romName.replace(" ", "").lower()).first()
-                if gamesDbGame:
-                    logging.debug("%s found match for name: \"%s\"", logPrefix, romName)
-                    retroId = gamesDbGame.retroId
-                    if (retroId is None or retroId == 0) and retroGame:
-                        retroId = retroGame.id
-                    game = pes.sql.Game( # pylint: disable=unexpected-keyword-arg
-                        consoleId=self._console.id,
-                        added=datetime.datetime.now(),
-                        name=gamesDbGame.name,
-                        rasum=rasum,
-                        gamesDbId=gamesDbGame.id,
-                        retroId=retroId,
-                        path=self._rom,
-                        fileSize=self._romFileSize,
-                        coverartFront=self._getNocoverart(),
-                        found=True
-                    )
-                else:
-                    logging.warning("%s could not find any match for %s", logPrefix, self._rom)
-                    game = pes.sql.Game( # pylint: disable=unexpected-keyword-arg
-                        consoleId=self._console.id,
-                        added=datetime.datetime.now(),
-                        name=romName,
-                        rasum=rasum,
-                        path=self._rom,
-                        fileSize=self._romFileSize,
-                        coverartFront=self._getNocoverart(),
-                        found=True
-                    )
-                with self._lock:
+
+                    if gamesDbGame:
+                        logging.debug("%s found match for name: \"%s\"", logPrefix, romName)
+                        retroId = gamesDbGame.retroId
+                        if (retroId is None or retroId == 0) and retroGame:
+                            retroId = retroGame.id
+
+                        game = pes.sql.Game( # pylint: disable=unexpected-keyword-arg
+                            consoleId=self._console.id,
+                            added=datetime.datetime.now(),
+                            name=gamesDbGame.name,
+                            rasum=rasum,
+                            gamesDbId=gamesDbGame.id,
+                            retroId=retroId,
+                            path=self._rom,
+                            fileSize=self._romFileSize,
+                            coverartFront=self._getNocoverart(),
+                            found=True
+                        )
+                    else:
+                        logging.warning("%s could not find any match for %s", logPrefix, self._rom)
+                        game = pes.sql.Game( # pylint: disable=unexpected-keyword-arg
+                            consoleId=self._console.id,
+                            added=datetime.datetime.now(),
+                            name=romName,
+                            rasum=rasum,
+                            path=self._rom,
+                            fileSize=self._romFileSize,
+                            coverartFront=self._getNocoverart(),
+                            found=True
+                        )
+            
                     session.add(game)
                     session.commit()
-                logging.debug("%s saved new record", logPrefix)
-                romTaskResult.state = RomTaskResult.STATE_ADDED
+                    logging.debug("%s saved new record", logPrefix)
+                    romTaskResult.state = RomTaskResult.STATE_ADDED
 
-        if game and (newGame or self._fullscan):
-            logging.debug("%s downloading cover art", logPrefix)
-            romTaskResult.name = game.name
-
-            url = None
-            if game.gamesDbGame:
-                # create list of URLs to try for front coverart
-                urls = []
-                if game.gamesDbGame.boxArtFrontLarge:
-                    urls.append(game.gamesDbGame.boxArtFrontLarge)
-                if game.gamesDbGame.boxArtFrontMedium:
-                    urls.append(game.gamesDbGame.boxArtFrontMedium)
-                if game.gamesDbGame.boxArtFrontOriginal:
-                    urls.append(game.gamesDbGame.boxArtFrontOriginal)
-
-                logging.debug("%s URLs to try: %s", logPrefix, urls)
-
-                if len(urls) > 0:
-                    i = 0
-                    imgSaved = False
-                    for url in urls:
-                        logging.debug("%s URL attempt %d for %s (front) is %s", logPrefix, (i + 1), self._rom, url)
-                        extension = url[url.rfind('.'):]
-                        path = os.path.join(pes.userCoverartDir, self._console.name, f"{romName}-front{extension}")
-                        if self._fullscan or not os.path.exists(path):
-                            try:
-                                response = requests.get(
-                                    url,
-                                    headers=self.HEADERS,
-                                    timeout=self.URL_TIMEOUT
-                                )
-                                if response.status_code == requests.codes.ok:
-                                    logging.debug("%s saving to %s", logPrefix, path)
-                                    with open(path, "wb") as f:
-                                        f.write(response.content)
-                                    self._scaleImage(path)
-                                    imgSaved = True
-                                    if not newGame:
-                                        romTaskResult.state = RomTaskResult.STATE_UPDATED
-                                    break
-                                if newGame:
-                                    logging.warning("%s unable to download %s", logPrefix, url)
-                            except Exception as e: # pylint: disable=broad-except
-                                logging.error("%s failed to download %s due to %s", logPrefix, url, e)
-                        else:
-                            logging.debug("%s using existing front cover art: %s", logPrefix, path)
-                            imgSaved = True
-                            break
-                        i += 1
-                    if newGame:
-                        if imgSaved:
-                            game.coverartFront = path
-                            romTaskResult.coverart = game.coverartFront
-                        else:
-                            game.coverartFront = self._getNocoverart()
-                        with self._lock:
-                            session.add(game)
-                            session.commit()
-                    # get rear cover art
+            if game and (newGame or self._fullscan):
+                logging.debug("%s downloading cover art", logPrefix)
+                romTaskResult.name = game.name
+                url = None
+                if game.gamesDbGame:
+                    # create list of URLs to try for front coverart
                     urls = []
-                    if game.gamesDbGame.boxArtBackLarge:
-                        urls.append(game.gamesDbGame.boxArtBackLarge)
-                    if game.gamesDbGame.boxArtBackMedium:
-                        urls.append(game.gamesDbGame.boxArtBackMedium)
-                    if game.gamesDbGame.boxArtBackOriginal:
-                        urls.append(game.gamesDbGame.boxArtBackOriginal)
-                    i = 0
-                    imgSaved = False
-                    for url in urls:
-                        extension = url[url.rfind('.'):]
-                        path = os.path.join(pes.userCoverartDir, self._console.name, f"{romName}-back{extension}")
-                        if self._fullscan or not os.path.exists(path):
-                            logging.debug("%s URL attempt %d for %s (back) is %s", logPrefix, (i + 1), self._rom, url)
-                            try:
-                                response = requests.get(
-                                    url,
-                                    headers=self.HEADERS,
-                                    timeout=self.URL_TIMEOUT
-                                )
-                                if response.status_code == requests.codes.ok:
-                                    logging.debug("%s saving to %s", logPrefix, path)
-                                    with open(path, "wb") as f:
-                                        f.write(response.content)
-                                    self._scaleImage(path)
-                                    imgSaved = True
-                            except Exception as e: # pylint: disable=broad-except
-                                logging.error("%s failed to download %s due to %s", logPrefix, url, e)
-                        else:
-                            logging.debug("%s using existing rear cover art: %s", logPrefix, path)
-                            imgSaved = True
-                        if imgSaved and newGame:
-                            game.coverartBack = path
-                            with self._lock:
-                                session.add(game)
-                                session.commit()
-                            break
-                        i += 1
-                    # get screen shots
-                    count = 0
-                    screenshots = []
-                    for screenshot in game.gamesDbGame.screenshots:
-                        urls = []
-                        if screenshot.large:
-                            urls.append(screenshot.large)
-                        if screenshot.medium:
-                            urls.append(screenshot.medium)
-                        if screenshot.original:
-                            urls.append(screenshot.original)
+                    if game.gamesDbGame.boxArtFrontLarge:
+                        urls.append(game.gamesDbGame.boxArtFrontLarge)
+                    if game.gamesDbGame.boxArtFrontMedium:
+                        urls.append(game.gamesDbGame.boxArtFrontMedium)
+                    if game.gamesDbGame.boxArtFrontOriginal:
+                        urls.append(game.gamesDbGame.boxArtFrontOriginal)
 
+                    logging.debug("%s URLs to try: %s", logPrefix, urls)
+
+                    if len(urls) > 0:
                         i = 0
+                        imgSaved = False
                         for url in urls:
-                            logging.debug("%s screen shot url: %s", logPrefix, url)
+                            logging.debug("%s URL attempt %d for %s (front) is %s", logPrefix, (i + 1), self._rom, url)
                             extension = url[url.rfind('.'):]
-                            path = os.path.join(pes.userScreenshotDir, self._console.name, f"{romName}-{count + 1}{extension}")
+                            path = os.path.join(pes.userCoverartDir, self._console.name, f"{romName}-front{extension}")
                             if self._fullscan or not os.path.exists(path):
-                                logging.debug("%s URL attempt %d for %s (screenshot) is %s", logPrefix, (i + 1), self._rom, url)
                                 try:
                                     response = requests.get(
                                         url,
@@ -463,39 +368,127 @@ class GamesDbRomTask(RomTask):
                                         with open(path, "wb") as f:
                                             f.write(response.content)
                                         self._scaleImage(path)
-                                        mustSave = True
+                                        imgSaved = True
                                         if not newGame:
-                                            # does the DB entry already exist?
-                                            if session.query(pes.sql.GameScreenshot).filter(pes.sql.GameScreenshot.path == path):
-                                                mustSave = False
-                                        if mustSave:
-                                            screenshots.append(pes.sql.GameScreenshot(path=path)) # pylint: disable=unexpected-keyword-arg
-                                        count += 1
+                                            romTaskResult.state = RomTaskResult.STATE_UPDATED
                                         break
+                                    if newGame:
+                                        logging.warning("%s unable to download %s", logPrefix, url)
                                 except Exception as e: # pylint: disable=broad-except
                                     logging.error("%s failed to download %s due to %s", logPrefix, url, e)
                             else:
-                                count += 1
-                                logging.debug("%s already dowloaded %s", logPrefix, path)
-                                mustSave = True
-                                if not newGame:
-                                    # does the DB entry already exist?
-                                    if session.query(pes.sql.GameScreenshot).filter(pes.sql.GameScreenshot.path == path):
-                                        mustSave = False
-                                if mustSave:
-                                    screenshots.append(pes.sql.GameScreenshot(path=path)) # pylint: disable=unexpected-keyword-arg
+                                logging.debug("%s using existing front cover art: %s", logPrefix, path)
+                                imgSaved = True
                                 break
                             i += 1
-                        # only save a max of three screen shots per game
-                        if count > 3:
-                            break
-                    if len(screenshots) > 0:
-                        game.screenshots = screenshots
-                        with self._lock:
+                        if newGame:
+                            if imgSaved:
+                                game.coverartFront = path
+                                romTaskResult.coverart = game.coverartFront
+                            else:
+                                game.coverartFront = self._getNocoverart()
                             session.add(game)
                             session.commit()
-                else:
-                    logging.warning("%s no cover art URL for %s (%d)", logPrefix, self._rom, game.gamesDbId)
+                        # get rear cover art
+                        urls = []
+                        if game.gamesDbGame.boxArtBackLarge:
+                            urls.append(game.gamesDbGame.boxArtBackLarge)
+                        if game.gamesDbGame.boxArtBackMedium:
+                            urls.append(game.gamesDbGame.boxArtBackMedium)
+                        if game.gamesDbGame.boxArtBackOriginal:
+                            urls.append(game.gamesDbGame.boxArtBackOriginal)
+                        i = 0
+                        imgSaved = False
+                        for url in urls:
+                            extension = url[url.rfind('.'):]
+                            path = os.path.join(pes.userCoverartDir, self._console.name, f"{romName}-back{extension}")
+                            if self._fullscan or not os.path.exists(path):
+                                logging.debug("%s URL attempt %d for %s (back) is %s", logPrefix, (i + 1), self._rom, url)
+                                try:
+                                    response = requests.get(
+                                        url,
+                                        headers=self.HEADERS,
+                                        timeout=self.URL_TIMEOUT
+                                    )
+                                    if response.status_code == requests.codes.ok:
+                                        logging.debug("%s saving to %s", logPrefix, path)
+                                        with open(path, "wb") as f:
+                                            f.write(response.content)
+                                        self._scaleImage(path)
+                                        imgSaved = True
+                                except Exception as e: # pylint: disable=broad-except
+                                    logging.error("%s failed to download %s due to %s", logPrefix, url, e)
+                            else:
+                                logging.debug("%s using existing rear cover art: %s", logPrefix, path)
+                                imgSaved = True
+                            if imgSaved and newGame:
+                                game.coverartBack = path
+                                session.add(game)
+                                session.commit()
+                                break
+                            i += 1
+                        # get screen shots
+                        count = 0
+                        screenshots = []
+                        for screenshot in game.gamesDbGame.screenshots:
+                            urls = []
+                            if screenshot.large:
+                                urls.append(screenshot.large)
+                            if screenshot.medium:
+                                urls.append(screenshot.medium)
+                            if screenshot.original:
+                                urls.append(screenshot.original)
+
+                            i = 0
+                            for url in urls:
+                                logging.debug("%s screen shot url: %s", logPrefix, url)
+                                extension = url[url.rfind('.'):]
+                                path = os.path.join(pes.userScreenshotDir, self._console.name, f"{romName}-{count + 1}{extension}")
+                                if self._fullscan or not os.path.exists(path):
+                                    logging.debug("%s URL attempt %d for %s (screenshot) is %s", logPrefix, (i + 1), self._rom, url)
+                                    try:
+                                        response = requests.get(
+                                            url,
+                                            headers=self.HEADERS,
+                                            timeout=self.URL_TIMEOUT
+                                        )
+                                        if response.status_code == requests.codes.ok:
+                                            logging.debug("%s saving to %s", logPrefix, path)
+                                            with open(path, "wb") as f:
+                                                f.write(response.content)
+                                            self._scaleImage(path)
+                                            mustSave = True
+                                            if not newGame:
+                                                # does the DB entry already exist?
+                                                if session.query(pes.sql.GameScreenshot).filter(pes.sql.GameScreenshot.path == path):
+                                                    mustSave = False
+                                            if mustSave:
+                                                screenshots.append(pes.sql.GameScreenshot(path=path)) # pylint: disable=unexpected-keyword-arg
+                                            count += 1
+                                            break
+                                    except Exception as e: # pylint: disable=broad-except
+                                        logging.error("%s failed to download %s due to %s", logPrefix, url, e)
+                                else:
+                                    count += 1
+                                    logging.debug("%s already dowloaded %s", logPrefix, path)
+                                    mustSave = True
+                                    if not newGame:
+                                        # does the DB entry already exist?
+                                        if session.query(pes.sql.GameScreenshot).filter(pes.sql.GameScreenshot.path == path):
+                                            mustSave = False
+                                    if mustSave:
+                                        screenshots.append(pes.sql.GameScreenshot(path=path)) # pylint: disable=unexpected-keyword-arg
+                                    break
+                                i += 1
+                            # only save a max of three screen shots per game
+                            if count > 3:
+                                break
+                        if len(screenshots) > 0:
+                            game.screenshots = screenshots
+                            session.add(game)
+                            session.commit()
+                    else:
+                        logging.warning("%s no cover art URL for %s (%d)", logPrefix, self._rom, game.gamesDbId)
 
         return romTaskResult
 
@@ -706,36 +699,34 @@ class RomScanThread(QThread):
         logging.debug("RomScanThread.run: will use %d ROM processes", self.__romProcessTotal)
         romProcesses = [RomProcess(i, self.__tasks, results, self.__exitEvent, lock, self.__romList) for i in range(self.__romProcessTotal)]
 
-        engine = pes.sql.connect()
-        session = sqlalchemy.orm.sessionmaker(bind=engine)()
-        # set all game records' found coumn to false
-        session.query(pes.sql.Game).update({pes.sql.Game.found: False})
-        # loop over all consoles
-        consoles = session.query(pes.sql.Console).all()
-        for console in consoles:
-            if self.__consoleSettings.hasSection(console.name):
-                logging.debug("RomScanThread.run: processing console %s", console.name)
-                extensions = self.__consoleSettings.get(console.name, "extensions")
-                ignoreRoms = self.__consoleSettings.get(console.name, "ignore_roms")
-                logging.debug("RomScanThread.run: extensions for %s are: %s", console.name, ','.join(extensions))
-                romFiles = []
-                for f in glob.glob(os.path.join(self.__romsDir, console.name, "*")):
-                    if os.path.isfile(f):
-                        if (ignoreRoms is None or f not in ignoreRoms) and self.__extensionOk(extensions, f):
-                            romFiles.append(f)
-                            if self.__romScraper == "theGamesDb.net":
-                                platform = console.platform
-                                if platform is None:
-                                    pes.common.pesExit(f"RomScanThread.run: no platform relationship with console ID: {console.id}")
-                                self.__tasks.put(GamesDbRomTask(console, f, self.__fullscan))
+        pes.sql.connect()
+        with pes.sql.Session.begin() as session:
+            # set all game records' found coumn to false
+            session.query(pes.sql.Game).update({pes.sql.Game.found: False})
+        with pes.sql.Session(expire_on_commit=False) as session:
+            # loop over all consoles
+            consoles = session.query(pes.sql.Console).all()
+            for console in consoles:
+                if self.__consoleSettings.hasSection(console.name):
+                    logging.debug("RomScanThread.run: processing console %s", console.name)
+                    extensions = self.__consoleSettings.get(console.name, "extensions")
+                    ignoreRoms = self.__consoleSettings.get(console.name, "ignore_roms")
+                    logging.debug("RomScanThread.run: extensions for %s are: %s", console.name, ','.join(extensions))
+                    romFiles = []
+                    for f in glob.glob(os.path.join(self.__romsDir, console.name, "*")):
+                        if os.path.isfile(f):
+                            if (ignoreRoms is None or f not in ignoreRoms) and self.__extensionOk(extensions, f):
+                                romFiles.append(f)
+                                if self.__romScraper == "theGamesDb.net":
+                                    platform = console.platform
+                                    if platform is None:
+                                        pes.common.pesExit(f"RomScanThread.run: no platform relationship with console ID: {console.id}")
+                                    self.__tasks.put(GamesDbRomTask(console, f, self.__fullscan))
 
-                consoleRomTotal = len(romFiles)
-                self.__romTotal += consoleRomTotal
-                logging.debug("RomScanThread.run: found %d ROMs for %s", consoleRomTotal, console.name)
-                self.progressMessageSignal.emit(f"Processing {console.name}: {consoleRomTotal} ROMs found")
-
-        # our session must be closed before starting the sub processes
-        session.close()
+                    consoleRomTotal = len(romFiles)
+                    self.__romTotal += consoleRomTotal
+                    logging.debug("RomScanThread.run: found %d ROMs for %s", consoleRomTotal, console.name)
+                    self.progressMessageSignal.emit(f"Processing {console.name}: {consoleRomTotal} ROMs found")
 
         if self.__romTotal == 0:
             self.progressMessageSignal.emit("No ROMs found")
@@ -774,17 +765,17 @@ class RomScanThread(QThread):
             "RomScanThread.run: finished processing %d result(s) from queue. Added: %d, Updated: %d, Skipped: %d, Failed: %d.",
             count, self.__added, self.__updated, self.__skipped, self.__failed
         )
-        session = sqlalchemy.orm.sessionmaker(bind=engine)()
-        if self.__interrupted:
-            # reset found status
-            session.query(pes.sql.Game).filter(not pes.sql.Game.found).update({pes.sql.Game.found: True})
-        else:
-            self.__deleted = session.query(pes.sql.Game).filter(not pes.sql.Game.found).count()
-            if self.__deleted > 0:
-                logging.warning("RomScanThread.run: deleted %d games from database", self.__deleted)
-                session.query(pes.sql.Game).filter(not pes.sql.Game.found).delete()
-        session.commit()
-        session.close()
+
+        with pes.sql.Session.begin() as session:
+            if self.__interrupted:
+                # reset found status
+                session.query(pes.sql.Game).filter(not pes.sql.Game.found).update({pes.sql.Game.found: True})
+            else:
+                self.__deleted = session.query(pes.sql.Game).filter(not pes.sql.Game.found).count()
+                if self.__deleted > 0:
+                    logging.warning("RomScanThread.run: deleted %d games from database", self.__deleted)
+                    session.query(pes.sql.Game).filter(not pes.sql.Game.found).delete()
+
         self.__timeTaken = time.time() - self.__startTime
         self.__done = True
         self.stateChangeSignal.emit("done")

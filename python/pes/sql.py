@@ -32,20 +32,21 @@ import os
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine, Column, DateTime, ForeignKey, Integer, String, Text, Boolean
-from sqlalchemy.orm import class_mapper, relationship, ColumnProperty
+from sqlalchemy.orm import class_mapper, relationship, sessionmaker, ColumnProperty
 
 import pes
 
 Base = declarative_base()
+Session = None
 
 def connect(db=pes.userDb):
+    global Session # pylint: disable=global-statement
     # disable check_same_thread check
     # must make sure writes only happen in one thread!
     s = f"sqlite:///{db}?check_same_thread=false"
     logging.debug("pes.sql.connect: connecting to: %s", s)
-    return create_engine(s)
-
-def createAll(engine):
+    engine = create_engine(s)
+    Session = sessionmaker(bind=engine)
     Base.metadata.create_all(engine)
 
 class CustomBase:

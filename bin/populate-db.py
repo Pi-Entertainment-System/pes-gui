@@ -40,9 +40,11 @@ import json
 import logging
 import os
 import requests
+import sys
+
+sys.path.append(os.path.abspath(f"{os.path.dirname(os.path.realpath(__file__))}/../python"))
 
 from sqlalchemy import func
-from sqlalchemy.orm import sessionmaker
 
 import pes
 import pes.retroachievement
@@ -50,28 +52,29 @@ import pes.sql
 
 from pes.common import checkDir, checkFile, mkdir, pesExit
 
-def getGamesDbImages(cacheDir):
-    result = session.query(pes.sql.GamesDbGame).all()
-    if not result:
-        logging.warning("found no GamesDbGames!")
-        return
-    gameIds = []
+def getGamesDbImages(cacheDir: str):
+    with pes.sql.Session() as session:
+        result = session.query(pes.sql.GamesDbGame).all()
+        if not result:
+            logging.warning("found no GamesDbGames!")
+            return
+        gameIds = []
 
-    imageDir = os.path.join(cacheDir, "images")
-    mkdir(imageDir)
+        imageDir = os.path.join(cacheDir, "images")
+        mkdir(imageDir)
 
-    requestNumber = 1
-    for game in result:
-        gameIds.append(game.id)
-        # get 400 ids at a time
-        if len(gameIds) == 400:
+        requestNumber = 1
+        for game in result:
+            gameIds.append(game.id)
+            # get 400 ids at a time
+            if len(gameIds) == 400:
+                getGamesDbImageJson(gameIds, imageDir, requestNumber)
+                gameIds = []
+                requestNumber += 1
+        if len(gameIds) > 0:
             getGamesDbImageJson(gameIds, imageDir, requestNumber)
-            gameIds = []
-            requestNumber += 1
-    if len(gameIds) > 0:
-        getGamesDbImageJson(gameIds, imageDir, requestNumber)
 
-def getGamesDbImageJson(ids, imageDir, requestNumber):
+def getGamesDbImageJson(ids: list, imageDir: str, requestNumber: int):
     page = 1
 
     while True:
@@ -108,25 +111,26 @@ def getGamesDbImageJson(ids, imageDir, requestNumber):
         else:
             pesExit(f"failed, status code: {response.status_code}")
 
-def mkTGDBCacheDir():
+def mkTGDBCacheDir() -> str:
     gamesDbCacheDir = os.path.join(cacheDir, f"tgdb-{datetime.datetime.now().strftime('%Y-%m-%d_%H%M')}")
     logging.info("using %s for theGamesDb JSON cache", gamesDbCacheDir)
     mkdir(gamesDbCacheDir)
     return gamesDbCacheDir
 
-def processGamesDbJson(newDb, session, data):
-    for game in data["data"]["games"]:
-        if game["platform"] in foundGamesDbConsoleIds:
-            gamesDbGame = processGamesDbGame(newDb, session, game)
-            session.add(gamesDbGame)
-        session.commit()
+def processGamesDbJson(newDb: bool, data: dict):
+    with pes.sql.Session.begin() as session:
+        for game in data["data"]["games"]:
+            if game["platform"] in foundGamesDbConsoleIds:
+                gamesDbGame = processGamesDbGame(newDb, game)
+                session.add(gamesDbGame)
 
-def processGamesDbGame(newDb, session, game):
+def processGamesDbGame(newDb: bool, game: dict) -> pes.sql.GamesDbGame:
     logging.info("processing game: %s, %s", game["id"], game["game_title"])
     gameId = int(game["id"])
     gamesDbGame = None
     if not newDb:
-        gamesDbGame = session.query(pes.sql.GamesDbGame).get(gameId)
+        with pes.sql.Session() as session:
+            gamesDbGame = session.query(pes.sql.GamesDbGame).get(gameId)
     if gamesDbGame:
         logging.info("-> updating")
         gamesDbGame.name = game["game_title"]
@@ -149,83 +153,83 @@ def processGamesDbGame(newDb, session, game):
         logging.warning("-> no cover art for game %s", game["id"])
     return gamesDbGame
 
-def processGamesDbImageJson(newDb, session, cacheDir):
-    logging.info("processing GamesDB image JSON files")
-    jsonDir = os.path.join(cacheDir, "images")
-    checkDir(jsonDir)
-    logging.debug("using JSON files from: %s", cacheDir)
-    if not newDb:
-        # remove existing sceen shots
-        session.query(pes.sql.GamesDbScreenshot).delete()
-    requestNumber = 1
-    page = 1
-    newRequest = False
-    while True:
-        jsonPath = os.path.join(jsonDir, f"images-{requestNumber}_{page}.json")
-        if os.path.exists(jsonPath) and os.path.isfile(jsonPath):
-            logging.debug("processing: %s", jsonPath)
-            newRequest = False
-            with open(jsonPath, "r", encoding="utf-8") as f:
-                try:
-                    data = json.load(f)["data"]
-                except Exception as e:
-                    pesExit(f"Failed to load JSON from {jsonPath} due to:\n{e}")
-                for gameId, images in data["images"].items():
-                    # look up game
-                    gameId = int(gameId)
-                    gamesDbGame = session.query(pes.sql.GamesDbGame).get(gameId)
-                    if not gamesDbGame:
-                        pesExit(f"Could not find GamesDbGame with id: {gameId}")
-                    logging.debug("processing images for: %s", gamesDbGame.name)
-                    for image in images:
-                        if image["type"] == "boxart" and image["side"] == "back":
-                            gamesDbGame.boxArtBackOriginal = f"{data['base_url']['original']}{image['filename']}"
-                            gamesDbGame.boxArtBackMedium = f"{data['base_url']['medium']}{image['filename']}"
-                            gamesDbGame.boxArtBackLarge = f"{data['base_url']['large']}{image['filename']}"
-                            session.add(gamesDbGame)
-                        if image["type"] == "screenshot":
-                            screenshot = pes.sql.GamesDbScreenshot(
-                                gameId=gameId,
-                                original=f"{data['base_url']['original']}{image['filename']}",
-                                medium=f"{data['base_url']['medium']}{image['filename']}",
-                                large=f"{data['base_url']['large']}{image['filename']}"
-                            )
-                            session.add(screenshot)
+def processGamesDbImageJson(newDb: bool, cacheDir: str):
+    with pes.sql.Session.begin() as session:
+        logging.info("processing GamesDB image JSON files")
+        jsonDir = os.path.join(cacheDir, "images")
+        checkDir(jsonDir)
+        logging.debug("using JSON files from: %s", cacheDir)
+        if not newDb:
+            # remove existing sceen shots
+            session.query(pes.sql.GamesDbScreenshot).delete()
+        requestNumber = 1
+        page = 1
+        newRequest = False
+        while True:
+            jsonPath = os.path.join(jsonDir, f"images-{requestNumber}_{page}.json")
+            if os.path.exists(jsonPath) and os.path.isfile(jsonPath):
+                logging.debug("processing: %s", jsonPath)
+                newRequest = False
+                with open(jsonPath, "r", encoding="utf-8") as f:
+                    try:
+                        data = json.load(f)["data"]
+                    except Exception as e:
+                        pesExit(f"Failed to load JSON from {jsonPath} due to:\n{e}")
+                    for gameId, images in data["images"].items():
+                        # look up game
+                        gameId = int(gameId)
+                        gamesDbGame = session.query(pes.sql.GamesDbGame).get(gameId)
+                        if not gamesDbGame:
+                            pesExit(f"Could not find GamesDbGame with id: {gameId}")
+                        logging.debug("processing images for: %s", gamesDbGame.name)
+                        for image in images:
+                            if image["type"] == "boxart" and image["side"] == "back":
+                                gamesDbGame.boxArtBackOriginal = f"{data['base_url']['original']}{image['filename']}"
+                                gamesDbGame.boxArtBackMedium = f"{data['base_url']['medium']}{image['filename']}"
+                                gamesDbGame.boxArtBackLarge = f"{data['base_url']['large']}{image['filename']}"
+                                session.add(gamesDbGame)
+                            if image["type"] == "screenshot":
+                                screenshot = pes.sql.GamesDbScreenshot(
+                                    gameId=gameId,
+                                    original=f"{data['base_url']['original']}{image['filename']}",
+                                    medium=f"{data['base_url']['medium']}{image['filename']}",
+                                    large=f"{data['base_url']['large']}{image['filename']}"
+                                )
+                                session.add(screenshot)
 
-        elif not newRequest:
-            logging.debug("finished processing batch: %d", requestNumber)
-            requestNumber += 1
-            page = 1
-            newRequest = True
-        else:
-            logging.debug("no more files to process")
-            break
-        page += 1
-    session.commit()
-
-def processRetroAchievementsJson(newDb, session, gameHashes, consoleRetroId):
-    # note: a game may appear in more than one hash file
-    for gameId, data in gameHashes.items():
-        logging.info("processing RetroGame: %s", data["name"])
-        retroGame = session.query(pes.sql.RetroAchievementGame).get(gameId)
-        if retroGame:
-            logging.info("-> updating")
-            retroGame.name = data["name"]
-        else:
-            logging.info("-> adding")
-            retroGame = pes.sql.RetroAchievementGame(id=gameId, name=data["name"], retroConsoleId=consoleRetroId)
-        retroGameHash = None
-        for h in data['hashes']:
-            if not newDb:
-                retroGameHash = session.query(pes.sql.RetroAchievementGameHash).get((gameId, h))
-            if not retroGameHash:
-                logging.info("-> adding hash: %s", h)
-                retroGameHash = pes.sql.RetroAchievementGameHash(id=gameId, rasum=h)
-                session.add(retroGameHash)
+            elif not newRequest:
+                logging.debug("finished processing batch: %d", requestNumber)
+                requestNumber += 1
+                page = 1
+                newRequest = True
             else:
-                logging.info("-> skipping hash: %s", h)
-        session.add(retroGame)
-    session.commit()
+                logging.debug("no more files to process")
+                break
+            page += 1
+
+def processRetroAchievementsJson(newDb: bool, gameHashes: dict, consoleRetroId: int):
+    with pes.sql.Session.begin() as session:
+        # note: a game may appear in more than one hash file
+        for gameId, data in gameHashes.items():
+            logging.info("processing RetroGame: %s", data["name"])
+            retroGame = session.query(pes.sql.RetroAchievementGame).get(gameId)
+            if retroGame:
+                logging.info("-> updating")
+                retroGame.name = data["name"]
+            else:
+                logging.info("-> adding")
+                retroGame = pes.sql.RetroAchievementGame(id=gameId, name=data["name"], retroConsoleId=consoleRetroId)
+            retroGameHash = None
+            for h in data['hashes']:
+                if not newDb:
+                    retroGameHash = session.query(pes.sql.RetroAchievementGameHash).get((gameId, h))
+                if not retroGameHash:
+                    logging.info("-> adding hash: %s", h)
+                    retroGameHash = pes.sql.RetroAchievementGameHash(id=gameId, rasum=h)
+                    session.add(retroGameHash)
+                else:
+                    logging.info("-> skipping hash: %s", h)
+            session.add(retroGame)
 
 if __name__ == "__main__":
 
@@ -280,54 +284,52 @@ if __name__ == "__main__":
     consoleJSON = os.path.join(args.dataDir, "consoles.json")
     checkFile(consoleJSON)
 
-    engine = pes.sql.connect(pesDb)
-    session = sessionmaker(bind=engine)()
-    pes.sql.createAll(engine)
+    pes.sql.connect(pesDb)
 
     logging.info("loading console definitions from: %s", consoleJSON)
     with open(consoleJSON, "r", encoding="utf-8") as consoleJSONFile:
         consoleData = json.load(consoleJSONFile)
         foundGamesDbConsoleIds = []
         consoleRetroIds = []
-        for c in consoleData["consoles"]:
-            platformId = int(c["gamesDbId"])
-            consoleId = int(c["id"])
+        with pes.sql.Session.begin() as session:
+            for c in consoleData["consoles"]:
+                platformId = int(c["gamesDbId"])
+                consoleId = int(c["id"])
 
-            console = None
-            if not newDb:
-                console = session.query(pes.sql.Console).get(consoleId)
-            if console:
-                logging.info("updating Console: %s", c["name"])
-                console.name = c["name"]
-                console.gamesDbId = platformId
-                console.nocoverart = c["nocoverart"]
-                console.art = c["art"]
-            else:
-                logging.info("adding console: %s", c["name"])
-                console = pes.sql.Console(id=consoleId, name=c["name"], gamesDbId=platformId, nocoverart=c["nocoverart"], art=c["art"])
+                console = None
+                if not newDb:
+                    console = session.query(pes.sql.Console).get(consoleId)
+                if console:
+                    logging.info("updating Console: %s", c["name"])
+                    console.name = c["name"]
+                    console.gamesDbId = platformId
+                    console.nocoverart = c["nocoverart"]
+                    console.art = c["art"]
+                else:
+                    logging.info("adding console: %s", c["name"])
+                    console = pes.sql.Console(id=consoleId, name=c["name"], gamesDbId=platformId, nocoverart=c["nocoverart"], art=c["art"])
 
-            if "retroId" in c and c["retroId"] not in consoleRetroIds:
-                console.retroId = int(c["retroId"])
-                retroConsole = session.query(pes.sql.RetroAchievementConsole).get(console.retroId)
-                if not retroConsole:
-                    logging.debug("creating new RetroAchievementConsole record: %d", console.retroId)
-                    retroConsole = pes.sql.RetroAchievementConsole(id=console.retroId)
-                    session.add(retroConsole)
+                if "retroId" in c and c["retroId"] not in consoleRetroIds:
+                    console.retroId = int(c["retroId"])
+                    retroConsole = session.query(pes.sql.RetroAchievementConsole).get(console.retroId)
+                    if not retroConsole:
+                        logging.debug("creating new RetroAchievementConsole record: %d", console.retroId)
+                        retroConsole = pes.sql.RetroAchievementConsole(id=console.retroId)
+                        session.add(retroConsole)
 
-            session.add(console)
+                session.add(console)
 
-            gamesDbPlatform = session.query(pes.sql.GamesDbPlatform).get(platformId)
-            if gamesDbPlatform:
-                logging.info("updating GamesDbPlatform: %s", c["name"])
-                gamesDbPlatform.name = c["name"]
-            else:
-                logging.info("adding GamesDbPlatform: %s", c["name"])
-                gamesDbPlatform = pes.sql.GamesDbPlatform(id=platformId, name=c["name"])
-            session.add(gamesDbPlatform)
+                gamesDbPlatform = session.query(pes.sql.GamesDbPlatform).get(platformId)
+                if gamesDbPlatform:
+                    logging.info("updating GamesDbPlatform: %s", c["name"])
+                    gamesDbPlatform.name = c["name"]
+                else:
+                    logging.info("adding GamesDbPlatform: %s", c["name"])
+                    gamesDbPlatform = pes.sql.GamesDbPlatform(id=platformId, name=c["name"])
+                session.add(gamesDbPlatform)
 
-            if not c["gamesDbId"] in foundGamesDbConsoleIds:
-                foundGamesDbConsoleIds.append(c["gamesDbId"])
-        session.commit()
+                if not c["gamesDbId"] in foundGamesDbConsoleIds:
+                    foundGamesDbConsoleIds.append(c["gamesDbId"])
 
     if args.mame:
         logging.info("processing MAME data")
@@ -369,7 +371,7 @@ if __name__ == "__main__":
             logging.debug("saving JSON to: %s", jsonDump)
             with open(jsonDump, "w", encoding="utf-8") as f:
                 json.dump(data, f)
-            processGamesDbJson(newDb, session, data)
+            processGamesDbJson(newDb, data)
         else:
             pesExit(f"failed, status code: {response.status_code}")
 
@@ -378,7 +380,7 @@ if __name__ == "__main__":
             args.tgdbKey = defaultTGDBKey
         logging.info("downloading GamesDB image JSON")
         getGamesDbImages(gamesDbCacheDir)
-        processGamesDbImageJson(newDb, session, gamesDbCacheDir)
+        processGamesDbImageJson(newDb, gamesDbCacheDir)
 
     if args.tgdbDir:
         checkDir(args.tgdbDir)
@@ -392,8 +394,8 @@ if __name__ == "__main__":
                     data = json.load(f)
                 except Exception as e:
                     pesExit(f"Failed to load JSON from {jsonPath} due to:\n{e}")
-            processGamesDbJson(newDb, session, data)
-            processGamesDbImageJson(newDb, session, args.tgdbDir)
+            processGamesDbJson(newDb, data)
+            processGamesDbImageJson(newDb, args.tgdbDir)
         else:
             pesExit(f"No previous TGDB dump found in {args.tgdbDir}")
         #    logging.warning("no JSON database dump found, looking for platform downloads instead")
@@ -487,18 +489,19 @@ if __name__ == "__main__":
     if args.retroachievementsDir:
         checkDir(args.retroachievementsDir)
         logging.info("using cached RetroAchievements.org data from %s", args.retroachievementsDir)
-        result = session.query(pes.sql.RetroAchievementConsole).all()
-        for retroConsole in result:
-            jsonPath = os.path.join(args.retroachievementsDir, f"{retroConsole.id}-hashes.json")
-            logging.debug("loading JSON from %s", jsonPath)
-            checkFile(jsonPath)
-            gameHashes = None
-            with open(jsonPath, "r", encoding="utf-8") as f:
-                try:
-                    gameHashes = json.load(f)
-                except Exception as e:
-                    pesExit(f"Failed to load JSON from {jsonPath} due to:\n{e}")
-            processRetroAchievementsJson(newDb, session, gameHashes, retroConsole.id)
+        with pes.sql.Session() as session:
+            result = session.query(pes.sql.RetroAchievementConsole).all()
+            for retroConsole in result:
+                jsonPath = os.path.join(args.retroachievementsDir, f"{retroConsole.id}-hashes.json")
+                logging.debug("loading JSON from %s", jsonPath)
+                checkFile(jsonPath)
+                gameHashes = None
+                with open(jsonPath, "r", encoding="utf-8") as f:
+                    try:
+                        gameHashes = json.load(f)
+                    except Exception as e:
+                        pesExit(f"Failed to load JSON from {jsonPath} due to:\n{e}")
+                processRetroAchievementsJson(newDb, gameHashes, retroConsole.id)
 
     if args.retroachievements:
         logging.info("updating RetroAchievement records")
@@ -508,42 +511,42 @@ if __name__ == "__main__":
         logging.info("using %s for RetroAchievements JSON cache", retroachievementsCacheDir)
         mkdir(retroachievementsCacheDir)
 
-        # get all consoles with a RetroId
-        result = session.query(pes.sql.RetroAchievementConsole).all()
-        for retroConsole in result:
-            logging.info("processing Retro console ID: %d", retroConsole.id)
-            gameHashes = pes.retroachievement.getGameHashes(retroConsole.id)
-            jsonPath = os.path.join(retroachievementsCacheDir, f"{retroConsole.id}-hashes.json")
-            logging.info("saving game hashes to: %s", jsonPath)
-            with open(jsonPath, "w", encoding="utf-8") as f:
-                f.write(json.dumps(gameHashes))
-            processRetroAchievementsJson(newDb, session, gameHashes, retroConsole.id)
+        with pes.sql.Session() as session:
+            # get all consoles with a RetroId
+            result = session.query(pes.sql.RetroAchievementConsole).all()
+            for retroConsole in result:
+                logging.info("processing Retro console ID: %d", retroConsole.id)
+                gameHashes = pes.retroachievement.getGameHashes(retroConsole.id)
+                jsonPath = os.path.join(retroachievementsCacheDir, f"{retroConsole.id}-hashes.json")
+                logging.info("saving game hashes to: %s", jsonPath)
+                with open(jsonPath, "w", encoding="utf-8") as f:
+                    f.write(json.dumps(gameHashes))
+                processRetroAchievementsJson(newDb, gameHashes, retroConsole.id)
 
     if args.match:
         logging.info("matching up theGamesDb records with RetroAchievements records")
-        i = 0
-        for console in session.query(pes.sql.Console).join(pes.sql.GamesDbPlatform).filter(pes.sql.Console.retroId != 0):
-            logging.info("processing console: %s", console.platform.name)
-            for gamesDbGame in console.platform.games:
-                for retroGame in session.query(pes.sql.RetroAchievementGame).filter(
-                    pes.sql.RetroAchievementGame.retroConsoleId == console.retroId
-                ).filter(
-                    func.lower(
-                        func.replace(
-                            func.replace(pes.sql.RetroAchievementGame.name, " ", ""), ":", ""
+        with pes.sql.Session.begin() as session:
+            i = 0
+            for console in session.query(pes.sql.Console).join(pes.sql.GamesDbPlatform).filter(pes.sql.Console.retroId != 0):
+                logging.info("processing console: %s", console.platform.name)
+                for gamesDbGame in console.platform.games:
+                    for retroGame in session.query(pes.sql.RetroAchievementGame).filter(
+                        pes.sql.RetroAchievementGame.retroConsoleId == console.retroId
+                    ).filter(
+                        func.lower(
+                            func.replace(
+                                func.replace(pes.sql.RetroAchievementGame.name, " ", ""), ":", ""
+                            )
                         )
-                    )
-                    ==
-                    func.lower(
-                        func.replace(
-                            func.replace(gamesDbGame.name, " ", ""), ":", ""
+                        ==
+                        func.lower(
+                            func.replace(
+                                func.replace(gamesDbGame.name, " ", ""), ":", ""
+                            )
                         )
-                    )
-                ):
-                    logging.debug("found match for: %s", retroGame.name)
-                    gamesDbGame.retroId = retroGame.id
-                    session.add(gamesDbGame)
-                    i += 1
-        logging.info("found %d matches", i)
-        if i > 0:
-            session.commit()
+                    ):
+                        logging.debug("found match for: %s", retroGame.name)
+                        gamesDbGame.retroId = retroGame.id
+                        session.add(gamesDbGame)
+                        i += 1
+            logging.info("found %d matches", i)

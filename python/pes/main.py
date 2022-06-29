@@ -43,7 +43,6 @@ import sdl2
 
 from pes.common import checkDir, checkFile, mkdir, initConfig, initDb, pesExit, UserSettings
 from pes.gui import Backend, PESGuiApplication
-from sqlalchemy.orm import sessionmaker
 
 coloredlogsImported = False
 try:
@@ -127,15 +126,15 @@ if __name__ == "__main__":
 
     # make directory for each support console
     logging.debug("connecting to database: %s", pes.userDb)
-    engine = pes.sql.connect(pes.userDb)
-    session = sessionmaker(bind=engine)()
-    pes.sql.createAll(engine)
-    consoles = session.query(pes.sql.Console).all()
-    logging.debug("creating ROM directories for user")
-    for c in consoles:
-        mkdir(os.path.join(pes.userRomDir, c.name))
-        mkdir(os.path.join(pes.userCoverartDir, c.name))
-        mkdir(os.path.join(pes.userScreenshotDir, c.name))
+    pes.sql.connect(pes.userDb)
+    
+    with pes.sql.Session() as session:
+        consoles = session.query(pes.sql.Console).all()
+        logging.debug("creating ROM directories for user")
+        for c in consoles:
+            mkdir(os.path.join(pes.userRomDir, c.name))
+            mkdir(os.path.join(pes.userCoverartDir, c.name))
+            mkdir(os.path.join(pes.userScreenshotDir, c.name))
 
     romScraper = userSettings.get("settings", "romScraper")
     if romScraper is None:

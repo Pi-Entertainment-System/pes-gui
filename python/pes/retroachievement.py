@@ -308,79 +308,79 @@ class RetroAchievementThread(QThread):
         self.__badges = []
         self.__progress = 0.0
         logging.debug("RetroAchievementThread.run: started for RetroAchievement game: %d", self.__gameId)
-        engine = pes.sql.connect()
-        session = sqlalchemy.orm.sessionmaker(bind=engine)()
-        self.__retroGame = session.query(pes.sql.RetroAchievementGame).get(self.__retroGameId)
-        if not self.__retroGame:
-            logging.error("RetroAchievementThread.run: could not find RetroAchievementGame with id: %d", self.__retroGameId)
-            return
-        game = session.query(pes.sql.Game).get(self.__gameId)
-        if not game:
-            logging.error("RetroAchievementThread.run: could not find Game with id: %d", game.id)
-            return
-        # create badge dir (if needed)
-        badgeDir = os.path.join(pes.userBadgeDir, str(self.__retroGameId))
-        pes.common.mkdir(badgeDir)
-        if self.__retroGameId in RetroAchievementThread.__gameIdCache:
-            logging.debug("RetroAchievementThread.run: game ID cached")
-        elif len(self.__retroGame.badges) == 0 or (game.lastPlayed and self.__retroGame.syncDate < game.lastPlayed) or not game.lastPlayed:
-            logging.debug("RetroAchievementThread.run: loading live data from the Internet")
-            score = 0
-            maxScore = 0
-            rslt = self.__retroUser.getGameInfoAndProgress(self.__retroGameId)
-            if 'Achievements' in rslt and len(rslt['Achievements']) > 0:
-                count = 0
-                total = len(rslt['Achievements'])
-                for badgeId, data in rslt['Achievements'].items():
-                    badgeId = int(badgeId)
-                    badge = session.query(pes.sql.RetroAchievementBadge).get(badgeId)
-                    if badge:
-                        badge.title = data["Title"]
-                        badge.description = data["Description"]
-                        badge.points = int(data["Points"])
-                    else:
-                        badge = pes.sql.RetroAchievementBadge( # pylint: disable=unexpected-keyword-arg
-                            id=badgeId,
-                            name=data["BadgeName"],
-                            retroGameId=self.__retroGameId,
-                            title=data["Title"],
-                            description=data["Description"],
-                            points=int(data["Points"]),
-                            lockedPath=os.path.join(badgeDir, f"{data['BadgeName']}_lock.png"),
-                            unlockedPath=os.path.join(badgeDir, f"{data['BadgeName']}.png"),
-                            displayOrder=int(data["DisplayOrder"]),
-                            totalAwarded=int(data["NumAwarded"]),
-                            totalAwardedHardcore=int(data["NumAwardedHardcore"])
-                        )
-                    maxScore += badge.points
-                    if "DateEarned" in data:
-                        badge.earned = datetime.strptime(data["DateEarned"], "%Y-%m-%d %H:%M:%S")
-                    if "DateEarnedHardcore" in data:
-                        badge.earned = datetime.strptime(data["DateEarnedHardcore"], "%Y-%m-%d %H:%M:%S")
-                    if "DateEarned" in data or "DateEarnedHardcore" in data:
-                        score += badge.points
-                    self.__saveBadge(badge)
-                    session.add(badge)
-                    count += 1
-                    self.__progress = float(count) /float(total)
-                    self.progressSignal.emit(self.__progress)
-                self.__retroGame.score = score
-                self.__retroGame.maxScore = maxScore
-                self.__retroGame.totalPlayers = int(rslt["NumDistinctPlayersCasual"])
-                self.__retroGame.totalPlayersHardcore = int(rslt["NumDistinctPlayersHardcore"])
-                self.__retroGame.syncDate = datetime.now()
-                session.add(self.__retroGame)
-                session.commit()
-            else:
-                logging.debug("RetroAchievementThread.run: no achievements found for %d", self.__retroGameId)
-                self.__progress = 100
+        pes.sql.connect()
+        with pes.sql.Session(expire_on_commit=False) as session:
+            self.__retroGame = session.query(pes.sql.RetroAchievementGame).get(self.__retroGameId)
+            if not self.__retroGame:
+                logging.error("RetroAchievementThread.run: could not find RetroAchievementGame with id: %d", self.__retroGameId)
                 return
-        badges = session.query(pes.sql.RetroAchievementBadge).filter(pes.sql.RetroAchievementBadge.retroGameId == self.__retroGameId).order_by(pes.sql.RetroAchievementBadge.displayOrder)
-        if badges:
-            for badge in badges:
-                self.__saveBadge(badge)
-                self.__badges.append(badge.getDict())
-        RetroAchievementThread.__gameIdCache.append(self.__retroGameId)
+            game = session.query(pes.sql.Game).get(self.__gameId)
+            if not game:
+                logging.error("RetroAchievementThread.run: could not find Game with id: %d", game.id)
+                return
+            # create badge dir (if needed)
+            badgeDir = os.path.join(pes.userBadgeDir, str(self.__retroGameId))
+            pes.common.mkdir(badgeDir)
+            if self.__retroGameId in RetroAchievementThread.__gameIdCache:
+                logging.debug("RetroAchievementThread.run: game ID cached")
+            elif len(self.__retroGame.badges) == 0 or (game.lastPlayed and self.__retroGame.syncDate < game.lastPlayed) or not game.lastPlayed:
+                logging.debug("RetroAchievementThread.run: loading live data from the Internet")
+                score = 0
+                maxScore = 0
+                rslt = self.__retroUser.getGameInfoAndProgress(self.__retroGameId)
+                if 'Achievements' in rslt and len(rslt['Achievements']) > 0:
+                    count = 0
+                    total = len(rslt['Achievements'])
+                    for badgeId, data in rslt['Achievements'].items():
+                        badgeId = int(badgeId)
+                        badge = session.query(pes.sql.RetroAchievementBadge).get(badgeId)
+                        if badge:
+                            badge.title = data["Title"]
+                            badge.description = data["Description"]
+                            badge.points = int(data["Points"])
+                        else:
+                            badge = pes.sql.RetroAchievementBadge( # pylint: disable=unexpected-keyword-arg
+                                id=badgeId,
+                                name=data["BadgeName"],
+                                retroGameId=self.__retroGameId,
+                                title=data["Title"],
+                                description=data["Description"],
+                                points=int(data["Points"]),
+                                lockedPath=os.path.join(badgeDir, f"{data['BadgeName']}_lock.png"),
+                                unlockedPath=os.path.join(badgeDir, f"{data['BadgeName']}.png"),
+                                displayOrder=int(data["DisplayOrder"]),
+                                totalAwarded=int(data["NumAwarded"]),
+                                totalAwardedHardcore=int(data["NumAwardedHardcore"])
+                            )
+                        maxScore += badge.points
+                        if "DateEarned" in data:
+                            badge.earned = datetime.strptime(data["DateEarned"], "%Y-%m-%d %H:%M:%S")
+                        if "DateEarnedHardcore" in data:
+                            badge.earned = datetime.strptime(data["DateEarnedHardcore"], "%Y-%m-%d %H:%M:%S")
+                        if "DateEarned" in data or "DateEarnedHardcore" in data:
+                            score += badge.points
+                        self.__saveBadge(badge)
+                        session.add(badge)
+                        count += 1
+                        self.__progress = float(count) /float(total)
+                        self.progressSignal.emit(self.__progress)
+                    self.__retroGame.score = score
+                    self.__retroGame.maxScore = maxScore
+                    self.__retroGame.totalPlayers = int(rslt["NumDistinctPlayersCasual"])
+                    self.__retroGame.totalPlayersHardcore = int(rslt["NumDistinctPlayersHardcore"])
+                    self.__retroGame.syncDate = datetime.now()
+                    session.add(self.__retroGame)
+                else:
+                    logging.debug("RetroAchievementThread.run: no achievements found for %d", self.__retroGameId)
+                    self.__progress = 100
+                    return
+            badges = session.query(pes.sql.RetroAchievementBadge).filter(pes.sql.RetroAchievementBadge.retroGameId == self.__retroGameId).order_by(pes.sql.RetroAchievementBadge.displayOrder)
+            if badges:
+                for badge in badges:
+                    self.__saveBadge(badge)
+                    self.__badges.append(badge.getDict())
+            RetroAchievementThread.__gameIdCache.append(self.__retroGameId)
+            session.commit()
         self.__progress = 100
 
     @staticmethod

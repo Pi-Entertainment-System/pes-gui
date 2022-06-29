@@ -137,9 +137,6 @@ class Backend(QObject):
         self.__gamepadTotal = 0
         logging.debug("Backend.__init__: connecting to database: %s", pes.userDb)
         #self.__romscanThread = None
-        engine = pes.sql.connect()
-        self.__session = sqlalchemy.orm.sessionmaker(bind=engine)()
-        pes.sql.createAll(engine)
 
     @pyqtSlot(result=bool)
     def btAvailable(self):
@@ -176,13 +173,13 @@ class Backend(QObject):
     @pyqtSlot(int, bool)
     def favouriteGame(self, gameId, favourite):
         logging.debug("Backend.favouriteGame: %d -> %s", gameId, favourite)
-        game = self.__session.query(pes.sql.Game).get(gameId)
-        if game:
-            game.favourite = favourite
-            self.__session.add(game)
-            self.__session.commit()
-        else:
-            logging.error("Backend.favouriteGame: could not find game with ID: %d", gameId)
+        with pes.sql.Session.begin() as session:
+            game = session.query(pes.sql.Game).get(gameId)
+            if game:
+                game.favourite = favourite
+                session.add(game)
+            else:
+                logging.error("Backend.favouriteGame: could not find game with ID: %d", gameId)
 
     @pyqtProperty(int)
     def gamepadTotal(self):
@@ -206,20 +203,22 @@ class Backend(QObject):
     @pyqtSlot(int, result=str)
     def getConsoleArt(self, consoleId):
         logging.debug("Backend.getConsoleArt: getting console art URL for %d", consoleId)
-        console = self.__session.query(pes.sql.Console).get(consoleId)
-        if console:
-            path = os.path.join(pes.resourcesDir, console.art)
-            logging.debug("Backend.getConsoleArt: path is %s", path)
-            return path
+        with pes.sql.Session() as session:
+            console = session.query(pes.sql.Console).get(consoleId)
+            if console:
+                path = os.path.join(pes.resourcesDir, console.art)
+                logging.debug("Backend.getConsoleArt: path is %s", path)
+                return path
         logging.error("Backend.getConsoleArt: could not find console with ID: %d", consoleId)
         return None
 
     @pyqtSlot(int, result=str)
     def getConsole(self, consoleId):
         logging.debug("Backend.getConsole: getting console with ID: %d", consoleId)
-        console = self.__session.query(pes.sql.Console).get(consoleId)
-        if console:
-            return console.getDict()
+        with pes.sql.Session() as session:
+            console = session.query(pes.sql.Console).get(consoleId)
+            if console:
+                return console.getDict()
         logging.error("Backend.getConsole: could not find console with ID: %d", consoleId)
         return None
 
@@ -227,12 +226,13 @@ class Backend(QObject):
     def getConsoles(self, withGames=False):
         logging.debug("Backend.getConsoles: getting consoles, withGames = %s", withGames)
         consoleList = []
-        if withGames:
-            result = self.__session.query(pes.sql.Console).join(pes.sql.Game).order_by(pes.sql.Console.name).all()
-        else:
-            result = self.__session.query(pes.sql.Console).order_by(pes.sql.Console.name).all()
-        for c in result:
-            consoleList.append(c.getDict())
+        with pes.sql.Session() as session:
+            if withGames:
+                result = session.query(pes.sql.Console).join(pes.sql.Game).order_by(pes.sql.Console.name).all()
+            else:
+                result = session.query(pes.sql.Console).order_by(pes.sql.Console.name).all()
+            for c in result:
+                consoleList.append(c.getDict())
         return consoleList
 
     @pyqtSlot(result=str)
@@ -248,32 +248,35 @@ class Backend(QObject):
     @pyqtSlot(int, result=QVariant)
     def getGame(self, gameId):
         logging.debug("Backend.getGame: getting game: %d", gameId)
-        game = self.__session.query(pes.sql.Game).get(gameId)
-        if game:
-            return game.getDict()
+        with pes.sql.Session() as session:
+            game = session.query(pes.sql.Game).get(gameId)
+            if game:
+                return game.getDict()
         logging.error("Backend.getGame: could not find game for: %d", gameId)
         return None
 
     @pyqtSlot(int, result=list)
     def getFavouriteGames(self, consoleId=None):
         games = []
-        if not consoleId or consoleId == 0:
-            logging.debug("Backand.getFavouriteGames: getting favourite games for all consoles")
-            result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.favourite).order_by(pes.sql.Game.name)
-        else:
-            logging.debug("Backend.getFavouriteGames: getting favourite games for console %d", consoleId)
-            result = self.__session.query(pes.sql.Game).filter(sqlalchemy.sql.expression.and_(pes.sql.Game.consoleId == consoleId, pes.sql.Game.favourite)).order_by(pes.sql.Game.name)
-        for g in result:
-            games.append(g.getDict())
+        with pes.sql.Session() as session:
+            if not consoleId or consoleId == 0:
+                logging.debug("Backand.getFavouriteGames: getting favourite games for all consoles")
+                result = session.query(pes.sql.Game).filter(pes.sql.Game.favourite).order_by(pes.sql.Game.name)
+            else:
+                logging.debug("Backend.getFavouriteGames: getting favourite games for console %d", consoleId)
+                result = session.query(pes.sql.Game).filter(sqlalchemy.sql.expression.and_(pes.sql.Game.consoleId == consoleId, pes.sql.Game.favourite)).order_by(pes.sql.Game.name)
+            for g in result:
+                games.append(g.getDict())
         return games
 
     @pyqtSlot(int, result=list)
     def getGames(self, consoleId):
         logging.debug("Backend.getGames: getting games for console %d", consoleId)
         games = []
-        result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).order_by(pes.sql.Game.name)
-        for g in result:
-            games.append(g.getDict())
+        with pes.sql.Session() as session:
+            result = session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).order_by(pes.sql.Game.name)
+            for g in result:
+                games.append(g.getDict())
         return games
 
     @pyqtSlot(result=bool)
@@ -289,18 +292,19 @@ class Backend(QObject):
     @pyqtSlot(int, int, result=list)
     def getMostPlayedGames(self, consoleId=None, limit=10):
         games = []
-        if not consoleId or consoleId == 0:
-            logging.debug("Backand.getMostPlayedGames: getting most played games for all consoles")
-            result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.playCount > 0).order_by(pes.sql.Game.playCount)
-            if limit > 0:
-                result = result.limit(limit)
-        else:
-            logging.debug("Backend.getMostPlayedGames: getting most played games for console %d", consoleId)
-            result = self.__session.query(pes.sql.Game).filter(sqlalchemy.sql.expression.and_(pes.sql.Game.consoleId == consoleId, pes.sql.Game.playCount > 0)).order_by(pes.sql.Game.playCount)
-            if limit > 0:
-                result = result.limit(limit)
-        for g in result:
-            games.append(g.getDict())
+        with pes.sql.Session() as session:
+            if not consoleId or consoleId == 0:
+                logging.debug("Backand.getMostPlayedGames: getting most played games for all consoles")
+                result = session.query(pes.sql.Game).filter(pes.sql.Game.playCount > 0).order_by(pes.sql.Game.playCount)
+                if limit > 0:
+                    result = result.limit(limit)
+            else:
+                logging.debug("Backend.getMostPlayedGames: getting most played games for console %d", consoleId)
+                result = session.query(pes.sql.Game).filter(sqlalchemy.sql.expression.and_(pes.sql.Game.consoleId == consoleId, pes.sql.Game.playCount > 0)).order_by(pes.sql.Game.playCount)
+                if limit > 0:
+                    result = result.limit(limit)
+            for g in result:
+                games.append(g.getDict())
         return games
 
     @pyqtSlot(result=bool)
@@ -310,35 +314,37 @@ class Backend(QObject):
     @pyqtSlot(int, int, result=list)
     def getRecentlyAddedGames(self, consoleId=None, limit=10):
         games = []
-        if not consoleId or consoleId == 0:
-            logging.debug("Backend.getRecentlyAddedGames: getting games for all consoles")
-            result = self.__session.query(pes.sql.Game).order_by(pes.sql.Game.added.desc())
-            if limit > 0:
-                result = result.limit(limit)
-        else:
-            logging.debug("Backend.getRecentlyAddedGames: getting games for console %d", consoleId)
-            result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).order_by(pes.sql.Game.added.desc())
-            if limit > 0:
-                result = result.limit(limit)
-        for g in result:
-            games.append(g.getDict())
+        with pes.sql.Session() as session:
+            if not consoleId or consoleId == 0:
+                logging.debug("Backend.getRecentlyAddedGames: getting games for all consoles")
+                result = session.query(pes.sql.Game).order_by(pes.sql.Game.added.desc())
+                if limit > 0:
+                    result = result.limit(limit)
+            else:
+                logging.debug("Backend.getRecentlyAddedGames: getting games for console %d", consoleId)
+                result = session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).order_by(pes.sql.Game.added.desc())
+                if limit > 0:
+                    result = result.limit(limit)
+            for g in result:
+                games.append(g.getDict())
         return games
 
     @pyqtSlot(int, int, result=list)
     def getRecentlyPlayedGames(self, consoleId=None, limit=10):
         games = []
-        if not consoleId or consoleId == 0:
-            logging.debug("Backend.getRecentlyPlayedGames: getting games for all consoles")
-            result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.playCount > 0).order_by(pes.sql.Game.lastPlayed.desc())
-            if limit > 0:
-                result = result.limit(limit)
-        else:
-            logging.debug("Backend.getRecentlyPlayedGames: getting games for console %d", consoleId)
-            result = self.__session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).filter(pes.sql.Game.playCount > 0).order_by(pes.sql.Game.lastPlayed.desc())
-            if limit > 0:
-                result = result.limit(limit)
-        for g in result:
-            games.append(g.getDict())
+        with pes.sql.Session() as session:
+            if not consoleId or consoleId == 0:
+                logging.debug("Backend.getRecentlyPlayedGames: getting games for all consoles")
+                result = session.query(pes.sql.Game).filter(pes.sql.Game.playCount > 0).order_by(pes.sql.Game.lastPlayed.desc())
+                if limit > 0:
+                    result = result.limit(limit)
+            else:
+                logging.debug("Backend.getRecentlyPlayedGames: getting games for console %d", consoleId)
+                result = session.query(pes.sql.Game).filter(pes.sql.Game.consoleId == consoleId).filter(pes.sql.Game.playCount > 0).order_by(pes.sql.Game.lastPlayed.desc())
+                if limit > 0:
+                    result = result.limit(limit)
+            for g in result:
+                games.append(g.getDict())
         return games
 
     @pyqtSlot(result=int)
@@ -361,115 +367,114 @@ class Backend(QObject):
     @pyqtSlot(int, result=QVariant)
     def playGame(self, gameId):
         # pylint: disable=too-many-locals
-        game = self.__session.query(pes.sql.Game).get(gameId)
-        if game:
-            logging.debug("Backend.playGame: found game ID %d", gameId)
+        with pes.sql.Session.begin() as session:
+            game = session.query(pes.sql.Game).get(gameId)
+            if game:
+                logging.debug("Backend.playGame: found game ID %d", gameId)
 
-            requireFiles = self.__consoleSettings.get(game.console.name, "require")
-            if requireFiles:
-                for f in requireFiles:
-                    f = f.strip()
-                    logging.debug("Backend.playGame: checking for: %s", f)
-                    if not os.path.exists(f) or not os.path.isfile(f):
-                        logging.error("Backend.playGame: could not find required file: %s", f)
-                        return { "result": False, "msg": f"Could not find required file: {f}"}
-            else:
-                logging.debug("Backend.playGame: no required files for console %s", game.console.name)
-
-            # generate emulator config
-            emulator = self.__consoleSettings.get(game.console.name, "emulator")
-            if emulator == "RetroArch":
-                # note: RetroArch uses a SNES control pad button layout, SDL2 uses XBOX 360 layout!
-                # check joystick configs
-                joystickTotal = sdl2.joystick.SDL_NumJoysticks()
-                if joystickTotal > 0:
-                    for i in range(joystickTotal):
-                        if sdl2.SDL_IsGameController(i):
-                            c = sdl2.SDL_GameControllerOpen(i)
-                            if sdl2.SDL_GameControllerGetAttached(c):
-                                # get joystick name
-                                j = sdl2.SDL_GameControllerGetJoystick(c)
-                                jsName = sdl2.SDL_JoystickName(j).decode()
-                                jsConfig = os.path.join(pes.userRetroArchJoysticksConfDir, "{jsName}.cfg")
-                                logging.debug("Backend.playGame: creating configuration file %s for %s", jsConfig, jsName)
-                                vendorId, productId = getJoystickDeviceInfoFromGUID(getJoystickGUIDString(sdl2.SDL_JoystickGetDeviceGUID(i)))
-                                with open(jsConfig, "w", encoding="utf-8") as f:
-                                    # control pad id etc.
-                                    f.write(f"input_device = \"{jsName}\"\n")
-                                    f.write(f"input_vendor_id = \"{vendorId}\"\n")
-                                    f.write(f"input_product_id = \"{productId}\"\n")
-                                    #f.write("input_driver = \"udev\"\n")
-                                    # buttons
-                                    f.write(getRetroArchConfigButtonValue("input_a", c, sdl2.SDL_CONTROLLER_BUTTON_B))
-                                    f.write(getRetroArchConfigButtonValue("input_b", c, sdl2.SDL_CONTROLLER_BUTTON_A))
-                                    f.write(getRetroArchConfigButtonValue("input_x", c, sdl2.SDL_CONTROLLER_BUTTON_Y))
-                                    f.write(getRetroArchConfigButtonValue("input_y", c, sdl2.SDL_CONTROLLER_BUTTON_X))
-                                    f.write(getRetroArchConfigButtonValue("input_start", c, sdl2.SDL_CONTROLLER_BUTTON_START))
-                                    f.write(getRetroArchConfigButtonValue("input_select", c, sdl2.SDL_CONTROLLER_BUTTON_BACK))
-                                    # shoulder buttons
-                                    f.write(getRetroArchConfigButtonValue("input_l", c, sdl2.SDL_CONTROLLER_BUTTON_LEFTSHOULDER))
-                                    f.write(getRetroArchConfigButtonValue("input_r", c, sdl2.SDL_CONTROLLER_BUTTON_RIGHTSHOULDER))
-                                    f.write(getRetroArchConfigAxisValue("input_l2", c, sdl2.SDL_CONTROLLER_AXIS_TRIGGERLEFT))
-                                    f.write(getRetroArchConfigAxisValue("input_r2", c, sdl2.SDL_CONTROLLER_AXIS_TRIGGERRIGHT))
-                                    # L3/R3 buttons
-                                    f.write(getRetroArchConfigButtonValue("input_l3", c, sdl2.SDL_CONTROLLER_BUTTON_LEFTSTICK))
-                                    f.write(getRetroArchConfigButtonValue("input_r3", c, sdl2.SDL_CONTROLLER_BUTTON_RIGHTSTICK))
-                                    # d-pad buttons
-                                    f.write(getRetroArchConfigButtonValue("input_up", c, sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP))
-                                    f.write(getRetroArchConfigButtonValue("input_down", c, sdl2.SDL_CONTROLLER_BUTTON_DPAD_DOWN))
-                                    f.write(getRetroArchConfigButtonValue("input_left", c, sdl2.SDL_CONTROLLER_BUTTON_DPAD_LEFT))
-                                    f.write(getRetroArchConfigButtonValue("input_right", c, sdl2.SDL_CONTROLLER_BUTTON_DPAD_RIGHT))
-                                    # axis
-                                    f.write(getRetroArchConfigAxisValue("input_l_x", c, sdl2.SDL_CONTROLLER_AXIS_LEFTX, True))
-                                    f.write(getRetroArchConfigAxisValue("input_l_y", c, sdl2.SDL_CONTROLLER_AXIS_LEFTY, True))
-                                    f.write(getRetroArchConfigAxisValue("input_r_x", c, sdl2.SDL_CONTROLLER_AXIS_RIGHTX, True))
-                                    f.write(getRetroArchConfigAxisValue("input_r_y", c, sdl2.SDL_CONTROLLER_AXIS_RIGHTY, True))
-                                    # hot key buttons
-                                    bind = sdl2.SDL_GameControllerGetBindForButton(c, sdl2.SDL_CONTROLLER_BUTTON_GUIDE)
-                                    if bind:
-                                        f.write(getRetroArchConfigButtonValue("input_enable_hotkey", c, sdl2.SDL_CONTROLLER_BUTTON_GUIDE))
-                                    else:
-                                        f.write(getRetroArchConfigButtonValue("input_enable_hotkey", c, sdl2.SDL_CONTROLLER_BUTTON_BACK))
-                                    f.write(getRetroArchConfigButtonValue("input_menu_toggle", c, sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP))
-                                    f.write(getRetroArchConfigButtonValue("input_exit_emulator", c, sdl2.SDL_CONTROLLER_BUTTON_START))
-                                    f.write(getRetroArchConfigButtonValue("input_save_state", c, sdl2.SDL_CONTROLLER_BUTTON_A))
-                                    f.write(getRetroArchConfigButtonValue("input_load_state", c, sdl2.SDL_CONTROLLER_BUTTON_B))
-                                    f.write("input_pause_toggle = \"nul\"\n")
-                            sdl2.SDL_GameControllerClose(c)
-                            sdl2.SDL_GameControllerClose(c)
-
-                # now set-up RetroAchievements
-                retroUser = self.__userSettings.get("RetroAchievements", "username")
-                retroPass = self.__userSettings.get("RetroAchievements", "password")
-                s = "# THIS FILE IS AUTOMATICALLY GENERATED BY PES!\n"
-                if retroUser is None or retroPass is None:
-                    s += "cheevos_enable = false\n"
+                requireFiles = self.__consoleSettings.get(game.console.name, "require")
+                if requireFiles:
+                    for f in requireFiles:
+                        f = f.strip()
+                        logging.debug("Backend.playGame: checking for: %s", f)
+                        if not os.path.exists(f) or not os.path.isfile(f):
+                            logging.error("Backend.playGame: could not find required file: %s", f)
+                            return { "result": False, "msg": f"Could not find required file: {f}"}
                 else:
-                    s += f"cheevos_username = {retroUser}\n"
-                    s += f"cheevos_password = {retroPass}\n"
-                    s += "cheevos_enable = true\n"
-                    if self.__userSettings.get("RetroAchievements", "hardcore"):
-                        s += "cheevos_hardcore_mode_enable = true\n"
-                    else:
-                        s += "cheevos_hardcore_mode_enable = false\n"
-                with open(pes.userRetroArchCheevosConfFile, "w", encoding="utf-8") as f:
-                    f.write(s)
+                    logging.debug("Backend.playGame: no required files for console %s", game.console.name)
 
-            # get emulator launch string
-            command = self.__consoleSettings.get(game.console.name, "command").replace("%%GAME%%", f"\"{game.path}\"")
-            if not command:
-                logging.error("Backend.playGame: could not determine launch command for the %s console", game.console.name)
-                return { "result": False, "msg": f"Could not determine launch command for the {game.console.name} console" }
-            logging.debug("Backend.playGame: launch string: %s", command)
-            self.__createCommandFile(command)
-            game.playCount += 1
-            game.lastPlayed = datetime.datetime.now()
-            self.__session.add(game)
-            self.__session.commit()
-            self.close()
-            return { "result": True, "msg": f"Loading {game.name}" }
-        logging.error("Backend.playGame: coult not find game ID %d", gameId)
-        return { "result": False, "msg": f"Could not find game {gameId}" }
+                # generate emulator config
+                emulator = self.__consoleSettings.get(game.console.name, "emulator")
+                if emulator == "RetroArch":
+                    # note: RetroArch uses a SNES control pad button layout, SDL2 uses XBOX 360 layout!
+                    # check joystick configs
+                    joystickTotal = sdl2.joystick.SDL_NumJoysticks()
+                    if joystickTotal > 0:
+                        for i in range(joystickTotal):
+                            if sdl2.SDL_IsGameController(i):
+                                c = sdl2.SDL_GameControllerOpen(i)
+                                if sdl2.SDL_GameControllerGetAttached(c):
+                                    # get joystick name
+                                    j = sdl2.SDL_GameControllerGetJoystick(c)
+                                    jsName = sdl2.SDL_JoystickName(j).decode()
+                                    jsConfig = os.path.join(pes.userRetroArchJoysticksConfDir, "{jsName}.cfg")
+                                    logging.debug("Backend.playGame: creating configuration file %s for %s", jsConfig, jsName)
+                                    vendorId, productId = getJoystickDeviceInfoFromGUID(getJoystickGUIDString(sdl2.SDL_JoystickGetDeviceGUID(i)))
+                                    with open(jsConfig, "w", encoding="utf-8") as f:
+                                        # control pad id etc.
+                                        f.write(f"input_device = \"{jsName}\"\n")
+                                        f.write(f"input_vendor_id = \"{vendorId}\"\n")
+                                        f.write(f"input_product_id = \"{productId}\"\n")
+                                        #f.write("input_driver = \"udev\"\n")
+                                        # buttons
+                                        f.write(getRetroArchConfigButtonValue("input_a", c, sdl2.SDL_CONTROLLER_BUTTON_B))
+                                        f.write(getRetroArchConfigButtonValue("input_b", c, sdl2.SDL_CONTROLLER_BUTTON_A))
+                                        f.write(getRetroArchConfigButtonValue("input_x", c, sdl2.SDL_CONTROLLER_BUTTON_Y))
+                                        f.write(getRetroArchConfigButtonValue("input_y", c, sdl2.SDL_CONTROLLER_BUTTON_X))
+                                        f.write(getRetroArchConfigButtonValue("input_start", c, sdl2.SDL_CONTROLLER_BUTTON_START))
+                                        f.write(getRetroArchConfigButtonValue("input_select", c, sdl2.SDL_CONTROLLER_BUTTON_BACK))
+                                        # shoulder buttons
+                                        f.write(getRetroArchConfigButtonValue("input_l", c, sdl2.SDL_CONTROLLER_BUTTON_LEFTSHOULDER))
+                                        f.write(getRetroArchConfigButtonValue("input_r", c, sdl2.SDL_CONTROLLER_BUTTON_RIGHTSHOULDER))
+                                        f.write(getRetroArchConfigAxisValue("input_l2", c, sdl2.SDL_CONTROLLER_AXIS_TRIGGERLEFT))
+                                        f.write(getRetroArchConfigAxisValue("input_r2", c, sdl2.SDL_CONTROLLER_AXIS_TRIGGERRIGHT))
+                                        # L3/R3 buttons
+                                        f.write(getRetroArchConfigButtonValue("input_l3", c, sdl2.SDL_CONTROLLER_BUTTON_LEFTSTICK))
+                                        f.write(getRetroArchConfigButtonValue("input_r3", c, sdl2.SDL_CONTROLLER_BUTTON_RIGHTSTICK))
+                                        # d-pad buttons
+                                        f.write(getRetroArchConfigButtonValue("input_up", c, sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP))
+                                        f.write(getRetroArchConfigButtonValue("input_down", c, sdl2.SDL_CONTROLLER_BUTTON_DPAD_DOWN))
+                                        f.write(getRetroArchConfigButtonValue("input_left", c, sdl2.SDL_CONTROLLER_BUTTON_DPAD_LEFT))
+                                        f.write(getRetroArchConfigButtonValue("input_right", c, sdl2.SDL_CONTROLLER_BUTTON_DPAD_RIGHT))
+                                        # axis
+                                        f.write(getRetroArchConfigAxisValue("input_l_x", c, sdl2.SDL_CONTROLLER_AXIS_LEFTX, True))
+                                        f.write(getRetroArchConfigAxisValue("input_l_y", c, sdl2.SDL_CONTROLLER_AXIS_LEFTY, True))
+                                        f.write(getRetroArchConfigAxisValue("input_r_x", c, sdl2.SDL_CONTROLLER_AXIS_RIGHTX, True))
+                                        f.write(getRetroArchConfigAxisValue("input_r_y", c, sdl2.SDL_CONTROLLER_AXIS_RIGHTY, True))
+                                        # hot key buttons
+                                        bind = sdl2.SDL_GameControllerGetBindForButton(c, sdl2.SDL_CONTROLLER_BUTTON_GUIDE)
+                                        if bind:
+                                            f.write(getRetroArchConfigButtonValue("input_enable_hotkey", c, sdl2.SDL_CONTROLLER_BUTTON_GUIDE))
+                                        else:
+                                            f.write(getRetroArchConfigButtonValue("input_enable_hotkey", c, sdl2.SDL_CONTROLLER_BUTTON_BACK))
+                                        f.write(getRetroArchConfigButtonValue("input_menu_toggle", c, sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP))
+                                        f.write(getRetroArchConfigButtonValue("input_exit_emulator", c, sdl2.SDL_CONTROLLER_BUTTON_START))
+                                        f.write(getRetroArchConfigButtonValue("input_save_state", c, sdl2.SDL_CONTROLLER_BUTTON_A))
+                                        f.write(getRetroArchConfigButtonValue("input_load_state", c, sdl2.SDL_CONTROLLER_BUTTON_B))
+                                        f.write("input_pause_toggle = \"nul\"\n")
+                                sdl2.SDL_GameControllerClose(c)
+                                sdl2.SDL_GameControllerClose(c)
+
+                    # now set-up RetroAchievements
+                    retroUser = self.__userSettings.get("RetroAchievements", "username")
+                    retroPass = self.__userSettings.get("RetroAchievements", "password")
+                    s = "# THIS FILE IS AUTOMATICALLY GENERATED BY PES!\n"
+                    if retroUser is None or retroPass is None:
+                        s += "cheevos_enable = false\n"
+                    else:
+                        s += f"cheevos_username = {retroUser}\n"
+                        s += f"cheevos_password = {retroPass}\n"
+                        s += "cheevos_enable = true\n"
+                        if self.__userSettings.get("RetroAchievements", "hardcore"):
+                            s += "cheevos_hardcore_mode_enable = true\n"
+                        else:
+                            s += "cheevos_hardcore_mode_enable = false\n"
+                    with open(pes.userRetroArchCheevosConfFile, "w", encoding="utf-8") as f:
+                        f.write(s)
+
+                # get emulator launch string
+                command = self.__consoleSettings.get(game.console.name, "command").replace("%%GAME%%", f"\"{game.path}\"")
+                if not command:
+                    logging.error("Backend.playGame: could not determine launch command for the %s console", game.console.name)
+                    return { "result": False, "msg": f"Could not determine launch command for the {game.console.name} console" }
+                logging.debug("Backend.playGame: launch string: %s", command)
+                self.__createCommandFile(command)
+                game.playCount += 1
+                game.lastPlayed = datetime.datetime.now()
+                session.add(game)
+                return { "result": True, "msg": f"Loading {game.name}" }
+            logging.error("Backend.playGame: coult not find game ID %d", gameId)
+            return { "result": False, "msg": f"Could not find game {gameId}" }
 
     @pyqtSlot()
     def reboot(self):
