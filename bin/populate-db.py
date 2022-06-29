@@ -22,7 +22,7 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# pylint: disable=broad-except,invalid-name,line-too-long,missing-class-docstring,missing-function-docstring,redefined-outer-name,too-many-locals,unexpected-keyword-arg
+# pylint: disable=broad-except,invalid-name,line-too-long,missing-class-docstring,missing-function-docstring,redefined-outer-name,too-many-locals,unexpected-keyword-arg,wrong-import-position
 
 # Note: disabled unexpected-keyword-arg due to false positives, ref: https://github.com/PyCQA/pylint/issues/6550
 
@@ -39,18 +39,17 @@ import datetime
 import json
 import logging
 import os
-import requests
 import sys
 
 sys.path.append(os.path.abspath(f"{os.path.dirname(os.path.realpath(__file__))}/../python"))
 
-from sqlalchemy import func
-
 import pes
 import pes.retroachievement
 import pes.sql
+import requests
 
 from pes.common import checkDir, checkFile, mkdir, pesExit
+from sqlalchemy import func
 
 def getGamesDbImages(cacheDir: str):
     with pes.sql.Session() as session:
