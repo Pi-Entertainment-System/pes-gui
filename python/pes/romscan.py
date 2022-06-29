@@ -327,7 +327,7 @@ class GamesDbRomTask(RomTask):
                             coverartFront=self._getNocoverart(),
                             found=True
                         )
-            
+
                     session.add(game)
                     session.commit()
                     logging.debug("%s saved new record", logPrefix)

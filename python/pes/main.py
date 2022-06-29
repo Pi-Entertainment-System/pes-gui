@@ -127,7 +127,7 @@ if __name__ == "__main__":
     # make directory for each support console
     logging.debug("connecting to database: %s", pes.userDb)
     pes.sql.connect(pes.userDb)
-    
+
     with pes.sql.Session() as session:
         consoles = session.query(pes.sql.Console).all()
         logging.debug("creating ROM directories for user")
