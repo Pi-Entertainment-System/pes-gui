@@ -473,7 +473,7 @@ class Backend(QObject):
                 game.lastPlayed = datetime.datetime.now()
                 session.add(game)
                 return { "result": True, "msg": f"Loading {game.name}" }
-            logging.error("Backend.playGame: coult not find game ID %d", gameId)
+            logging.error("Backend.playGame: could not find game ID %d", gameId)
             return { "result": False, "msg": f"Could not find game {gameId}" }
 
     @pyqtSlot()
