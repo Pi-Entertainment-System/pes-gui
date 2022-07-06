@@ -374,7 +374,7 @@ class Backend(QObject):
             if not game:
                 logging.error("Backend.playGame: could not find game ID %d", gameId)
                 return { "result": False, "msg": f"Could not find game {gameId}" }
-            
+
             logging.debug("Backend.playGame: found game ID %d", gameId)
             gameName = game.name
             requireFiles = self.__consoleSettings.get(game.console.name, "require")
@@ -480,7 +480,6 @@ class Backend(QObject):
         logging.debug("Backend.playGame: done")
         self.close()
         return { "result": True, "msg": f"Loading {gameName}" }
-            
 
     @pyqtSlot()
     def reboot(self):
