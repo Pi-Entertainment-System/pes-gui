@@ -176,6 +176,13 @@ Rectangle {
         }
     }
 
+    Timer {
+        id: retroThreadTimer
+        interval: 1
+        repeat: true
+        running: false
+    }
+
     Component {
         id: badgeDelegate
 
@@ -338,7 +345,15 @@ Rectangle {
                     delegate: MenuDelegate {
                         Keys.onPressed: {
                             if (event.key == Qt.Key_Return && name == "Play") {
-                                play(game.id);
+                                // wait until retroThread has finished
+                                retroThreadTimer.start();
+                                retroThread.stop();
+                                retroThreadTimer.triggered.connect(function() {
+                                   if (!retroThread.isRunning()) {
+                                       retroThreadTimer.stop();
+                                       play(game.id);
+                                   } 
+                                });
                             }
                             else if ((event.key == Qt.Key_Return || event.key == Qt.Key_Right) && name == "Achievements") {
                                 if (badgesListView.currentIndex == -1) {

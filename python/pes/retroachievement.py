@@ -272,6 +272,7 @@ class RetroAchievementThread(QThread):
         self.__badges = []
         self.__retroUser = None
         self.__progress = 0.0
+        self.__stop = False
 
     @pyqtProperty(int)
     def gameId(self):
@@ -288,6 +289,10 @@ class RetroAchievementThread(QThread):
     @pyqtSlot(result=QVariant)
     def getRetroGame(self):
         return self.__retroGame.getDict()
+
+    @pyqtSlot(result=bool)
+    def isRunning(self) -> bool:
+        return super().isRunning()
 
     @pyqtProperty(int)
     def progress(self):
@@ -330,6 +335,10 @@ class RetroAchievementThread(QThread):
                     count = 0
                     total = len(rslt['Achievements'])
                     for badgeId, data in rslt['Achievements'].items():
+                        if self.__stop:
+                            self.__progress = 100
+                            logging.debug("RetroAchievementThread.run: returning")
+                            return
                         badgeId = int(badgeId)
                         badge = session.query(pes.sql.RetroAchievementBadge).get(badgeId)
                         if badge:
@@ -375,11 +384,27 @@ class RetroAchievementThread(QThread):
             badges = session.query(pes.sql.RetroAchievementBadge).filter(pes.sql.RetroAchievementBadge.retroGameId == self.__retroGameId).order_by(pes.sql.RetroAchievementBadge.displayOrder)
             if badges:
                 for badge in badges:
+                    if self.__stop:
+                        self.__progress = 100
+                        logging.debug("RetroAchievementThread.run: returning")
+                        return
                     self.__saveBadge(badge)
                     self.__badges.append(badge.getDict())
             RetroAchievementThread.__gameIdCache.append(self.__retroGameId)
             session.commit()
         self.__progress = 100
+        logging.debug("RetroAchievementThread.run: returning")
+
+    @pyqtSlot()
+    def start(self):
+        logging.debug("RetroAchievementThread.start: called")
+        self.__stop = False
+        super().start()
+
+    @pyqtSlot()
+    def stop(self):
+        logging.debug("RetroAchievementThread.stop: called")
+        self.__stop = True
 
     @staticmethod
     def __saveBadge(badge):
