@@ -64,17 +64,17 @@ Rectangle {
                 screenshotImg.source = "";
             }
             filenameText.text = "Filename: " + game.filename + " (" + PES.humanFileSize(game.fileSize, false, 0) + ")";
-            /*if (game.playCount > 0) {
+            if (game.playCount > 0) {
                 if (game.playCount == 1) {
-                    historyText.text = "History: played " + game.playCount + " time on " + game.lastPlayed;
+                    historyText.text = "History: played " + game.playCount + " time on " + game.lastPlayedStr;
                 }
                 else {
-                    historyText.text = "History: played " + game.playCount + " times, last time " + game.lastPlayed;
+                    historyText.text = "History: played " + game.playCount + " times, last time " + game.lastPlayedStr;
                 }
             }
             else {
                 historyText.text = "History: Never played";
-            }*/
+            }
             releasedText.text = "Released: " + game.releaseDate
             overviewText.text = game.overview;
             reset();
@@ -436,9 +436,9 @@ Rectangle {
                             }
                         }
 
-                        /*BodyText {
+                        BodyText {
                             id: historyText
-                        }*/
+                        }
 
                         BodyText {
                             id: filenameText
