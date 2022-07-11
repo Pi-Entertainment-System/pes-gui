@@ -348,6 +348,10 @@ class UserSettings(Settings):
         self.set("RetroAchievements", "hardcore", value)
 
     @property
+    def pythonDateFormat(self) -> str:
+        return UserSettings.DATE_FORMATS[self.dateFormat]
+
+    @property
     def rebootCommand(self) -> str:
         return self.get("commands", "reboot")
 
