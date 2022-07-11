@@ -51,12 +51,14 @@ def connect(db=pes.userDb):
 
 class CustomBase:
 
+    DATE_TIME_FORMAT = "%d/%m/%Y %H:%M"
+
     def __init__(self) -> None:
         self.__table__ = None
 
     @staticmethod
     def getDateStr(column: datetime) -> str:
-        return column.strftime("%d/%m/%Y %H:%M")
+        return column.strftime(CustomBase.DATE_TIME_FORMAT)
 
     def getDict(self) -> dict:
         j = {}
