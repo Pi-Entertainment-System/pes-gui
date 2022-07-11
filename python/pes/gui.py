@@ -510,7 +510,8 @@ class Backend(QObject):
         pes.common.runCommand(self.__userSettings.shutdownCommand)
 
     def __updateDateTimeFormat(self):
-        self.__dateTimeFormat = self.__userSettings.DATE_FORMATS[self.__userSettings.dateFormat] + " %H:%M:%S"
+        self.__dateTimeFormat = f"{self.__userSettings.pythonDateFormat} %H:%M:%S"
+        pes.sql.CustomBase.DATE_TIME_FORMAT = f"{self.__userSettings.pythonDateFormat} %H:%M"
 
 class PESGuiApplication(QGuiApplication):
     # pylint: disable=unused-private-member
