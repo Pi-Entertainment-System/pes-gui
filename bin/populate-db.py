@@ -34,22 +34,23 @@ By creating a cache of game data this aids adding user games to
 the database.
 """
 
+# standard imports
 import argparse
 import datetime
 import json
 import logging
 import os
-import sys
 
-sys.path.append(os.path.abspath(f"{os.path.dirname(os.path.realpath(__file__))}/../python"))
+# third-party imports
+import requests
+from sqlalchemy import func
 
+# pes imports
+# sys.path.append(os.path.abspath(f"{os.path.dirname(os.path.realpath(__file__))}/../src"))
 import pes
 import pes.retroachievement
 import pes.sql
-import requests
-
 from pes.common import checkDir, checkFile, mkdir, pesExit
-from sqlalchemy import func
 
 def getGamesDbImages(cacheDir: str):
     with pes.sql.Session() as session:
