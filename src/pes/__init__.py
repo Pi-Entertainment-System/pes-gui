@@ -27,10 +27,8 @@ PES provides an interactive GUI for games console emulators
 and is designed to work on the Raspberry Pi.
 """
 
+# standard imports
 import os
-import shutil
-import sys
-import logging
 
 VERSION_NUMBER = '3.0 (ALPHA)'
 VERSION_DATE = '2022-06-04'

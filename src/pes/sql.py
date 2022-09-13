@@ -26,14 +26,17 @@
 This module provides classes and functions for PES' database functionality.
 """
 
+# standard imports
 from datetime import datetime
 import logging
 import os
 
+# third-party imports
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine, Column, DateTime, ForeignKey, Integer, String, Text, Boolean
 from sqlalchemy.orm import class_mapper, relationship, sessionmaker, ColumnProperty
 
+# pes imports
 import pes
 
 Base = declarative_base()

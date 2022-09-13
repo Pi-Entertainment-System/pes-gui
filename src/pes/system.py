@@ -27,8 +27,10 @@ This module provides system level classes that make use of dbus
 to adjust Bluetooth and date/time settings.
 """
 
+# standard imports
 import logging
 
+# third-party imports
 from dbus.mainloop.pyqt5 import DBusQtMainLoop # pylint: disable=import-error
 from PyQt5.QtCore import Q_CLASSINFO, QObject, QVariant, pyqtProperty, pyqtSlot, QMetaType
 from PyQt5.QtDBus import QDBusArgument, QDBusConnection, QDBusAbstractAdaptor, QDBusInterface, QDBusVariant, QDBusMessage, QDBusObjectPath, QDBusError

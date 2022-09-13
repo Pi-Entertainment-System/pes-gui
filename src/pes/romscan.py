@@ -1,4 +1,4 @@
-
+#
 #    This file is part of the Pi Entertainment System (PES).
 #
 #    PES provides an interactive GUI for games console emulators
@@ -26,6 +26,7 @@
 This module provides classes and functions to process meta data for ROMS.
 """
 
+# standard imports
 import abc
 import datetime
 import glob
@@ -34,15 +35,17 @@ import multiprocessing
 import os
 import time
 
+# third-party imports
+import PIL
+import requests
+import sqlalchemy
+from PyQt5.QtCore import pyqtProperty, pyqtSignal, pyqtSlot, QThread
+
+# pes imports
 import pes
 import pes.common
 import pes.retroachievement
 import pes.sql
-import PIL
-import requests
-import sqlalchemy
-
-from PyQt5.QtCore import pyqtProperty, pyqtSignal, pyqtSlot, QThread
 
 logging.getLogger("PIL").setLevel(logging.WARNING)
 logging.getLogger("requests").setLevel(logging.WARNING)

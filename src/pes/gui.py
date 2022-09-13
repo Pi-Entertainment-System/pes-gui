@@ -20,21 +20,18 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# pylint: disable=invalid-name,line-too-long,missing-class-docstring,missing-function-docstring,too-many-branches,too-many-instance-attributes,too-many-public-methods,too-many-nested-blocks,too-many-return-statements,too-many-statements
+# pylint: disable=invalid-name,line-too-long,missing-class-docstring,missing-function-docstring,too-many-branches,too-many-instance-attributes,too-many-public-methods,too-many-nested-blocks,too-many-return-statements,too-many-statements,wrong-import-position
 
 """
 This module creates the PES GUI.
 """
 
+# standard imports
 import datetime
 import logging
 import os
-import pes
-import pes.common
-import pes.retroachievement
-import pes.romscan
-import pes.sql
-import pes.system
+
+# third-party imports
 import sdl2
 import sdl2.ext
 import sdl2.joystick
@@ -50,6 +47,14 @@ try:
     cecImported = True
 except ImportError:
     pass
+
+# pes imports
+import pes
+import pes.common
+import pes.retroachievement
+import pes.romscan
+import pes.sql
+import pes.system
 
 JOYSTICK_AXIS_MIN = -30000
 JOYSTICK_AXIS_MAX =  30000

@@ -26,6 +26,7 @@
 This module provides the "common" functions and classes required by PES.
 """
 
+# standard imports
 import configparser
 import csv
 import fcntl
@@ -38,6 +39,7 @@ import subprocess
 import sys
 import struct
 
+# pes imports
 from pes import baseDir, confDir, primaryDb, userBiosDir, userConfDir, userConsolesConfigFile, userDb, userDir, userPesConfigFile
 
 def checkDir(d: str):

@@ -29,15 +29,15 @@ This module provides classes and functions to access RetroAchievement.org data.
 # standard imports
 import logging
 import os
-
 from datetime import datetime
 
-# additional imports
+# third-party imports
+import requests
+from PyQt5.QtCore import QThread, QVariant, pyqtSignal, pyqtSlot, pyqtProperty, QObject
+
+# pes imports
 import pes
 import pes.common
-import requests
-
-from PyQt5.QtCore import QThread, QVariant, pyqtSignal, pyqtSlot, pyqtProperty, QObject
 
 URL_TIMEOUT = 30
 RETRO_URL = "https://www.retroachievements.org/dorequest.php"

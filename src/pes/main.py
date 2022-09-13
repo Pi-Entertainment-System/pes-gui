@@ -29,17 +29,21 @@ This module is the entry point for the PES application.
 It bootstraps the GUI and loads it.
 """
 
+# standard imports
 import argparse
 import logging
 import os
 import shutil
 import sys
 
+# third-party imports
+import sdl2
+
+# pes imports
 import pes
 import pes.retroachievement
 import pes.sql
 import pes.web
-import sdl2
 
 from pes.common import checkDir, checkFile, mkdir, initConfig, initDb, pesExit, UserSettings
 from pes.gui import Backend, PESGuiApplication

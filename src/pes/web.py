@@ -26,13 +26,17 @@
 Experimental PES web GUI.
 """
 
+# standard imports
 import logging
 import os
-import pes
 
+# third-party imports
 from flask import abort, Flask, render_template, request, send_file
 from PyQt5.QtCore import QThread
 from waitress import serve
+
+# pes imports
+import pes
 
 class WebThread(QThread):
 
