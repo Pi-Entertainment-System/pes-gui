@@ -29,6 +29,17 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BASEDIR=`realpath $DIR/..`
 COMMANDS_FILE=~/pes/commands.sh
 
+# are we in a dev set-up?
+DEV_ENV=0
+if [ -d "${BASEDIR}/src/pes" ] && [ -d "${BASEDIR}/.git" ]; then
+    DEV_ENV=1
+    export PATH=$BASEDIR/bin:$PATH
+else
+    if [ -d /opt/pes/bin ]; then
+        export PATH=/opt/pes/bin:$PATH
+    fi
+fi
+
 # are we on a Raspberry Pi?
 if [ -e /sys/firmware/devicetree/base/model ] && grep -q 'Raspberry Pi' /sys/firmware/devicetree/base/model; then
     export QT_QPA_PLATFORM=eglfs
@@ -36,11 +47,11 @@ if [ -e /sys/firmware/devicetree/base/model ] && grep -q 'Raspberry Pi' /sys/fir
     export QT_SCALE_FACTOR=1.5
 fi
 
-export PYTHONPATH=${BASEDIR}/python
-
 pythonVer=`python -c 'import sys; print(str(sys.version_info[0])+"."+str(sys.version_info[1]))'`
 
-if [ -d /opt/pes/lib/python${pythonVer}/site-packages ]; then
+if [ $DEV_ENV -eq 1 ]; then
+    export PYTHONPATH=${BASEDIR}/src
+elif [ -d /opt/pes/lib/python${pythonVer}/site-packages ]; then
     if [ -z $PYTHONPATH ]; then
         export PYTHONPATH=/opt/pes/lib/python${pythonVer}/site-packages
     else
@@ -48,18 +59,15 @@ if [ -d /opt/pes/lib/python${pythonVer}/site-packages ]; then
     fi
 fi
 
-if [ -d /opt/pes/bin ]; then
-	export PATH=/opt/pes/bin:$PATH
-fi
-
-export PATH=$BASEDIR/bin:$PATH
-
 if [ -f $COMMANDS_FILE ]; then
     echo "removing old $COMMANDS_FILE"
     rm -f $COMMANDS_FILE
 fi
 
-$BASEDIR/python/pes/main.py $*
+# @TODO: need to handle when PES is installed -> need a setup.py
+if [ $DEV_ENV -eq 1 ]; then
+    $BASEDIR/src/pes/main.py $*
+fi
 
 if [ -x $COMMANDS_FILE ]; then
     $COMMANDS_FILE
