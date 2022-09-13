@@ -2,4 +2,4 @@ bin/rasum
 data/cache
 data/pes.db*
 data/retro_games.json
-python/pes/__pycache__
+__pycache__/
