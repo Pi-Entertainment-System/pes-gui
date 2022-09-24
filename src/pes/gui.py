@@ -491,6 +491,18 @@ class Backend(QObject):
         logging.info("Rebooting")
         pes.common.runCommand(self.__userSettings.rebootCommand)
 
+    @pyqtSlot(bool, bool)
+    def resetData(self, resetConfig, resetDatabase):
+        command = ""
+        if resetConfig:
+            logging.debug("Backend.resetData: user configuration will be deleted")
+            command += f"rm -rf {pes.userConfDir}/*\n"
+        if resetDatabase:
+            logging.debug("Backend.resetData: PES database will be deleted")
+            command += f"rm -f {pes.userDb}\n"
+        self.__createCommandFile(command)
+        self.close()
+
     @pyqtSlot(QJSValue)
     def saveSettings(self, settings):
         # pylint: disable=comparison-with-callable

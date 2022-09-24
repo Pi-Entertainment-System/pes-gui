@@ -699,6 +699,10 @@ ApplicationWindow {
             Layout.fillWidth: true
             Layout.fillHeight: true
 
+            onResetData: {
+              backend.resetData(config, database);
+            }
+
             onSettingsApplied: {
               backend.saveSettings({
                   bluetoothEnabled: settingsScreen.getBluetoothEnabled(),

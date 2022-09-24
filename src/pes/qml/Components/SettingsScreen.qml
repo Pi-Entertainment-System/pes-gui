@@ -39,10 +39,14 @@ Rectangle {
         property int btnWidth: 250
         property int btnHeight: 50
         property int labelWidth: 400
+        property int msgBoxWidth: 800
+        property int msgBoxHeight: 200
         property var systemFocusItem: hardcoreModeToggle
+        property var resetDataFocusItem: resetDatabaseToggle
     }
 
     // signals
+    signal resetData(bool config, bool database)
     signal settingsApplied()
 
     // functions
@@ -120,8 +124,8 @@ Rectangle {
         id: bluetoothDialog
         //navSound: navSound
         text: "Are you sure you want to disable Bluetooth? This could cause your controller to disconnect!"
-        width: 650
-        height: 200
+        width: internal.msgBoxWidth
+        height: internal.msgBoxHeight
         onYesButtonPressed: {
             saveSettings();
             bluetoothDialog.close();
@@ -132,16 +136,33 @@ Rectangle {
         }
     }
 
+    YesNoDialog {
+        id: resetDataDialog
+        text: "Are you sure you want to reset your selected data?"
+        width: internal.msgBoxWidth
+        height: internal.msgBoxHeight
+        onYesButtonPressed: {
+            resetData(resetConfigToggle.getValue(), resetDatabaseToggle.getValue()); 
+            resetDataDialog.close();
+        }
+    }
+
+    MessageBox {
+        id: noDataResetMsgBox
+        text: "No data to reset"
+        width: internal.msgBoxWidth
+    }
+
     MessageBox {
         id: restartMsgBox
         text: "Settings saved OK.\nThe PES GUI will need to be restarted for the changes to be applied."
-        width: 650
+        width: internal.msgBoxWidth
     }
 
     MessageBox {
         id: savedMsgBox
         text: "Settings saved OK"
-        width: 650
+        width: internal.msgBoxWidth
     }
 
     RowLayout {
@@ -158,6 +179,10 @@ Rectangle {
             /*ListElement {
                 name: "Control Pad"
             }*/
+
+            ListElement {
+                name: "Reset Data"
+            }
         }
 
         Rectangle {
@@ -199,8 +224,9 @@ Rectangle {
                         delegate: MenuDelegate {
                             Keys.onPressed: {
                                 if (event.key == Qt.Key_Right || event.key == Qt.Key_Return) {
-                                    if (name == "System") {
-                                        internal.systemFocusItem.forceActiveFocus();
+                                    switch (name) {
+                                        case "System": internal.systemFocusItem.forceActiveFocus(); break;
+                                        case "Reset Data": internal.resetDataFocusItem.forceActiveFocus(); break;
                                     }
                                 }
                             }
@@ -307,7 +333,7 @@ Rectangle {
                             ComboScroll {
                                 id: dateFmtCombo
                                 values: []
-                                KeyNavigation.down: applyBtn
+                                KeyNavigation.down: applySettingsBtn
                                 KeyNavigation.up: timezoneCombo
                                 KeyNavigation.left: menuScrollView
                             }
@@ -322,13 +348,13 @@ Rectangle {
                             }
 
                             UiButton {
-                                id: applyBtn
+                                id: applySettingsBtn
                                 btnText: "Apply"
                                 Layout.rightMargin: 50
                                 Layout.preferredWidth: internal.btnWidth
                                 Layout.preferredHeight: internal.btnHeight
                                 KeyNavigation.up: dateFmtCombo
-                                KeyNavigation.right: resetBtn
+                                KeyNavigation.right: resetSettingsBtn
                                 KeyNavigation.left: menuScrollView
 
                                 Keys.onReturnPressed: {
@@ -342,12 +368,12 @@ Rectangle {
                             }
 
                             UiButton {
-                                id: resetBtn
+                                id: resetSettingsBtn
                                 btnText: "Reset"
                                 Layout.preferredWidth: internal.btnWidth
                                 Layout.preferredHeight: internal.btnHeight
                                 KeyNavigation.up: dateFmtCombo
-                                KeyNavigation.left: applyBtn
+                                KeyNavigation.left: applySettingsBtn
 
                                 Keys.onReturnPressed: {
                                     bluetoothToggle.reset();
@@ -366,7 +392,7 @@ Rectangle {
                 }
 
                 // control pad settings
-                Rectangle {
+                /*Rectangle {
                     id: controlPadScreen
                     color: Colour.panelBg
                     Layout.fillWidth: true
@@ -393,6 +419,91 @@ Rectangle {
                             }
                         }
                     }
+                }*/
+
+                // reset settings
+                Rectangle {
+                    id: resetDataScreen
+
+                    color: Colour.panelBg
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+
+                    onVisibleChanged: {
+                        if (visible) {
+                            resetConfigToggle.setValue(false);
+                            resetDatabaseToggle.setValue(false);
+                        }
+                    }
+                    
+                    ColumnLayout {
+                        HeaderText {
+                            text: "Reset Data"
+                        }
+
+                        BodyText {
+                            text: "Using the buttons below you can opt to reset the data files used by PES."
+                        }
+
+                        RowLayout {
+                            BodyText {
+                                text: "Database:"
+                                Layout.preferredWidth: internal.labelWidth
+                            }
+
+                            YesNoToggle {
+                                id: resetDatabaseToggle
+                                KeyNavigation.down: resetConfigToggle
+                                KeyNavigation.left: menuScrollView
+                            }
+                        }
+
+                        RowLayout {
+                            BodyText {
+                                text: "Configuration:"
+                                Layout.preferredWidth: internal.labelWidth
+                            }
+
+                            YesNoToggle {
+                                id: resetConfigToggle
+                                KeyNavigation.left: menuScrollView
+                                KeyNavigation.up: resetDatabaseToggle
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.topMargin: 100
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                            }
+
+                            UiButton {
+                                id: applyResetDataBtn
+                                btnText: "Apply"
+                                Layout.rightMargin: 50
+                                Layout.preferredWidth: internal.btnWidth
+                                Layout.preferredHeight: internal.btnHeight
+                                KeyNavigation.up: resetConfigToggle
+                                KeyNavigation.left: menuScrollView
+
+                                Keys.onReturnPressed: {
+                                    if (!resetConfigToggle.getValue() && !resetDatabaseToggle.getValue()) {
+                                        noDataResetMsgBox.open();
+                                    }
+                                    else {
+                                        resetDataDialog.open();
+                                    }
+                                }
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                            }
+                        }
+                    }   
                 }
             }
         }
