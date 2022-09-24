@@ -155,9 +155,9 @@ Rectangle {
                 name: "System"
             }
 
-            ListElement {
+            /*ListElement {
                 name: "Control Pad"
-            }
+            }*/
         }
 
         Rectangle {
@@ -219,6 +219,12 @@ Rectangle {
 
             Layout.fillWidth: true
             Layout.fillHeight: true
+
+            Keys.onPressed: {
+                if (event.key == Qt.Key_Backspace) {
+                    PES.goHome();
+                }
+            }
 
             StackLayout {
                 id: settingsScreenStack
