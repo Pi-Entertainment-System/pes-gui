@@ -38,9 +38,13 @@ from pes import VERSION_ARCH, VERSION_AUTHOR, VERSION_NUMBER # pylint: disable=w
 setuptools.setup(
     author=VERSION_AUTHOR,
     description='GUI package for PES written in PyQT',
+    extras_require={
+        'web': ['Flask', 'waitress']
+    },
     include_package_data=True,
     install_requires=[
         'PyQt5',
+        'PySDL2',
         'setuptools'
     ],
     license='GPLv3',
