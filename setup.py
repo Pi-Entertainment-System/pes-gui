@@ -40,6 +40,7 @@ setuptools.setup(
     description='GUI package for PES written in PyQT',
     include_package_data=True,
     install_requires=[
+        'PyQt5',
         'setuptools'
     ],
     license='GPLv3',
