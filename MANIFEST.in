@@ -1,0 +1,9 @@
+include src/pes/qml/*
+include src/pes/qml/Components/*
+include src/pes/qml/icons/*
+include src/pes/qml/images/*
+include src/pes/qml/sounds/*
+include src/pes/qml/Style/*
+include src/pes/web/static/css/*
+include src/pes/web/static/js/*
+include src/pes/web/templates/*
