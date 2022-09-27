@@ -1,5 +1,8 @@
 bin/rasum
+build
 data/cache
 data/pes.db*
 data/retro_games.json
+dist
 __pycache__/
+*.egg-info
