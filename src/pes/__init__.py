@@ -30,9 +30,10 @@ and is designed to work on the Raspberry Pi.
 # standard imports
 import os
 
-VERSION_NUMBER = '3.0 (ALPHA)'
-VERSION_DATE = '2022-06-04'
+VERSION_NUMBER = '3.0'
+VERSION_DATE = '2022-09-27'
 VERSION_AUTHOR = 'Neil Munday'
+VERSION_ARCH = 'any'
 
 romScrapers = ['theGamesDb.net'] # list of ROM scrapers, default scraper is assumed to be at index 0
 
