@@ -71,7 +71,10 @@ def cecEvent(button, dur):
     if app is not None:
         app.processCecEvent(button, dur)
 
-if __name__ == "__main__":
+def pes_main():
+    """
+    PES main function.
+    """
 
     parser = argparse.ArgumentParser(description='Launch the Pi Entertainment System (PES)', add_help=True)
     parser.add_argument('-v', '--verbose', help='Turn on debug messages', dest='verbose', action='store_true')
@@ -207,3 +210,6 @@ if __name__ == "__main__":
         logging.debug("removing CEC callbacks...")
         cecconfig.ClearCallbacks()
     logging.info("exiting...")
+
+if __name__ == "__main__":
+    pes_main()
