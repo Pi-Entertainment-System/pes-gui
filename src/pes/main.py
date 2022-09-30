@@ -22,7 +22,8 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# pylint: disable=broad-except,invalid-name,line-too-long,missing-class-docstring,missing-function-docstring
+# pylint: disable=broad-except,invalid-name,line-too-long,missing-class-docstring,
+# pylint: disable=missing-function-docstring,too-many-branches,too-many-locals,too-many-statements
 
 """
 This module is the entry point for the PES application.
@@ -52,7 +53,7 @@ coloredlogsImported = False
 try:
     import coloredlogs
     coloredlogsImported = True
-except ImportError as e:
+except ImportError:
     pass
 
 cecImported = False # pylint: disable=duplicate-code
@@ -62,19 +63,20 @@ try:  # pylint: disable=duplicate-code
 except ImportError:  # pylint: disable=duplicate-code
     pass  # pylint: disable=duplicate-code
 
-def cecEvent(button, dur):
-    """
-    Wrapper function to work around segmentation fault
-    when adding Qt app as the callback.
-    """
-    global app # pylint: disable=global-variable-not-assigned
-    if app is not None:
-        app.processCecEvent(button, dur)
-
 def pes_main():
     """
     PES main function.
     """
+
+    app = None
+
+    def cecEvent(button, dur):
+        """
+        Wrapper function to work around segmentation fault
+        when adding Qt app as the callback.
+        """
+        if app is not None:
+            app.processCecEvent(button, dur)
 
     parser = argparse.ArgumentParser(description='Launch the Pi Entertainment System (PES)', add_help=True)
     parser.add_argument('-v', '--verbose', help='Turn on debug messages', dest='verbose', action='store_true')
@@ -157,7 +159,7 @@ def pes_main():
     if userSettings.get("webServer", "enabled"):
         try:
             webPort = int(userSettings.get("webServer", "port"))
-        except Exception as e:
+        except Exception:
             logging.error("Could not determine web port from %s", pes.userPesConfigFile)
         try:
             webThread = pes.web.WebThread(webPort, backend)
@@ -176,7 +178,7 @@ def pes_main():
         pes.common.pesExit(f"failed to load SDL2 control pad mappings from: {pes.userGameControllerFile}")
     logging.debug("loaded %d control pad mappings", mappingsLoaded)
 
-    app = PESGuiApplication(sys.argv, backend)
+    app = PESGuiApplication(sys.argv, backend) # pylint: disable=redefined-outer-name
 
     userCecEnabled = userSettings.get("settings", "hdmi-cec")
     if cecImported and (userCecEnabled or userCecEnabled is None):
