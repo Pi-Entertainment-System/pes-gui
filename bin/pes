@@ -29,14 +29,19 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BASEDIR=`realpath $DIR/..`
 COMMANDS_FILE=~/pes/commands.sh
 
+if [ -d /opt/pes/bin ]; then
+    export PATH=/opt/pes/bin:$PATH
+fi
+
 # are we in a dev set-up?
 DEV_ENV=0
 if [ -d "${BASEDIR}/src/pes" ] && [ -d "${BASEDIR}/.git" ]; then
     DEV_ENV=1
     export PATH=$BASEDIR/bin:$PATH
 else
-    if [ -d /opt/pes/bin ]; then
-        export PATH=/opt/pes/bin:$PATH
+    if ! which pes-gui > /dev/null 2>&1; then
+        echo "could not find pes-gui!"
+        exit 1
     fi
 fi
 
@@ -51,7 +56,9 @@ pythonVer=`python -c 'import sys; print(str(sys.version_info[0])+"."+str(sys.ver
 
 if [ $DEV_ENV -eq 1 ]; then
     export PYTHONPATH=${BASEDIR}/src
-elif [ -d /opt/pes/lib/python${pythonVer}/site-packages ]; then
+fi
+
+if [ -d /opt/pes/lib/python${pythonVer}/site-packages ]; then
     if [ -z $PYTHONPATH ]; then
         export PYTHONPATH=/opt/pes/lib/python${pythonVer}/site-packages
     else
@@ -64,9 +71,10 @@ if [ -f $COMMANDS_FILE ]; then
     rm -f $COMMANDS_FILE
 fi
 
-# @TODO: need to handle when PES is installed -> need a setup.py
 if [ $DEV_ENV -eq 1 ]; then
     $BASEDIR/src/pes/main.py $*
+else
+    pes-gui $*
 fi
 
 if [ -x $COMMANDS_FILE ]; then
