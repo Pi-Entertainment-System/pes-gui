@@ -38,6 +38,11 @@ from pes import VERSION_ARCH, VERSION_AUTHOR, VERSION_NUMBER # pylint: disable=w
 setuptools.setup(
     author=VERSION_AUTHOR,
     description='GUI package for PES written in PyQT',
+    entry_points = {
+        'console_scripts': [
+            'pes-gui=pes.main:pes_main',
+        ],
+    },
     extras_require={
         'web': ['Flask', 'waitress']
     },
