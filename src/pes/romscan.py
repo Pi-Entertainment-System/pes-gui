@@ -192,7 +192,7 @@ class RomTask(abc.ABC):
         """
 
     def _getNocoverart(self) -> str:
-        return os.path.join(pes.resourcesDir, self._console.nocoverart)
+        return os.path.join(pes.imagesDir, self._console.nocoverart)
 
     @staticmethod
     def _scaleImage(path: str) -> str:

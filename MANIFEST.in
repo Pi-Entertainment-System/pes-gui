@@ -1,3 +1,7 @@
+include src/pes/conf.d/*
+include src/pes/conf.d/pes/*
+include src/pes/conf.d/retroarch/*
+include src/pes/data/*
 include src/pes/qml/*
 include src/pes/qml/Components/*
 include src/pes/qml/icons/*

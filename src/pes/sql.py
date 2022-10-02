@@ -149,7 +149,7 @@ class Game(Base, CustomBase):
             j["lastPlayedStr"] = "Unknown"
         if not os.path.exists(j["coverartFront"]):
             logging.warning("%s does not exist!", self.coverartFront)
-            j["coverartFront"] = os.path.join(pes.resourcesDir, self.console.nocoverart)
+            j["coverartFront"] = os.path.join(pes.imagesDir, self.console.nocoverart)
         j["filename"] = os.path.basename(self.path)
         j["screenshots"] = []
         for screenshot in self.screenshots:

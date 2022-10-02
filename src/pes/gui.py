@@ -164,9 +164,9 @@ class Backend(QObject):
             f.write("# THIS FILE WAS AUTOMATICALLY CREATED BY PES\n")
             f.write(f"{command}\n")
             if logging.getLogger().isEnabledFor(logging.DEBUG):
-                f.write(f"exec {pes.binDir}/pes -v\n")
+                f.write(f"exec pes -v\n")
             else:
-                f.write(f"exec {pes.binDir}/pes\n")
+                f.write(f"exec pes\n")
         os.chmod(pes.userScriptFile, 0o700)
         logging.debug("Backend.__createCommandFile: done")
 
@@ -212,7 +212,7 @@ class Backend(QObject):
         with pes.sql.Session() as session:
             console = session.query(pes.sql.Console).get(consoleId)
             if console:
-                path = os.path.join(pes.resourcesDir, console.art)
+                path = os.path.join(pes.imagesDir, console.art)
                 logging.debug("Backend.getConsoleArt: path is %s", path)
                 return path
         logging.error("Backend.getConsoleArt: could not find console with ID: %d", consoleId)
