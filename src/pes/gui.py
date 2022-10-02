@@ -164,9 +164,9 @@ class Backend(QObject):
             f.write("# THIS FILE WAS AUTOMATICALLY CREATED BY PES\n")
             f.write(f"{command}\n")
             if logging.getLogger().isEnabledFor(logging.DEBUG):
-                f.write(f"exec pes -v\n")
+                f.write("exec pes -v\n")
             else:
-                f.write(f"exec pes\n")
+                f.write("exec pes\n")
         os.chmod(pes.userScriptFile, 0o700)
         logging.debug("Backend.__createCommandFile: done")
 
