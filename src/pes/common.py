@@ -40,7 +40,7 @@ import sys
 import struct
 
 # pes imports
-from pes import baseDir, confDir, primaryDb, userBiosDir, userConfDir, userConsolesConfigFile, userDb, userDir, userPesConfigFile
+from pes import baseDir, confDir, moduleDir, primaryDb, userBiosDir, userConfDir, userConsolesConfigFile, userDb, userDir, userPesConfigFile
 
 def checkDir(d: str):
     logging.debug("checking for: %s", d)
@@ -72,7 +72,7 @@ def initConfig():
     logging.debug("initialising config...")
     checkDir(userConfDir)
     for root, dirs, files in os.walk(confDir):
-        userRoot = root.replace(baseDir, userDir)
+        userRoot = root.replace(moduleDir, userDir)
         for d in dirs:
             dest = os.path.join(userRoot, d)
             if not os.path.exists(dest):

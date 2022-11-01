@@ -30,23 +30,22 @@ and is designed to work on the Raspberry Pi.
 # standard imports
 import os
 
-VERSION_NUMBER = '3.0 (ALPHA)'
-VERSION_DATE = '2022-06-04'
+VERSION_NUMBER = '3.0'
+VERSION_DATE = '2022-09-27'
 VERSION_AUTHOR = 'Neil Munday'
+VERSION_ARCH = 'any'
 
 romScrapers = ['theGamesDb.net'] # list of ROM scrapers, default scraper is assumed to be at index 0
 
 moduleDir = os.path.dirname(os.path.realpath(__file__))
 baseDir = os.path.abspath(f'{moduleDir}/../../')
-binDir = os.path.join(baseDir, 'bin')
-confDir = os.path.join(baseDir, 'conf.d')
-themeDir = os.path.join(baseDir, 'themes')
+confDir = os.path.join(moduleDir, 'conf.d')
 qmlDir = os.path.join(moduleDir, 'qml')
 qmlMain = os.path.join(qmlDir, 'main.qml')
 webDir = os.path.join(moduleDir, 'web')
-dataDir = os.path.join(baseDir, 'data')
+dataDir = os.path.join(moduleDir, 'data')
+imagesDir = os.path.join(qmlDir, 'images')
 primaryDb = os.path.join(dataDir, 'pes.db')
-resourcesDir = os.path.join(baseDir, 'resources')
 userHomeDir = os.path.expanduser('~')
 userDir = os.path.join(userHomeDir, 'pes')
 userDb = os.path.join(userDir, 'pes.db')

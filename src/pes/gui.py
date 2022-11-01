@@ -164,9 +164,9 @@ class Backend(QObject):
             f.write("# THIS FILE WAS AUTOMATICALLY CREATED BY PES\n")
             f.write(f"{command}\n")
             if logging.getLogger().isEnabledFor(logging.DEBUG):
-                f.write(f"exec {pes.binDir}/pes -v\n")
+                f.write("exec pes -v\n")
             else:
-                f.write(f"exec {pes.binDir}/pes\n")
+                f.write("exec pes\n")
         os.chmod(pes.userScriptFile, 0o700)
         logging.debug("Backend.__createCommandFile: done")
 
@@ -212,7 +212,7 @@ class Backend(QObject):
         with pes.sql.Session() as session:
             console = session.query(pes.sql.Console).get(consoleId)
             if console:
-                path = os.path.join(pes.resourcesDir, console.art)
+                path = os.path.join(pes.imagesDir, console.art)
                 logging.debug("Backend.getConsoleArt: path is %s", path)
                 return path
         logging.error("Backend.getConsoleArt: could not find console with ID: %d", consoleId)
@@ -490,6 +490,18 @@ class Backend(QObject):
     def reboot(self):
         logging.info("Rebooting")
         pes.common.runCommand(self.__userSettings.rebootCommand)
+
+    @pyqtSlot(bool, bool)
+    def resetData(self, resetConfig, resetDatabase):
+        command = ""
+        if resetConfig:
+            logging.debug("Backend.resetData: user configuration will be deleted")
+            command += f"rm -rf {pes.userConfDir}/*\n"
+        if resetDatabase:
+            logging.debug("Backend.resetData: PES database will be deleted")
+            command += f"rm -f {pes.userDb}\n"
+        self.__createCommandFile(command)
+        self.close()
 
     @pyqtSlot(QJSValue)
     def saveSettings(self, settings):

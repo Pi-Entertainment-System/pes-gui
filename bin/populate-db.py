@@ -30,7 +30,7 @@
 This script initialises the PES database with console and game
 data for use by PES.
 
-By creating a cache of game data this aids adding user games to
+By creating a cache of game data this aids adding games to
 the database.
 """
 
