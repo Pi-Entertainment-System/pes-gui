@@ -1,6 +1,6 @@
 # Pi Entertainment System (PES) GUI
 
-[![GitHub stars](https://img.shields.io/github/stars/Pi-Entertainment-System/pes-gui)](https://github.com/Pi-Entertainment-System/pes-gui/stargazers) [![GitHub issues](https://img.shields.io/github/issues/Pi-Entertainment-System/pes-gui)](https://github.com/Pi-Entertainment-System/pes-gui/issues) ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/Pi-Entertainment-System/pes-gui/Pylint?label=PyLint) [![GitHub license](https://img.shields.io/github/license/Pi-Entertainment-System/pes-gui)](https://github.com/Pi-Entertainment-System/pes-gui/blob/main/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/Pi-Entertainment-System/pes-gui)](https://github.com/Pi-Entertainment-System/pes-gui/stargazers) [![GitHub issues](https://img.shields.io/github/issues/Pi-Entertainment-System/pes-gui)](https://github.com/Pi-Entertainment-System/pes-gui/issues) ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/Pi-Entertainment-System/pes-gui/pylint.yml?label=PyLint) [![GitHub license](https://img.shields.io/github/license/Pi-Entertainment-System/pes-gui)](https://github.com/Pi-Entertainment-System/pes-gui/blob/main/LICENSE)
 
 PES is a graphical front end for a variety of games console emulators that has been written in [Python](https://www.python.org>) which is intended for use on the Raspberry Pi.
 
