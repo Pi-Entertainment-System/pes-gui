@@ -117,7 +117,7 @@ class RetroAchievementException(Exception):
 
 class RetroAchievementUser(QObject):
 
-    __URL = 'http://retroachievements.org/API/'
+    __URL = 'http://retroachievements.org/API'
 
     loginSignal = pyqtSignal()
     scoreChanged = pyqtSignal()
