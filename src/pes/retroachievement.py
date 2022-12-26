@@ -160,7 +160,7 @@ class RetroAchievementUser(QObject):
                 timeout=URL_TIMEOUT
             )
         except Exception as e:
-            raise RetroAchievementException(f"Failed to load URL {url} with {params} due to:\n{e}")
+            raise RetroAchievementException(f"Failed to load URL {url} with {params} due to:\n{e}") from e
         if response.status_code == requests.codes.ok: # pylint: disable=no-member
             if response.text == 'Invalid API Key':
                 raise RetroAchievementException("Invalid RetroAchievement API key")
@@ -169,7 +169,7 @@ class RetroAchievementUser(QObject):
             try:
                 jsonObj = response.json()
             except Exception as e:
-                raise RetroAchievementException(f"Failed to convert response from {url} with {params} to JSON:\n{e}")
+                raise RetroAchievementException(f"Failed to convert response from {url} with {params} to JSON:\n{e}") from e
             return jsonObj
         raise RetroAchievementException(f"Failed to load URL {url} with {params}")
 
