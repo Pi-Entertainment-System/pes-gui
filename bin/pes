@@ -62,7 +62,7 @@ if [ -d /opt/pes/lib/python${pythonVer}/site-packages ]; then
     if [ -z $PYTHONPATH ]; then
         export PYTHONPATH=/opt/pes/lib/python${pythonVer}/site-packages
     else
-        export PYTHONPATH=/opt/pes/lib/python${pythonVer}/site-packages:$PYTHONPATH
+        export PYTHONPATH=$PYTHONPATH:/opt/pes/lib/python${pythonVer}/site-packages
     fi
 fi
 
