@@ -115,22 +115,27 @@ Rectangle {
         user: retroUser
 
         onFinished: {
-            var badges = retroThread.getBadges();
-            if (badges && badges.length > 0) {
-                var retroGame = retroThread.getRetroGame();
-                var earned = 0;
-                for (var i = 0; i < badges.length; i++) {
-                    if (badges[i].earned || badges[i].earnedHardcore) {
-                        earned++;
+            if (!retroThread.hasErrors()) {
+                var badges = retroThread.getBadges();
+                if (badges && badges.length > 0) {
+                    var retroGame = retroThread.getRetroGame();
+                    var earned = 0;
+                    for (var i = 0; i < badges.length; i++) {
+                        if (badges[i].earned || badges[i].earnedHardcore) {
+                            earned++;
+                        }
+                        badges[i]["playersEarnedPercent"] = Math.round((badges[i].totalAwarded / retroGame.totalPlayers) * 100);
+                        badgeModel.append(badges[i]);
                     }
-                    badges[i]["playersEarnedPercent"] = Math.round((badges[i].totalAwarded / retroGame.totalPlayers) * 100);
-                    badgeModel.append(badges[i]);
+                    var percent = Math.round((earned / badges.length) * 100);
+                    achievementBodyText.text = "Score: " + retroGame.score + ", " + percent + "% complete\n" + badges.length + " badges found.";
                 }
-                var percent = Math.round((earned / badges.length) * 100);
-                achievementBodyText.text = "Score: " + retroGame.score + ", " + percent + "% complete\n" + badges.length + " badges found.";
+                else {
+                    __noAchievements();
+                }
             }
             else {
-                __noAchievements();
+                achievementBodyText.text = "An error occurred whilst retrieving the achievements for this game. Please check the PES logs for further info."
             }
             achievementProgressBar.visible = false;
         }

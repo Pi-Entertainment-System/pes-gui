@@ -153,16 +153,24 @@ class RetroAchievementUser(QObject):
                 params[k] = v
         url = f"{RetroAchievementUser.__URL}/{apiUrl}"
         logging.debug("RetroachievementUser.__doRequest: loading URL %s with %s", url, params)
-        response = requests.get(
-            url,
-            params=params,
-            timeout=URL_TIMEOUT
-        )
+        try:
+            response = requests.get(
+                url,
+                params=params,
+                timeout=URL_TIMEOUT
+            )
+        except Exception as e:
+            raise RetroAchievementException(f"Failed to load URL {url} with {params} due to:\n{e}")
         if response.status_code == requests.codes.ok: # pylint: disable=no-member
             if response.text == 'Invalid API Key':
                 raise RetroAchievementException("Invalid RetroAchievement API key")
             logging.debug("RetroAchievementUser.__doRequest: loaded ok")
-            return response.json()
+            jsonObj = {}
+            try:
+                jsonObj = response.json()
+            except Exception as e:
+                raise RetroAchievementException(f"Failed to convert response from {url} with {params} to JSON:\n{e}")
+            return jsonObj
         raise RetroAchievementException(f"Failed to load URL {url} with {params}")
 
     def getGameInfoAndProgress(self, gameId):
@@ -273,6 +281,7 @@ class RetroAchievementThread(QThread):
         self.__retroUser = None
         self.__progress = 0.0
         self.__stop = False
+        self.__errors = False
 
     @pyqtProperty(int)
     def gameId(self):
@@ -289,6 +298,10 @@ class RetroAchievementThread(QThread):
     @pyqtSlot(result=QVariant)
     def getRetroGame(self):
         return self.__retroGame.getDict()
+
+    @pyqtSlot(result=bool)
+    def hasErrors(self) -> bool:
+        return self.__errors
 
     @pyqtSlot(result=bool)
     def isRunning(self) -> bool:
@@ -330,7 +343,14 @@ class RetroAchievementThread(QThread):
                 logging.debug("RetroAchievementThread.run: loading live data from the Internet")
                 score = 0
                 maxScore = 0
-                rslt = self.__retroUser.getGameInfoAndProgress(self.__retroGameId)
+                try:
+                    rslt = self.__retroUser.getGameInfoAndProgress(self.__retroGameId)
+                except RetroAchievementException as e:
+                    self.__errors = True
+                    logging.error(e)
+                    self.__progress = 100
+                    return
+
                 if 'Achievements' in rslt and len(rslt['Achievements']) > 0:
                     count = 0
                     total = len(rslt['Achievements'])
