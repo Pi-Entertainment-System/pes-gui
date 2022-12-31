@@ -33,6 +33,7 @@ ListView {
     property bool soundOn: true;
     property QtObject focusTop: null; // item to pass focus to when the top of the list is hit
     property QtObject focusBottom: null; // item to pass focus to when the bottom of the list is hit
+    property bool wrap: false;
 
     signal itemHighlighted(variant item);
 
@@ -40,13 +41,16 @@ ListView {
         if (currentIndex < count - 1) {
             if (navSound && soundOn) {
                 navSound.play();
-
             }
             currentIndex += 1;
             itemHighlighted(model.get(currentIndex));
         }
-        else if (listView.focusBottom != null) {
+        else if (!wrap && listView.focusBottom != null) {
             listView.focusBottom.forceActiveFocus();
+        }
+        else if (wrap) {
+            currentIndex = 0;
+            itemHighlighted(model.get(currentIndex));
         }
     }
 
@@ -58,8 +62,12 @@ ListView {
             currentIndex -= 1;
             itemHighlighted(model.get(currentIndex));
         }
-        else if (listView.focusTop != null) {
+        else if (!wrap && listView.focusTop != null) {
             listView.focusTop.forceActiveFocus();
+        }
+        else if (wrap) {
+            currentIndex = count - 1;
+            itemHighlighted(model.get(currentIndex));
         }
     }
 

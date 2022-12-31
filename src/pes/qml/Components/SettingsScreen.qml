@@ -221,6 +221,7 @@ Rectangle {
                         model: menuModel
                         //navSound: navSound
                         soundOn: false
+                        wrap: true
                         delegate: MenuDelegate {
                             Keys.onPressed: {
                                 if (event.key == Qt.Key_Right || event.key == Qt.Key_Return) {

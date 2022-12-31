@@ -264,6 +264,7 @@ Rectangle {
                         model: menuModel
                         //navSound: navSound
                         soundOn: false
+                        wrap: true
                         delegate: MenuDelegate {
                             Keys.onReturnPressed: gridFocus()
                             Keys.onRightPressed: gridFocus()
