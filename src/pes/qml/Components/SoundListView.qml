@@ -49,6 +49,7 @@ ListView {
             listView.focusBottom.forceActiveFocus();
         }
     }
+
     Keys.onUpPressed: {
         if (currentIndex > 0) {
             if (navSound && soundOn) {
