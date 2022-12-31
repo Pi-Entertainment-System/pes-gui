@@ -448,7 +448,14 @@ ApplicationWindow {
                       id: powerBtn
                       source: "icons/power-button.png"
                       KeyNavigation.right: kodiBtn
-                      KeyNavigation.down: mainMenuScrollView
+                      Keys.onDownPressed: {
+                        mainMenuScrollView.forceActiveFocus()
+                        mainMenuView.currentIndex = 0
+                      }
+                      Keys.onUpPressed: {
+                        mainMenuScrollView.forceActiveFocus()
+                        mainMenuView.currentIndex = mainMenuView.count - 1
+                      }
                       Keys.onReturnPressed: powerDialog.open()
                     }
 
@@ -457,7 +464,14 @@ ApplicationWindow {
                       source: "icons/film-strip.png"
                       KeyNavigation.right: settingsBtn
                       KeyNavigation.left: powerBtn
-                      KeyNavigation.down: mainMenuScrollView
+                      Keys.onDownPressed: {
+                        mainMenuScrollView.forceActiveFocus()
+                        mainMenuView.currentIndex = 0
+                      }
+                      Keys.onUpPressed: {
+                        mainMenuScrollView.forceActiveFocus()
+                        mainMenuView.currentIndex = mainMenuView.count - 1
+                      }
                       Keys.onReturnPressed: backend.loadKodi()
                     }
 
@@ -465,7 +479,14 @@ ApplicationWindow {
                       id: settingsBtn
                       source: "icons/cog.png"
                       KeyNavigation.left: kodiBtn
-                      KeyNavigation.down: mainMenuScrollView
+                      Keys.onDownPressed: {
+                        mainMenuScrollView.forceActiveFocus()
+                        mainMenuView.currentIndex = 0
+                      }
+                      Keys.onUpPressed: {
+                        mainMenuScrollView.forceActiveFocus()
+                        mainMenuView.currentIndex = mainMenuView.count - 1
+                      }
                       Keys.onReturnPressed: optionsDialog.open()
                     }
                   }
@@ -483,6 +504,7 @@ ApplicationWindow {
                       id: mainMenuView
                       anchors.fill: parent
                       focus: false
+                      focusBottom: powerBtn
                       focusTop: powerBtn
                       model: mainMenuModel
                       //navSound: navSound
