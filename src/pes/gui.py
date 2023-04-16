@@ -20,7 +20,7 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# pylint: disable=invalid-name,line-too-long,missing-class-docstring,missing-function-docstring,too-many-branches,too-many-instance-attributes,too-many-public-methods,too-many-nested-blocks,too-many-return-statements,too-many-statements,wrong-import-position
+# pylint: disable=broad-exception-raised,invalid-name,line-too-long,missing-class-docstring,missing-function-docstring,too-many-branches,too-many-instance-attributes,too-many-public-methods,too-many-nested-blocks,too-many-return-statements,too-many-statements,wrong-import-position
 
 """
 This module creates the PES GUI.

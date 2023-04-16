@@ -20,7 +20,7 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# pylint: disable=invalid-name,line-too-long,missing-class-docstring,missing-function-docstring
+# pylint: disable=broad-exception-raised,invalid-name,line-too-long,missing-class-docstring,missing-function-docstring
 
 """
 This module provides the "common" functions and classes required by PES.
