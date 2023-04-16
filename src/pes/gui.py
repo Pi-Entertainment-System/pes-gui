@@ -535,6 +535,7 @@ class PESGuiApplication(QGuiApplication):
 
     def __init__(self, argv, backend, windowed=False):
         super().__init__(argv)
+        self.setOverrideCursor(Qt.BlankCursor) # hide mouse pointer
         self.__windowed = windowed
         self.__running = True
         self.__player1Controller = None
