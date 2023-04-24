@@ -314,7 +314,7 @@ ApplicationWindow {
 
           TitleText {
             id: retroHeaderTxt
-            text: " | " + retroUser.username + " (" + retroUser.score + ")"
+            text: ` | ${retroUser.username} (${retroUser.score})`
             visible: retroUser.loggedIn
           }
 
