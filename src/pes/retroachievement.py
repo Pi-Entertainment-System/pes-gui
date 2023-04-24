@@ -41,7 +41,7 @@ import pes.common
 
 URL_TIMEOUT = 30
 RETRO_URL = "https://www.retroachievements.org/dorequest.php"
-RETRO_BADGE_URL = "http://i.retroachievements.org/Badge"
+RETRO_BADGE_URL = "https://i.retroachievements.org/Badge"
 HEADERS = { "accept": "application/json", 'User-Agent': 'PES Scraper'}
 
 logging.getLogger("requests").setLevel(logging.WARNING)
@@ -117,7 +117,7 @@ class RetroAchievementException(Exception):
 
 class RetroAchievementUser(QObject):
 
-    __URL = 'http://retroachievements.org/API'
+    __URL = 'https://retroachievements.org/API'
 
     loginSignal = pyqtSignal()
     scoreChanged = pyqtSignal()
