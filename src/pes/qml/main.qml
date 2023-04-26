@@ -25,6 +25,7 @@ import QtQuick.Layouts 1.12
 import QtQuick.Window 2.2
 import QtQuick.Controls 2.5
 import QtMultimedia 5.12
+import ControlPad 1.0
 import RetroAchievementUser 1.0
 import "Components"
 import "./Style/" 1.0
@@ -50,18 +51,17 @@ ApplicationWindow {
     id: retroUser
   }
 
-	Connections {
-	    target: backend
-
-			function onHomeButtonPress() {
-        PES.goHome();
-			}
-
-			function onControlPadButtonPress() {
-				console.warn("button: " + button);
-				console.warn(mainWindow.activeFocusItem.Keys.downPressed({ key: Qt.KeyDown }));
-			}
-	}
+  Connections {
+    target: backend
+    
+    function onControlPadButtonPress(button) {
+      if (button === ControlPad.GuideButton) {
+        PES.goHome()
+      }
+      //console.warn("button: " + button);
+      //console.warn(mainWindow.activeFocusItem.Keys.downPressed({ key: Qt.KeyDown }));
+    }
+  }
 
   // sounds
   SoundEffect {

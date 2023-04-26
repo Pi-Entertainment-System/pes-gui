@@ -39,7 +39,7 @@ import sqlalchemy.orm
 
 from PyQt5.QtGui import QGuiApplication, QKeyEvent
 from PyQt5.QtQml import QQmlApplicationEngine, QJSValue, qmlRegisterType
-from PyQt5.QtCore import Qt, pyqtProperty, pyqtSignal, pyqtSlot, QObject, QEvent, QVariant
+from PyQt5.QtCore import Qt, pyqtProperty, pyqtSignal, pyqtSlot, Q_ENUMS, QObject, QEvent, QVariant
 
 cecImported = False
 try:
@@ -169,9 +169,6 @@ class Backend(QObject):
                 f.write("exec pes\n")
         os.chmod(pes.userScriptFile, 0o700)
         logging.debug("Backend.__createCommandFile: done")
-
-    def emitHomeButtonPress(self):
-        self.homeButtonPress.emit()
 
     def emitControlPadButtonPress(self, button):
         self.controlPadButtonPress.emit(button)
@@ -530,6 +527,37 @@ class Backend(QObject):
         self.__dateTimeFormat = f"{self.__userSettings.pythonDateFormat} %H:%M:%S"
         pes.sql.CustomBase.DATE_TIME_FORMAT = f"{self.__userSettings.pythonDateFormat} %H:%M"
 
+class ControlPad(QObject):
+    
+    class Axis:
+        # trigger buttons
+        LeftTriggerAxis = sdl2.SDL_CONTROLLER_AXIS_TRIGGERLEFT
+        RightTriggerAxis = sdl2.SDL_CONTROLLER_AXIS_TRIGGERRIGHT
+
+    class Button:
+        # DPAD buttons
+        UpButton = sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP
+        DownButton = sdl2.SDL_CONTROLLER_BUTTON_DPAD_DOWN
+        LeftButton = sdl2.SDL_CONTROLLER_BUTTON_DPAD_LEFT
+        RightButton = sdl2.SDL_CONTROLLER_BUTTON_DPAD_RIGHT
+        # shoulder buttons
+        LeftShoulderButton = sdl2.SDL_CONTROLLER_BUTTON_LEFTSHOULDER
+        RightShoulderButton = sdl2.SDL_CONTROLLER_BUTTON_RIGHTSHOULDER
+        # action buttons
+        AButton = sdl2.SDL_CONTROLLER_BUTTON_A
+        BButton = sdl2.SDL_CONTROLLER_BUTTON_B
+        XButton = sdl2.SDL_CONTROLLER_BUTTON_X
+        YButton = sdl2.SDL_CONTROLLER_BUTTON_Y
+        # others
+        BackButton = sdl2.SDL_CONTROLLER_BUTTON_BACK
+        GuideButton = sdl2.SDL_CONTROLLER_BUTTON_GUIDE
+        StartButton = sdl2.SDL_CONTROLLER_BUTTON_START
+
+    Q_ENUMS(Button)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
 class PESGuiApplication(QGuiApplication):
     # pylint: disable=unused-private-member
 
@@ -544,6 +572,7 @@ class PESGuiApplication(QGuiApplication):
         self.__engine = None
         self.__backend = backend
         self.__backend.closeSignal.connect(self.close)
+        qmlRegisterType(ControlPad, 'ControlPad', 1, 0, 'ControlPad')
         qmlRegisterType(pes.romscan.RomScanMonitorThread, 'RomScanMonitorThread', 1, 0, 'RomScanMonitorThread')
         qmlRegisterType(pes.retroachievement.RetroAchievementUser, 'RetroAchievementUser', 1, 0, 'RetroAchievementUser')
         qmlRegisterType(pes.retroachievement.RetroAchievementThread, 'RetroAchievementThread', 1, 0, 'RetroAchievementThread')
@@ -610,45 +639,45 @@ class PESGuiApplication(QGuiApplication):
             for event in events:
                 if event.type == sdl2.SDL_CONTROLLERBUTTONUP and event.cbutton.state == sdl2.SDL_RELEASED:
                     if event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP:
-                        logging.debug("player: up")
+                        logging.debug("controller: up")
                         self.__sendKeyEvent(Qt.Key_Up)
                     elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                        logging.debug("player: down")
+                        logging.debug(f"controller: down")
                         self.__sendKeyEvent(Qt.Key_Down)
                     elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_LEFT:
-                        logging.debug("player: left")
+                        logging.debug("controller: left")
                         self.__sendKeyEvent(Qt.Key_Left)
                     elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
-                        logging.debug("player: right")
+                        logging.debug("controller: right")
                         self.__sendKeyEvent(Qt.Key_Right)
                     elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_A:
-                        logging.debug("player: A")
+                        logging.debug("controller: A")
                         self.__sendKeyEvent(Qt.Key_Backspace)
                     elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_B:
-                        logging.debug("player: B")
+                        logging.debug("controller: B")
                         self.__sendKeyEvent(Qt.Key_Return)
                     elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_BACK:
-                        logging.debug("player: select (back)")
+                        logging.debug("controller: select (back)")
                         self.__sendKeyEvent(Qt.Key_S)
                     elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_GUIDE:
-                        logging.debug("player: Guide")
-                        self.__backend.emitHomeButtonPress()
+                        logging.debug("controller: Guide")
+                    self.__backend.emitControlPadButtonPress(event.cbutton.button)
                 elif event.type == sdl2.SDL_CONTROLLERAXISMOTION:
                     if event.caxis.value < JOYSTICK_AXIS_MIN or event.caxis.value > JOYSTICK_AXIS_MAX:
-                        logging.debug("player: axis \"%s\" activated: %d", sdl2.SDL_GameControllerGetStringForAxis(event.caxis.axis), event.caxis.value)
+                        logging.debug("controller: axis \"%s\" activated: %d", sdl2.SDL_GameControllerGetStringForAxis(event.caxis.axis), event.caxis.value)
                         if event.caxis.axis == sdl2.SDL_CONTROLLER_AXIS_LEFTY:
                             if event.caxis.value > 0:
-                                logging.debug("player: left axis down")
+                                logging.debug("controller: left axis down")
                                 self.__sendKeyEvent(Qt.Key_Down)
                             else:
-                                logging.debug("player: left axis up")
+                                logging.debug("controller: left axis up")
                                 self.__sendKeyEvent(Qt.Key_Up)
                         elif event.caxis.axis == sdl2.SDL_CONTROLLER_AXIS_LEFTX:
                             if event.caxis.value > 0:
-                                logging.debug("player: left axis right")
+                                logging.debug("controller: left axis right")
                                 self.__sendKeyEvent(Qt.Key_Right)
                             else:
-                                logging.debug("player: left axis left")
+                                logging.debug("controller: left axis left")
                                 self.__sendKeyEvent(Qt.Key_Left)
                 #elif event.type == sdl2.SDL_JOYHATMOTION:
                 # NOTE: could be handling an already handled game controller event!
