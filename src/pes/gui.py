@@ -20,7 +20,7 @@
 #    along with PES.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# pylint: disable=broad-exception-raised,invalid-name,line-too-long,missing-class-docstring,missing-function-docstring,too-many-branches,too-many-instance-attributes,too-many-public-methods,too-many-nested-blocks,too-many-return-statements,too-many-statements,wrong-import-position
+# pylint: disable=broad-exception-raised,invalid-name,line-too-long,missing-class-docstring,missing-function-docstring,too-many-branches,too-many-instance-attributes,too-few-public-methods,too-many-public-methods,too-many-nested-blocks,too-many-return-statements,too-many-statements,wrong-import-position
 
 """
 This module creates the PES GUI.
@@ -528,7 +528,7 @@ class Backend(QObject):
         pes.sql.CustomBase.DATE_TIME_FORMAT = f"{self.__userSettings.pythonDateFormat} %H:%M"
 
 class ControlPad(QObject):
-    
+
     class Axis:
         # trigger buttons
         LeftTriggerAxis = sdl2.SDL_CONTROLLER_AXIS_TRIGGERLEFT
@@ -642,7 +642,7 @@ class PESGuiApplication(QGuiApplication):
                         logging.debug("controller: up")
                         self.__sendKeyEvent(Qt.Key_Up)
                     elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                        logging.debug(f"controller: down")
+                        logging.debug("controller: down")
                         self.__sendKeyEvent(Qt.Key_Down)
                     elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_LEFT:
                         logging.debug("controller: left")
