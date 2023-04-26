@@ -39,7 +39,7 @@ import sqlalchemy.orm
 
 from PyQt5.QtGui import QGuiApplication, QKeyEvent
 from PyQt5.QtQml import QQmlApplicationEngine, QJSValue, qmlRegisterType
-from PyQt5.QtCore import Qt, pyqtProperty, pyqtSignal, pyqtSlot, Q_ENUMS, QObject, QEvent, QVariant
+from PyQt5.QtCore import Qt, pyqtProperty, pyqtSignal, pyqtSlot, QObject, QEvent, QVariant
 
 cecImported = False
 try:
@@ -51,6 +51,7 @@ except ImportError:
 # pes imports
 import pes
 import pes.common
+import pes.controlpad
 import pes.retroachievement
 import pes.romscan
 import pes.sql
@@ -118,8 +119,6 @@ def getRetroArchConfigButtonValue(param, controller, button):
 class Backend(QObject):
 
     closeSignal = pyqtSignal()
-    controlPadButtonPress = pyqtSignal(int, arguments=['button'])
-    homeButtonPress = pyqtSignal()
     gamepadTotalSignal = pyqtSignal(int, arguments=['total'])
 
     def __init__(self, parent=None):
@@ -169,9 +168,6 @@ class Backend(QObject):
                 f.write("exec pes\n")
         os.chmod(pes.userScriptFile, 0o700)
         logging.debug("Backend.__createCommandFile: done")
-
-    def emitControlPadButtonPress(self, button):
-        self.controlPadButtonPress.emit(button)
 
     @pyqtSlot(int, bool)
     def favouriteGame(self, gameId, favourite):
@@ -527,37 +523,6 @@ class Backend(QObject):
         self.__dateTimeFormat = f"{self.__userSettings.pythonDateFormat} %H:%M:%S"
         pes.sql.CustomBase.DATE_TIME_FORMAT = f"{self.__userSettings.pythonDateFormat} %H:%M"
 
-class ControlPad(QObject):
-
-    class Axis:
-        # trigger buttons
-        LeftTriggerAxis = sdl2.SDL_CONTROLLER_AXIS_TRIGGERLEFT
-        RightTriggerAxis = sdl2.SDL_CONTROLLER_AXIS_TRIGGERRIGHT
-
-    class Button:
-        # DPAD buttons
-        UpButton = sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP
-        DownButton = sdl2.SDL_CONTROLLER_BUTTON_DPAD_DOWN
-        LeftButton = sdl2.SDL_CONTROLLER_BUTTON_DPAD_LEFT
-        RightButton = sdl2.SDL_CONTROLLER_BUTTON_DPAD_RIGHT
-        # shoulder buttons
-        LeftShoulderButton = sdl2.SDL_CONTROLLER_BUTTON_LEFTSHOULDER
-        RightShoulderButton = sdl2.SDL_CONTROLLER_BUTTON_RIGHTSHOULDER
-        # action buttons
-        AButton = sdl2.SDL_CONTROLLER_BUTTON_A
-        BButton = sdl2.SDL_CONTROLLER_BUTTON_B
-        XButton = sdl2.SDL_CONTROLLER_BUTTON_X
-        YButton = sdl2.SDL_CONTROLLER_BUTTON_Y
-        # others
-        BackButton = sdl2.SDL_CONTROLLER_BUTTON_BACK
-        GuideButton = sdl2.SDL_CONTROLLER_BUTTON_GUIDE
-        StartButton = sdl2.SDL_CONTROLLER_BUTTON_START
-
-    Q_ENUMS(Button)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
 class PESGuiApplication(QGuiApplication):
     # pylint: disable=unused-private-member
 
@@ -572,7 +537,8 @@ class PESGuiApplication(QGuiApplication):
         self.__engine = None
         self.__backend = backend
         self.__backend.closeSignal.connect(self.close)
-        qmlRegisterType(ControlPad, 'ControlPad', 1, 0, 'ControlPad')
+        qmlRegisterType(pes.controlpad.ControlPad, 'ControlPad', 1, 0, 'ControlPad')
+        qmlRegisterType(pes.controlpad.ControlPadManager, 'ControlPadManager', 1, 0, 'ControlPadManager')
         qmlRegisterType(pes.romscan.RomScanMonitorThread, 'RomScanMonitorThread', 1, 0, 'RomScanMonitorThread')
         qmlRegisterType(pes.retroachievement.RetroAchievementUser, 'RetroAchievementUser', 1, 0, 'RetroAchievementUser')
         qmlRegisterType(pes.retroachievement.RetroAchievementThread, 'RetroAchievementThread', 1, 0, 'RetroAchievementThread')
@@ -661,7 +627,7 @@ class PESGuiApplication(QGuiApplication):
                         self.__sendKeyEvent(Qt.Key_S)
                     elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_GUIDE:
                         logging.debug("controller: Guide")
-                    self.__backend.emitControlPadButtonPress(event.cbutton.button)
+                    pes.controlpad.ControlPadManager.listener.fireButtonEvent(event.cbutton.button)
                 elif event.type == sdl2.SDL_CONTROLLERAXISMOTION:
                     if event.caxis.value < JOYSTICK_AXIS_MIN or event.caxis.value > JOYSTICK_AXIS_MAX:
                         logging.debug("controller: axis \"%s\" activated: %d", sdl2.SDL_GameControllerGetStringForAxis(event.caxis.axis), event.caxis.value)
