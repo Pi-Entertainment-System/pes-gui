@@ -55,15 +55,39 @@ ApplicationWindow {
   ControlPadManager {
     id: controlPadManager
 
-    onButtonEventSignal: {
-      if (button === ControlPad.GuideButton) {
-        PES.goHome()
+    onAxisEvent: {
+      const positive = value > 0
+      switch(axis) {
+        case ControlPad.LeftX: {
+          if (positive) {
+            keyboardEmitter.keyPress(Qt.Key_Right)
+          }
+          else {
+            keyboardEmitter.keyPress(Qt.Key_Left)
+          }
+        }; break
+        case ControlPad.LeftY: {
+          if (positive) {
+            keyboardEmitter.keyPress(Qt.Key_Down)
+          }
+          else {
+            keyboardEmitter.keyPress(Qt.Key_Up)
+          }
+        }; break
       }
     }
-  }
 
-  Connections {
-    target: backend
+    onButtonEvent: {
+      switch(button) {
+        case ControlPad.AButton: keyboardEmitter.keyPress(Qt.Key_Backspace); break;
+        case ControlPad.BButton: keyboardEmitter.keyPress(Qt.Key_Return); break;
+        case ControlPad.DownButton: keyboardEmitter.keyPress(Qt.Key_Down); break;
+        case ControlPad.GuideButton: PES.goHome(); break;
+        case ControlPad.LeftButton: keyboardEmitter.keyPress(Qt.Key_Left); break;
+        case ControlPad.RightButton: keyboardEmitter.keyPress(Qt.Key_Right); break;
+        case ControlPad.UpButton: keyboardEmitter.keyPress(Qt.Key_Up); break;
+      }
+    }
   }
 
   // sounds

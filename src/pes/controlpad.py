@@ -42,6 +42,11 @@ class ControlPad(QObject):
         """
         This class is used to create ENUM for axis values for associated QML type.
         """
+        # axis
+        LeftX = sdl2.SDL_CONTROLLER_AXIS_LEFTX
+        LeftY = sdl2.SDL_CONTROLLER_AXIS_LEFTY
+        RightX = sdl2.SDL_CONTROLLER_AXIS_RIGHTX
+        RightY = sdl2.SDL_CONTROLLER_AXIS_RIGHTY
         # trigger buttons
         LeftTriggerAxis = sdl2.SDL_CONTROLLER_AXIS_TRIGGERLEFT
         RightTriggerAxis = sdl2.SDL_CONTROLLER_AXIS_TRIGGERRIGHT
@@ -72,6 +77,14 @@ class ControlPad(QObject):
     Q_ENUMS(Button)
 
     __nameMap = {
+        "axis": {
+            Axis.LeftTriggerAxis: "Left trigger",
+            Axis.LeftX: "Left axis: X direction",
+            Axis.LeftY: "Left axis: Y direction",
+            Axis.RightTriggerAxis: "Right trigger",
+            Axis.RightX: "Right axis: X direction",
+            Axis.RightY: "Right axis: Y direction"
+        },
         "buttons": {
             Button.AButton: "A Button",
             Button.BackButton: "Back Button",
@@ -93,6 +106,15 @@ class ControlPad(QObject):
         super().__init__(parent)
 
     @staticmethod
+    def getAxisName(axis: int) -> str:
+        """
+        Returns the string name for the given axis value.
+        """
+        if axis not in ControlPad.__nameMap["axis"]:
+            raise ValueError("f{axis} not found")
+        return ControlPad.__nameMap["axis"][axis]
+
+    @staticmethod
     def getButtonName(button: int) -> str:
         """
         Returns the string name for the given button value.
@@ -106,30 +128,53 @@ class ControlPadListener(QObject):
     Helper class to fire control pad events.
     """
 
-    buttonEventSignal = pyqtSignal(int)
+    axisEvent = pyqtSignal(int, int)
+    buttonEvent = pyqtSignal(int)
 
     def __init__(self, parent=None):
         super().__init__(parent)
+
+    def fireAxisEvent(self, axis: int, value: int):
+        """
+        Fires the given axis event
+        """
+        self.axisEvent.emit(axis, value)
 
     def fireButtonEvent(self, button: int):
         """
         Fires the given button event.
         """
-        self.buttonEventSignal.emit(button)
+        self.buttonEvent.emit(button)
 
 class ControlPadManager(QObject):
     """
     Manages control pads.
     """
 
-    buttonEventSignal = pyqtSignal(int, arguments=['button'])
+    axisEvent = pyqtSignal(int, int, arguments=['axis', 'value'])
+    buttonEvent = pyqtSignal(int, arguments=['button'])
     listener = ControlPadListener()
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.listener.buttonEventSignal.connect(self.__fireButtonEvent)
+        self.listener.axisEvent.connect(self.__fireAxisEvent)
+        self.listener.buttonEvent.connect(self.__fireButtonEvent)
+
+    @pyqtSlot(int, int)
+    def __fireAxisEvent(self, axis: int, value: int):
+        """
+        Fire axis event.
+        """
+        logging.debug(
+            "ControlPadManager.__fireAxisEvent: %s, value: %d",
+            ControlPad.getAxisName(axis), value
+        )
+        self.axisEvent.emit(axis, value)
 
     @pyqtSlot(int)
     def __fireButtonEvent(self, button: int):
+        """
+        Fire button event.
+        """
         logging.debug("ControlPadManager.__fireButtonEvent: %s", ControlPad.getButtonName(button))
-        self.buttonEventSignal.emit(button)
+        self.buttonEvent.emit(button)

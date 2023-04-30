@@ -523,6 +523,19 @@ class Backend(QObject):
         self.__dateTimeFormat = f"{self.__userSettings.pythonDateFormat} %H:%M:%S"
         pes.sql.CustomBase.DATE_TIME_FORMAT = f"{self.__userSettings.pythonDateFormat} %H:%M"
 
+class KeyboardEmitter(QObject):
+
+    def __init__(self, app, parent=None):
+        super().__init__(parent)
+        self.__app = app
+        logging.debug("KeyboardEmitter.__init__: created")
+
+    @pyqtSlot(int)
+    def keyPress(self, key):
+        event = QKeyEvent(QEvent.KeyPress, key, Qt.NoModifier)
+        logging.debug("KeyboardEmitter.keyPress: %s", key)
+        self.__app.sendEvent(self.__app.focusWindow(), event)
+
 class PESGuiApplication(QGuiApplication):
     # pylint: disable=unused-private-member
 
@@ -537,6 +550,7 @@ class PESGuiApplication(QGuiApplication):
         self.__engine = None
         self.__backend = backend
         self.__backend.closeSignal.connect(self.close)
+        self.__keyboardEmitter = KeyboardEmitter(self)
         qmlRegisterType(pes.controlpad.ControlPad, 'ControlPad', 1, 0, 'ControlPad')
         qmlRegisterType(pes.controlpad.ControlPadManager, 'ControlPadManager', 1, 0, 'ControlPadManager')
         qmlRegisterType(pes.romscan.RomScanMonitorThread, 'RomScanMonitorThread', 1, 0, 'RomScanMonitorThread')
@@ -544,6 +558,7 @@ class PESGuiApplication(QGuiApplication):
         qmlRegisterType(pes.retroachievement.RetroAchievementThread, 'RetroAchievementThread', 1, 0, 'RetroAchievementThread')
         self.__engine = QQmlApplicationEngine()
         self.__engine.rootContext().setContextProperty("backend", self.__backend)
+        self.__engine.rootContext().setContextProperty("keyboardEmitter", self.__keyboardEmitter)
         logging.debug("loading QML from: %s", pes.qmlMain)
         self.__engine.load(pes.qmlMain)
 
@@ -581,21 +596,18 @@ class PESGuiApplication(QGuiApplication):
             raise Exception("PESGuiApplication.processCecEvent: CEC module not imported")
         if dur > 0:
             logging.debug("PESGuiApplication.processCecEvent: button %s", button)
-            event = None
             if button == cec.CEC_USER_CONTROL_CODE_UP:
-                event = QKeyEvent(QEvent.KeyPress, Qt.Key_Up, Qt.NoModifier)
+                self.__keyboardEmitter.keyPress(Qt.Key_Up)
             elif button == cec.CEC_USER_CONTROL_CODE_DOWN:
-                event = QKeyEvent(QEvent.KeyPress, Qt.Key_Down, Qt.NoModifier)
+                self.__keyboardEmitter.keyPress(Qt.Key_Down)
             elif button == cec.CEC_USER_CONTROL_CODE_LEFT:
-                event = QKeyEvent(QEvent.KeyPress, Qt.Key_Left, Qt.NoModifier)
+                self.__keyboardEmitter.keyPress(Qt.Key_Left)
             elif button == cec.CEC_USER_CONTROL_CODE_RIGHT:
-                event = QKeyEvent(QEvent.KeyPress, Qt.Key_Right, Qt.NoModifier)
+                self.__keyboardEmitter.keyPress(Qt.Key_Right)
             elif button == cec.CEC_USER_CONTROL_CODE_SELECT:
-                event = QKeyEvent(QEvent.KeyPress, Qt.Key_Return, Qt.NoModifier)
+                self.__keyboardEmitter.keyPress(Qt.Key_Return)
             elif button in [cec.CEC_USER_CONTROL_CODE_AN_RETURN, cec.CECDEVICE_RESERVED2]:
-                event = QKeyEvent(QEvent.KeyPress, Qt.Key_Backspace, Qt.NoModifier)
-            if event:
-                self.sendEvent(self.__engine.rootObjects()[0], event)
+                self.__keyboardEmitter.keyPress(Qt.Key_Backspace)
 
     def run(self):
         joystickTick = sdl2.timer.SDL_GetTicks()
@@ -604,47 +616,11 @@ class PESGuiApplication(QGuiApplication):
             events = sdl2.ext.get_events()
             for event in events:
                 if event.type == sdl2.SDL_CONTROLLERBUTTONUP and event.cbutton.state == sdl2.SDL_RELEASED:
-                    if event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_UP:
-                        logging.debug("controller: up")
-                        self.__sendKeyEvent(Qt.Key_Up)
-                    elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                        logging.debug("controller: down")
-                        self.__sendKeyEvent(Qt.Key_Down)
-                    elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_LEFT:
-                        logging.debug("controller: left")
-                        self.__sendKeyEvent(Qt.Key_Left)
-                    elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
-                        logging.debug("controller: right")
-                        self.__sendKeyEvent(Qt.Key_Right)
-                    elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_A:
-                        logging.debug("controller: A")
-                        self.__sendKeyEvent(Qt.Key_Backspace)
-                    elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_B:
-                        logging.debug("controller: B")
-                        self.__sendKeyEvent(Qt.Key_Return)
-                    elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_BACK:
-                        logging.debug("controller: select (back)")
-                        self.__sendKeyEvent(Qt.Key_S)
-                    elif event.cbutton.button == sdl2.SDL_CONTROLLER_BUTTON_GUIDE:
-                        logging.debug("controller: Guide")
                     pes.controlpad.ControlPadManager.listener.fireButtonEvent(event.cbutton.button)
                 elif event.type == sdl2.SDL_CONTROLLERAXISMOTION:
                     if event.caxis.value < JOYSTICK_AXIS_MIN or event.caxis.value > JOYSTICK_AXIS_MAX:
                         logging.debug("controller: axis \"%s\" activated: %d", sdl2.SDL_GameControllerGetStringForAxis(event.caxis.axis), event.caxis.value)
-                        if event.caxis.axis == sdl2.SDL_CONTROLLER_AXIS_LEFTY:
-                            if event.caxis.value > 0:
-                                logging.debug("controller: left axis down")
-                                self.__sendKeyEvent(Qt.Key_Down)
-                            else:
-                                logging.debug("controller: left axis up")
-                                self.__sendKeyEvent(Qt.Key_Up)
-                        elif event.caxis.axis == sdl2.SDL_CONTROLLER_AXIS_LEFTX:
-                            if event.caxis.value > 0:
-                                logging.debug("controller: left axis right")
-                                self.__sendKeyEvent(Qt.Key_Right)
-                            else:
-                                logging.debug("controller: left axis left")
-                                self.__sendKeyEvent(Qt.Key_Left)
+                        pes.controlpad.ControlPadManager.listener.fireAxisEvent(event.caxis.axis, event.caxis.value)
                 #elif event.type == sdl2.SDL_JOYHATMOTION:
                 # NOTE: could be handling an already handled game controller event!
                 #    if event.jhat.value == sdl2.SDL_HAT_UP:
@@ -690,9 +666,6 @@ class PESGuiApplication(QGuiApplication):
                 self.__backend.gamepadTotal = controlPadTotal
 
             self.processEvents()
-
-    def __sendKeyEvent(self, key):
-        self.sendEvent(self.focusWindow(), QKeyEvent(QEvent.KeyPress, key, Qt.NoModifier))
 
     #def __updateControlPad(self, jsIndex):
     #    if jsIndex == self.__player1ControllerIndex:
