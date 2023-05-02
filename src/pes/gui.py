@@ -546,7 +546,6 @@ class PESGuiApplication(QGuiApplication):
         self.__running = True
         self.__player1Controller = None
         self.__player1ControllerIndex = None
-        self.__controlPadTotal = 0
         self.__engine = None
         self.__backend = backend
         self.__backend.closeSignal.connect(self.close)
@@ -616,11 +615,11 @@ class PESGuiApplication(QGuiApplication):
             events = sdl2.ext.get_events()
             for event in events:
                 if event.type == sdl2.SDL_CONTROLLERBUTTONUP and event.cbutton.state == sdl2.SDL_RELEASED:
-                    pes.controlpad.ControlPadManager.listener.fireButtonEvent(event.cbutton.button)
+                    pes.controlpad.ControlPadManager.fireButtonEvent(event.cbutton.button)
                 elif event.type == sdl2.SDL_CONTROLLERAXISMOTION:
                     if event.caxis.value < JOYSTICK_AXIS_MIN or event.caxis.value > JOYSTICK_AXIS_MAX:
                         logging.debug("controller: axis \"%s\" activated: %d", sdl2.SDL_GameControllerGetStringForAxis(event.caxis.axis), event.caxis.value)
-                        pes.controlpad.ControlPadManager.listener.fireAxisEvent(event.caxis.axis, event.caxis.value)
+                        pes.controlpad.ControlPadManager.fireAxisEvent(event.caxis.axis, event.caxis.value)
                 #elif event.type == sdl2.SDL_JOYHATMOTION:
                 # NOTE: could be handling an already handled game controller event!
                 #    if event.jhat.value == sdl2.SDL_HAT_UP:
@@ -659,11 +658,9 @@ class PESGuiApplication(QGuiApplication):
                 else:
                     self.__player1Controller = None
                     self.__player1ControllerIndex = None
-                if self.__controlPadTotal != controlPadTotal:
-                    self.__controlPadTotal = controlPadTotal
-                    #self.__handler.emitJoysticksConnected(self.__controlPadTotal)
                 joystickTick = tick
-                self.__backend.gamepadTotal = controlPadTotal
+                if pes.controlpad.ControlPadManager.total != controlPadTotal:
+                    pes.controlpad.ControlPadManager.fireTotalChangedEvent(controlPadTotal)
 
             self.processEvents()
 
