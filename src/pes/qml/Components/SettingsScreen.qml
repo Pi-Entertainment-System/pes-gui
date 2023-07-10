@@ -223,14 +223,14 @@ Rectangle {
                         soundOn: false
                         wrap: true
                         delegate: MenuDelegate {
-                            Keys.onPressed: {
-                                if (event.key == Qt.Key_Right || event.key == Qt.Key_Return) {
-                                    switch (name) {
-                                        case "System": internal.systemFocusItem.forceActiveFocus(); break;
-                                        case "Reset Data": internal.resetDataFocusItem.forceActiveFocus(); break;
-                                    }
+                            function handleMenuKeyPress() {
+                                switch (name) {
+                                    case "System": internal.systemFocusItem.forceActiveFocus(); break;
+                                    case "Reset Data": internal.resetDataFocusItem.forceActiveFocus(); break;
                                 }
                             }
+                            Keys.onReturnPressed: handleMenuKeyPress()
+                            Keys.onRightPressed: handleMenuKeyPress()
                         }
                         onItemHighlighted: {
                             settingsScreenStack.currentIndex = menuView.currentIndex;
