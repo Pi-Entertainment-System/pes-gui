@@ -173,10 +173,9 @@ def pes_main():
         pesExit("Failed to initialise SDL")
 
     logging.debug("loading SDL2 control pad mappings from: %s", pes.userGameControllerFile)
-    mappingsLoaded = sdl2.SDL_GameControllerAddMappingsFromFile(pes.userGameControllerFile.encode())
-    if mappingsLoaded == -1:
+    if sdl2.SDL_GameControllerAddMappingsFromFile(pes.userGameControllerFile.encode()) == -1:
         pes.common.pesExit(f"failed to load SDL2 control pad mappings from: {pes.userGameControllerFile}")
-    logging.debug("loaded %d control pad mappings", mappingsLoaded)
+    logging.debug("loaded control pad mappings")
 
     app = PESGuiApplication(sys.argv, backend) # pylint: disable=redefined-outer-name
 
