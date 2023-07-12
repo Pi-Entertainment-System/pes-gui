@@ -102,8 +102,11 @@ class ControlPad(QObject):
         }
     }
 
-    def __init__(self, parent=None):
+    def __init__(self, name: str, guid: str, parent: QObject = None):
         super().__init__(parent)
+        self.__name = name
+        self.__guid = guid
+        self.__present = True
 
     @staticmethod
     def getAxisName(axis: int) -> str:
@@ -122,6 +125,34 @@ class ControlPad(QObject):
         if button not in ControlPad.__nameMap["buttons"]:
             raise ValueError(f"{button} not found")
         return ControlPad.__nameMap["buttons"][button]
+
+    @pyqtProperty(str)
+    def guid(self) -> str:
+        """
+        Returns the GUID of the control pad.
+        """
+        return self.__guid
+
+    @pyqtProperty(str)
+    def name(self) -> str:
+        """
+        Returns the name of the control pad.
+        """
+        return self.__name
+
+    @pyqtProperty(bool)
+    def present(self) -> bool:
+        """
+        Returns true if the control pad is present, false otherwise.
+        """
+        return self.__present
+
+    @present.setter
+    def present(self, present: bool):
+        """
+        Set the present status of the control pad.
+        """
+        self.__present = present
 
 class ControlPadListener(QObject):
     """
@@ -161,8 +192,8 @@ class ControlPadManager(QObject):
     axisEvent = pyqtSignal(int, int, arguments=['axis', 'value'])
     buttonEvent = pyqtSignal(int, arguments=['button'])
     totalChangedEvent = pyqtSignal(int, arguments=['total'])
-    __controlPadTotal = 0 # shared total
     __listener = ControlPadListener() # shared instance
+    __controlPads = {} # shared dictionary of connected control pads
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -199,6 +230,34 @@ class ControlPadManager(QObject):
         self.totalChangedEvent.emit(total)
 
     @staticmethod
+    def beginUpdate():
+        """
+        This method should be called before polling connected
+        control pads.
+        """
+        for controlPad in ControlPadManager.__controlPads.values():
+            controlPad.present = False
+
+    @staticmethod
+    def endUpdate():
+        """
+        This method should be called after polling connected
+        control pads is complete.
+        """
+        toRemove = [
+            controlPad for controlPad in
+                ControlPadManager.__controlPads.values() if not controlPad.present
+        ]
+        if len(toRemove) > 0:
+            for controlPad in toRemove:
+                logging.info(
+                    "ControlPadManager.endUpdate: %s is no longer connected",
+                    controlPad.name
+                )
+                del ControlPadManager.__controlPads[controlPad.guid]
+            ControlPadManager.__listener.fireTotalChangedEvent(len(ControlPadManager.__controlPads))
+
+    @staticmethod
     def fireAxisEvent(axis: int, value: int):
         """
         Fire axis event.
@@ -212,18 +271,29 @@ class ControlPadManager(QObject):
         """
         ControlPadManager.__listener.fireButtonEvent(button)
 
-    @staticmethod
-    def fireTotalChangedEvent(total: int):
+    @pyqtSlot(result=list)
+    def getControlPads(self) -> list:
         """
-        Fire control pad total changed event.
+        Return a list of all the ControlPad objects that
+        are connected.
         """
-        if ControlPadManager.__controlPadTotal != total:
-            ControlPadManager.__controlPadTotal = total
-            ControlPadManager.__listener.fireTotalChangedEvent(total)
+        return list(ControlPadManager.__controlPads.values())
 
     @pyqtProperty(int, notify=totalChangedEvent)
     def total(self) -> int:
         """
         Returns the total number of control pads connected.
         """
-        return ControlPadManager.__controlPadTotal
+        return len(ControlPadManager.__controlPads)
+
+    @staticmethod
+    def updateControlPad(guid: str, name: str):
+        """
+        Update the list of control pads.
+        """
+        if guid in ControlPadManager.__controlPads:
+            ControlPadManager.__controlPads[guid].present = True
+            return
+        logging.debug("ControlPadManager.addControlPad: adding %s (%s)", guid, name)
+        ControlPadManager.__controlPads[guid] = ControlPad(name, guid)
+        ControlPadManager.__listener.fireTotalChangedEvent(len(ControlPadManager.__controlPads))

@@ -636,6 +636,7 @@ class PESGuiApplication(QGuiApplication):
                 #        self.__sendKeyEvent(Qt.Key_Right)
 
             if sdl2.timer.SDL_GetTicks() - joystickTick > 1000:
+                pes.controlpad.ControlPadManager.beginUpdate()
                 tick = sdl2.timer.SDL_GetTicks()
                 joystickTotal = sdl2.joystick.SDL_NumJoysticks()
                 controlPadTotal = 0
@@ -645,22 +646,26 @@ class PESGuiApplication(QGuiApplication):
                             close = True
                             c = sdl2.SDL_GameControllerOpen(i)
                             if sdl2.SDL_GameControllerGetAttached(c):
+                                controlPadName = sdl2.SDL_GameControllerNameForIndex(i).decode()
+                                joystickGUID = getJoystickGUIDString(sdl2.SDL_JoystickGetDeviceGUID(i))
                                 controlPadTotal += 1
                                 #logging.debug("PESWindow.run: %s is attached at %d", sdl2.SDL_GameControllerNameForIndex(i).decode(), i)
                                 if self.__player1Controller is None:
-                                    logging.debug("PESApp.run: switching player 1 to control pad #%d: %s (%s)", i, sdl2.SDL_GameControllerNameForIndex(i).decode(), getJoystickGUIDString(sdl2.SDL_JoystickGetDeviceGUID(i)))
+                                    logging.debug("PESApp.run: switching player 1 to control pad #%d: %s (%s)", i, controlPadName, joystickGUID)
                                     self.__player1ControllerIndex = i
                                     self.__player1Controller = c
                                     #self.__updateControlPad(self.__player1ControllerIndex)
                                     close = False
+
+                                pes.controlpad.ControlPadManager.updateControlPad(joystickGUID, controlPadName)
+
                             if close:
                                 sdl2.SDL_GameControllerClose(c)
                 else:
                     self.__player1Controller = None
                     self.__player1ControllerIndex = None
                 joystickTick = tick
-                if pes.controlpad.ControlPadManager.total != controlPadTotal:
-                    pes.controlpad.ControlPadManager.fireTotalChangedEvent(controlPadTotal)
+                pes.controlpad.ControlPadManager.endUpdate()
 
             self.processEvents()
 
