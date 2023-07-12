@@ -281,11 +281,6 @@ ApplicationWindow {
     id: mainStackView
     anchors.fill: parent
 
-    Keys.onReleased: {
-      screenSaverTimer.restart();
-      event.accepted = false;
-    }
-
     pushEnter: Transition {
         PropertyAnimation {
             property: "opacity"
