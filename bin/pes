@@ -50,6 +50,8 @@ if [ -e /sys/firmware/devicetree/base/model ] && grep -q 'Raspberry Pi' /sys/fir
     export QT_QPA_PLATFORM=eglfs
     # scale display (assuming large resolution here)
     export QT_SCALE_FACTOR=1.5
+    # prevent "Could not queue DRM page flip on screen HDMI" error
+    export QT_QPA_EGLFS_ALWAYS_SET_MODE="1"
 fi
 
 pythonVer=`python -c 'import sys; print(str(sys.version_info[0])+"."+str(sys.version_info[1]))'`
