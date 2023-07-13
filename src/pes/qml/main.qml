@@ -645,10 +645,7 @@ ApplicationWindow {
                     visible: false
                     KeyNavigation.left: mainMenuScrollView
                     KeyNavigation.up: recentlyAddedMainPanel.visible ? recentlyAddedMainPanel : recentlyPlayedMainPanel
-
-                    Keys.onReturnPressed: {
-                      PES.loadConsoleScreen(PES.getCurrentConsole());
-                    }
+                    onButtonPressed: PES.loadConsoleScreen(PES.getCurrentConsole())
                   }
                 }
               }

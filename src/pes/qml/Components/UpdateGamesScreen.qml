@@ -150,8 +150,8 @@ Rectangle {
                 Layout.preferredHeight: 50
                 Layout.leftMargin: 30
 
-                Keys.onReturnPressed: beginRomScan(false)
                 KeyNavigation.down: beginFullScanBtn
+                onButtonPressed: beginRomScan(false)
             }
 
             BodyText {
@@ -173,8 +173,8 @@ Rectangle {
                 Layout.preferredHeight: 50
                 Layout.leftMargin: 30
 
-                Keys.onReturnPressed: beginRomScan(true)
                 KeyNavigation.down: beginScanBtn
+                onButtonPressed: beginRomScan(true)
             }
 
             BodyText {
@@ -226,7 +226,7 @@ Rectangle {
             Layout.preferredHeight: 50
             Layout.leftMargin: 30
             Layout.topMargin: 20
-            Keys.onReturnPressed: updateGamesRect.abortRomScan()
+            onButtonPressed: updateGamesRect.abortRomScan()
         }
 
         UiButton {
@@ -237,7 +237,7 @@ Rectangle {
             Layout.preferredHeight: 50
             Layout.leftMargin: 30
             Layout.topMargin: 20
-            Keys.onReturnPressed: PES.goHome()
+            onButtonPressed: PES.goHome()
         }
     }
 }

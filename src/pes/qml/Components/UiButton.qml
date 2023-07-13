@@ -24,10 +24,20 @@ import QtQuick 2.7
 import "../Style/" 1.0
 
 Rectangle {
+  id: button
   color: focus ? Colour.buttonFocus : Colour.menuBg
   property alias btnText: btnText.text
   //border.color: 'black'
   //border.width: 2
+
+  // custom signals
+  signal buttonPressed()
+
+  Keys.onReturnPressed: {
+    if (visible) {
+      button.buttonPressed();
+    }
+  }
 
   Text {
     id: btnText
