@@ -207,7 +207,7 @@ class RomTask(abc.ABC):
         newHeight = height * ratio
         if width > newWidth or height > newHeight:
             # scale image
-            img.thumbnail((newWidth, newHeight), PIL.Image.LANCZOS)
+            img.thumbnail((newWidth, newHeight), PIL.Image.Resampling.LANCZOS)
         if imgFormat == "JPEG":
             extension = ".jpg"
         elif imgFormat == "PNG":
