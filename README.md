@@ -29,7 +29,7 @@ PES requires its database to be populated with theGamesDB and RetroAchievements.
 Once you have cloned this repository you can create the database like so:
 
 ```
-export PYTHONPATH=python
+export PYTHONPATH=src/pes
 bin/populate-db.py -g -m -d data -r --match -v
 ```
 
