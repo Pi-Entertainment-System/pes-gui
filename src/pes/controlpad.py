@@ -33,6 +33,42 @@ import sdl2
 
 from PyQt5.QtCore import pyqtProperty, pyqtSignal, pyqtSlot, Q_ENUMS, QObject
 
+JOYSTICK_AXIS_MIN = -30000
+JOYSTICK_AXIS_MAX =  30000
+
+def getLitteEndianFromHex(x: str) -> int:
+    """
+    Returns the little endian value of the given
+    hex value.
+    """
+    return int(f"{x[2:4]}{x[0:2]}", 16)
+
+def getJoystickGUIDString(guid) -> str:
+    """
+    Returns the a string representation of the given 
+    joystick GUID.
+    """
+    # pylint: disable=line-too-long
+    # workaround for http://bugs.python.org/issue22273
+    # thanks to https://github.com/GreatFruitOmsk/py-sdl2/commit/e9b13cb5a13b0f5265626d02b0941771e0d1d564
+    s = ''
+    for g in guid.data:
+        s += "{:x}".format(g >> 4) # pylint: disable=consider-using-f-string
+        s += "{:x}".format(g & 0x0F) # pylint: disable=consider-using-f-string
+    return s
+
+def getJoystickDeviceInfoFromGUID(guid: str) -> tuple[str, str]:
+    """
+    Returns a tuple containing the vendor and product ID of the
+    given GUID.
+    """
+    vendorId = guid[8:12]
+    productId = guid[16:20]
+    # swap from big endian to little endian and covert to an int
+    vendorId = getLitteEndianFromHex(vendorId)
+    productId = getLitteEndianFromHex(productId)
+    return (vendorId, productId)
+
 class ControlPad(QObject):
     """
     ControlPad class.
@@ -230,7 +266,7 @@ class ControlPadManager(QObject):
         self.totalChangedEvent.emit(total)
 
     @staticmethod
-    def beginUpdate():
+    def __beginUpdate():
         """
         This method should be called before polling connected
         control pads.
@@ -239,7 +275,7 @@ class ControlPadManager(QObject):
             controlPad.present = False
 
     @staticmethod
-    def endUpdate():
+    def __endUpdate():
         """
         This method should be called after polling connected
         control pads is complete.
@@ -251,25 +287,11 @@ class ControlPadManager(QObject):
         if len(toRemove) > 0:
             for controlPad in toRemove:
                 logging.info(
-                    "ControlPadManager.endUpdate: %s is no longer connected",
+                    "ControlPadManager.__endUpdate: %s is no longer connected",
                     controlPad.name
                 )
                 del ControlPadManager.__controlPads[controlPad.guid]
             ControlPadManager.__listener.fireTotalChangedEvent(len(ControlPadManager.__controlPads))
-
-    @staticmethod
-    def fireAxisEvent(axis: int, value: int):
-        """
-        Fire axis event.
-        """
-        ControlPadManager.__listener.fireAxisEvent(axis, value)
-
-    @staticmethod
-    def fireButtonEvent(button: int):
-        """
-        Fire button event.
-        """
-        ControlPadManager.__listener.fireButtonEvent(button)
 
     @pyqtSlot(result=list)
     def getControlPads(self) -> list:
@@ -279,6 +301,22 @@ class ControlPadManager(QObject):
         """
         return list(ControlPadManager.__controlPads.values())
 
+    @staticmethod
+    def processEvent(event):
+        """
+        Processes the given SDL event.
+        """
+        if event.type == sdl2.SDL_CONTROLLERBUTTONUP and event.cbutton.state == sdl2.SDL_RELEASED:
+            ControlPadManager.__listener.fireButtonEvent(event.cbutton.button)
+        elif event.type == sdl2.SDL_CONTROLLERAXISMOTION:
+            if event.caxis.value < JOYSTICK_AXIS_MIN or event.caxis.value > JOYSTICK_AXIS_MAX:
+                logging.debug(
+                    "ControlPadManager.processEvent: axis \"%s\" activated: %d",
+                    sdl2.SDL_GameControllerGetStringForAxis(event.caxis.axis),
+                    event.caxis.value
+                )
+                ControlPadManager.__listener.fireAxisEvent(event.caxis.axis, event.caxis.value)
+
     @pyqtProperty(int, notify=totalChangedEvent)
     def total(self) -> int:
         """
@@ -287,7 +325,30 @@ class ControlPadManager(QObject):
         return len(ControlPadManager.__controlPads)
 
     @staticmethod
-    def updateControlPad(guid: str, name: str):
+    def updateControlPads():
+        """
+        Poll the control pads that are currently connected.
+        """
+        ControlPadManager.__beginUpdate()
+        joystickTotal = sdl2.joystick.SDL_NumJoysticks()
+
+        if joystickTotal > 0:
+            for i in range(joystickTotal):
+                if sdl2.SDL_IsGameController(i):
+                    c = sdl2.SDL_GameControllerOpen(i)
+                    if sdl2.SDL_GameControllerGetAttached(c):
+                        controlPadName = sdl2.SDL_GameControllerNameForIndex(i).decode()
+                        joystickGUID = getJoystickGUIDString(sdl2.SDL_JoystickGetDeviceGUID(i))
+                        ControlPadManager.__updateControlPad(joystickGUID, controlPadName)
+
+                    if i > 0:
+                        # only allow first controller to control GUI
+                        sdl2.SDL_GameControllerClose(c)
+
+        ControlPadManager.__endUpdate()
+
+    @staticmethod
+    def __updateControlPad(guid: str, name: str):
         """
         Update the list of control pads.
         """
