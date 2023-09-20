@@ -38,6 +38,7 @@ import socket
 import subprocess
 import sys
 import struct
+from typing import NoReturn
 
 # pes imports
 from pes import baseDir, confDir, moduleDir, primaryDb, userBiosDir, userConfDir, userConsolesConfigFile, userDb, userDir, userPesConfigFile
@@ -105,7 +106,7 @@ def mkdir(path: str):
         logging.debug("mkdir: %s already exists", path)
     return False
 
-def pesExit(msg: str=None, error: bool=False):
+def pesExit(msg: str=None, error: bool=False) -> NoReturn:
     if error:
         if msg:
             logging.error(msg)
@@ -118,7 +119,7 @@ def pesExit(msg: str=None, error: bool=False):
         logging.info("Exiting...")
     sys.exit(0)
 
-def runCommand(cmd: str) -> tuple:
+def runCommand(cmd: str) -> tuple[int, str, str]:
     '''
     Execute the given command and return a tuple that contains the
     return code, std out and std err output.
@@ -128,7 +129,7 @@ def runCommand(cmd: str) -> tuple:
         stdout, stderr = process.communicate()
         return (process.returncode, stdout.decode(), stderr.decode())
 
-def scaleImage(ix: int, iy: int, bx: int, by: int) -> tuple:
+def scaleImage(ix: int, iy: int, bx: int, by: int) -> tuple[int, int]:
     """
     Original author: Frank Raiser (crashchaos@gmx.net)
     URL: http://www.pygame.org/pcr/transform_scale
@@ -154,7 +155,7 @@ def scaleImage(ix: int, iy: int, bx: int, by: int) -> tuple:
             sy = scale_factor * iy
         else:
             sy = by
-    return (int(sx),int(sy))
+    return (int(sx), int(sy))
 
 class Settings:
 
