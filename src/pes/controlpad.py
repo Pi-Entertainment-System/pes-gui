@@ -233,6 +233,7 @@ class ControlPadManager(QObject):
     totalChangedEvent = pyqtSignal(int, arguments=['total'])
     __listener = ControlPadListener() # shared instance
     __controlPads = {} # shared dictionary of connected control pads
+    __configMode = False
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -295,6 +296,21 @@ class ControlPadManager(QObject):
         """
         logging.debug("ControlPadManager.__fireTotalChangedEvent: %d", total)
         self.totalChangedEvent.emit(total)
+
+    @pyqtProperty(bool)
+    def configMode(self) -> bool:
+        """
+        Return's True if config mode has been enabled, False otherwise.
+        """
+        return ControlPadManager.__configMode
+
+    @configMode.setter
+    def configMode(self, mode: bool):
+        """
+        Set the config mode to True or False.
+        """
+        ControlPadManager.__configMode = mode
+        logging.debug("ControlPadManager.configMode = %s", mode)
 
     @pyqtSlot(result=list)
     def getControlPads(self) -> list:
