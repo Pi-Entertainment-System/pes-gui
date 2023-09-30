@@ -190,29 +190,32 @@ class ControlPad(QObject):
         """
         self.__present = present
 
+    def __repr__(self) -> str:
+        return f"<ControlPad guid=\"{self.__guid}\" name=\"{self.__name}\">"
+
 class ControlPadListener(QObject):
     """
     Helper class to fire control pad events.
     """
 
-    axisEvent = pyqtSignal(int, int)
-    buttonEvent = pyqtSignal(int)
+    axisEvent = pyqtSignal(int, int, ControlPad)
+    buttonEvent = pyqtSignal(int, ControlPad)
     totalChangedEvent = pyqtSignal(int)
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
-    def fireAxisEvent(self, axis: int, value: int):
+    def fireAxisEvent(self, axis: int, value: int, controlPad: ControlPad):
         """
         Fires the given axis event
         """
-        self.axisEvent.emit(axis, value)
+        self.axisEvent.emit(axis, value, controlPad)
 
-    def fireButtonEvent(self, button: int):
+    def fireButtonEvent(self, button: int, controlPad: ControlPad):
         """
         Fires the given button event.
         """
-        self.buttonEvent.emit(button)
+        self.buttonEvent.emit(button, controlPad)
 
     def fireTotalChangedEvent(self, total: int):
         """
@@ -225,8 +228,8 @@ class ControlPadManager(QObject):
     Manages control pads.
     """
 
-    axisEvent = pyqtSignal(int, int, arguments=['axis', 'value'])
-    buttonEvent = pyqtSignal(int, arguments=['button'])
+    axisEvent = pyqtSignal(int, int, ControlPad, arguments=['axis', 'value', 'controlPad'])
+    buttonEvent = pyqtSignal(int, ControlPad, arguments=['button', 'controlPad'])
     totalChangedEvent = pyqtSignal(int, arguments=['total'])
     __listener = ControlPadListener() # shared instance
     __controlPads = {} # shared dictionary of connected control pads
@@ -266,8 +269,8 @@ class ControlPadManager(QObject):
                 del ControlPadManager.__controlPads[controlPad.guid]
             ControlPadManager.__listener.fireTotalChangedEvent(len(ControlPadManager.__controlPads))
 
-    @pyqtSlot(int, int)
-    def __fireAxisEvent(self, axis: int, value: int):
+    @pyqtSlot(int, int, ControlPad)
+    def __fireAxisEvent(self, axis: int, value: int, controlPad: ControlPad):
         """
         Fire axis event.
         """
@@ -275,15 +278,15 @@ class ControlPadManager(QObject):
             "ControlPadManager.__fireAxisEvent: %s, value: %d",
             ControlPad.getAxisName(axis), value
         )
-        self.axisEvent.emit(axis, value)
+        self.axisEvent.emit(axis, value, controlPad)
 
-    @pyqtSlot(int)
-    def __fireButtonEvent(self, button: int):
+    @pyqtSlot(int, ControlPad)
+    def __fireButtonEvent(self, button: int, controlPad: ControlPad):
         """
         Fire button event.
         """
         logging.debug("ControlPadManager.__fireButtonEvent: %s", ControlPad.getButtonName(button))
-        self.buttonEvent.emit(button)
+        self.buttonEvent.emit(button, controlPad)
 
     @pyqtSlot(int)
     def __fireTotalChangedEvent(self, total: int):
@@ -307,15 +310,28 @@ class ControlPadManager(QObject):
         Processes the given SDL event.
         """
         if event.type == sdl2.SDL_CONTROLLERBUTTONUP and event.cbutton.state == sdl2.SDL_RELEASED:
-            ControlPadManager.__listener.fireButtonEvent(event.cbutton.button)
+            joystickGUID = getJoystickGUIDString(
+                sdl2.SDL_JoystickGetDeviceGUID(event.cbutton.which)
+            )
+            ControlPadManager.__listener.fireButtonEvent(
+                event.cbutton.button,
+                ControlPadManager.__controlPads[joystickGUID]
+            )
         elif event.type == sdl2.SDL_CONTROLLERAXISMOTION:
             if event.caxis.value < JOYSTICK_AXIS_MIN or event.caxis.value > JOYSTICK_AXIS_MAX:
+                joystickGUID = getJoystickGUIDString(
+                    sdl2.SDL_JoystickGetDeviceGUID(event.cbutton.which)
+                )
                 logging.debug(
                     "ControlPadManager.processEvent: axis \"%s\" activated: %d",
                     sdl2.SDL_GameControllerGetStringForAxis(event.caxis.axis),
                     event.caxis.value
                 )
-                ControlPadManager.__listener.fireAxisEvent(event.caxis.axis, event.caxis.value)
+                ControlPadManager.__listener.fireAxisEvent(
+                    event.caxis.axis,
+                    event.caxis.value,
+                    ControlPadManager.__controlPads[joystickGUID]
+                )
 
     @pyqtProperty(int, notify=totalChangedEvent)
     def total(self) -> int:
