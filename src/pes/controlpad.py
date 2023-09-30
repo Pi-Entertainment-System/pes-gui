@@ -238,33 +238,6 @@ class ControlPadManager(QObject):
         self.__listener.buttonEvent.connect(self.__fireButtonEvent)
         self.__listener.totalChangedEvent.connect(self.__fireTotalChangedEvent)
 
-    @pyqtSlot(int, int)
-    def __fireAxisEvent(self, axis: int, value: int):
-        """
-        Fire axis event.
-        """
-        logging.debug(
-            "ControlPadManager.__fireAxisEvent: %s, value: %d",
-            ControlPad.getAxisName(axis), value
-        )
-        self.axisEvent.emit(axis, value)
-
-    @pyqtSlot(int)
-    def __fireButtonEvent(self, button: int):
-        """
-        Fire button event.
-        """
-        logging.debug("ControlPadManager.__fireButtonEvent: %s", ControlPad.getButtonName(button))
-        self.buttonEvent.emit(button)
-
-    @pyqtSlot(int)
-    def __fireTotalChangedEvent(self, total: int):
-        """
-        Fire control pad total changed event.
-        """
-        logging.debug("ControlPadManager.__fireTotalChangedEvent: %d", total)
-        self.totalChangedEvent.emit(total)
-
     @staticmethod
     def __beginUpdate():
         """
@@ -292,6 +265,33 @@ class ControlPadManager(QObject):
                 )
                 del ControlPadManager.__controlPads[controlPad.guid]
             ControlPadManager.__listener.fireTotalChangedEvent(len(ControlPadManager.__controlPads))
+
+    @pyqtSlot(int, int)
+    def __fireAxisEvent(self, axis: int, value: int):
+        """
+        Fire axis event.
+        """
+        logging.debug(
+            "ControlPadManager.__fireAxisEvent: %s, value: %d",
+            ControlPad.getAxisName(axis), value
+        )
+        self.axisEvent.emit(axis, value)
+
+    @pyqtSlot(int)
+    def __fireButtonEvent(self, button: int):
+        """
+        Fire button event.
+        """
+        logging.debug("ControlPadManager.__fireButtonEvent: %s", ControlPad.getButtonName(button))
+        self.buttonEvent.emit(button)
+
+    @pyqtSlot(int)
+    def __fireTotalChangedEvent(self, total: int):
+        """
+        Fire control pad total changed event.
+        """
+        logging.debug("ControlPadManager.__fireTotalChangedEvent: %d", total)
+        self.totalChangedEvent.emit(total)
 
     @pyqtSlot(result=list)
     def getControlPads(self) -> list:
