@@ -25,9 +25,8 @@ import QtQuick.Layouts 1.12
 import QtQuick.Window 2.2
 import QtQuick.Controls 2.5
 import QtMultimedia 5.12
-import "../Style/" 1.0
 import "../pes.js" as PES
-import "../screensaver.js" as SCREENSAVER
+import "screensaver.js" as SCREENSAVER
 
 Rectangle {
 
